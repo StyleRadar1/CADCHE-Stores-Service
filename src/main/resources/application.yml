@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: ms-tiendas
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/styleradar_tiendas}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    open-in-view: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+
+server:
+  port: ${SERVER_PORT:8083}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
