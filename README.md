@@ -66,6 +66,7 @@
 10. [CI/CD con el badge del pipeline](#10-cicd-con-el-badge-del-pipeline)
 11. [Ramas y cómo contribuir](#11-ramas-y-cómo-contribuir)
 12. [Enlace a la épica en Jira](#12-enlace-a-la-épica-en-jira)
+13. [Análisis de tecnologías del servicio](#13-análisis-de-tecnologías-del-servicio)
 
 ---
 
@@ -542,96 +543,22 @@ La comunicación asíncrona entre microservicios se orquesta a través de **Rabb
 
 ## <img src="https://img.shields.io/badge/06-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 6. TECNOLOGÍAS Y DEPENDENCIAS
 
-Esta sección presenta el análisis de tecnologías del microservicio `ms-tiendas` dentro del ecosistema StyleRadar. Cada decisión tecnológica responde a los requerimientos de integridad jurídica de los comercios aliados en Bogotá, verificación documental del RUT, consultas georreferenciadas por cercanía, gestión de activos multimedia y sincronización asíncrona con los servicios de identidad, catálogo e inventario.
+El stack del microservicio cumple con el estándar unificado de arquitectura de StyleRadar:
 
-### Tabla Completa de Análisis de Tecnologías del Servicio
+| Capa / Componente | Tecnología | Versión | Justificación Técnica |
+| :--- | :--- | :--- | :--- |
+| **Lenguaje Core** | Java LTS | `17 / 21 LTS` | Records inmutables para DTOs, cálculo geodésico Haversine y alto rendimiento sobre JVM. |
+| **Framework Empresarial** | Spring Boot | `3.2.12` | Gestión declarativa de configuración, soporte multipart (hasta 6 MB) y Actuator. |
+| **Base de Datos** | PostgreSQL | `16` | Integridad transaccional ACID para almacenes (NIT primario), vínculos de administradores, fotografías y fundaciones aliadas. |
+| **Almacenamiento de Archivos** | Azure Blob Storage / S3 | `API REST v2` | Almacenamiento seguro de documentos RUT en PDF y fotografías de vitrina en alta resolución. |
+| **Caché en Memoria** | Redis | `7.x` | Almacenamiento en caché de directorios de tiendas aprobadas y coordenadas de sedes. |
+| **Migraciones de BD** | Flyway | `10.20.1` | Control de versiones reproducible del esquema SQL (`styleradar_tiendas`). |
+| **Broker de Mensajería** | RabbitMQ | `3.12+` | Publicación de eventos de verificación de tiendas, asignación de roles y umbrales de catálogo. |
+| **Mapeo de DTOs** | MapStruct + Lombok | `1.5.5.Final / 1.18.42` | Generación de mappers en tiempo de compilación con cero sobrecarga de reflexión. |
+| **Documentación API** | SpringDoc OpenAPI | `2.3.0` | Generación automática del contrato OpenAPI 3.0 y consola interactiva `/swagger-ui.html`. |
+| **Testing Core & Integración** | JUnit 5, Mockito, Testcontainers | `5.10.x / 1.19.8` | Pruebas unitarias de dominio, verificación de contrato OpenAPI y contenedores efímeros PostgreSQL. |
 
-La siguiente matriz consolida las cuatro decisiones tecnológicas estructurales del microservicio `ms-tiendas` y su relación con los demás componentes del Paquete 1 de Identidad gestionado por el equipo CADche:
-
-| Servicio | Equipo | ¿BD o no? | Tipo de BD y Motor | Frameworks y Lenguaje | Broker de Mensajería | Justificación Técnica de cada Decisión |
-| :--- | :---: | :---: | :--- | :--- | :--- | :--- |
-| **`ms-tiendas`**<br>Puerto `8083` | **CADche** | **Sí** | **Híbrida: Relacional Georreferenciada + Caché + Blob Storage**<br>`PostgreSQL 16` + `Redis 7` + `Azure Blob Storage` | `Java 21 LTS`, `Spring Boot 3.2.12`, `Spring Data JPA`, `Jakarta Bean Validation`, `Flyway`, `MapStruct` | **RabbitMQ 3.12+**<br>Protocolo `AMQP 0-9-1`<br>Exchange `styleradar.tiendas.events` | **BD:** Persistencia propia de almacenes identificados por NIT, administradores vinculados, fotografías, horarios, configuraciones de catálogo y fundaciones aliadas.<br>**Tipo BD:** PostgreSQL garantiza integridad referencial ACID y consultas espaciales por latitud y longitud; Redis acelera la lectura de tiendas verificadas en el mapa; Blob Storage aloja archivos binarios de RUT e imágenes.<br>**Frameworks:** Soporte multipart nativo, cálculo geodésico Haversine en dominio y Java Records inmutables.<br>**Broker:** Propaga la aprobación o rechazo de tiendas, la asignación de roles comerciales y los umbrales de catálogo hacia `ms-auth`, `ms-usuarios`, `ms-catalogo` y `ms-inventario`. |
-| **`ms-auth`**<br>Puerto `8081` | **CADche** | **Sí** | **Híbrida: Relacional + Clave-Valor en Memoria**<br>`PostgreSQL 16` + `Redis 7` | `Java 21 LTS`, `Spring Boot 3.2.12`, `Spring Security 6`, `Spring Data JPA`, `JJWT 0.12.6`, `Flyway`, `MapStruct` | **RabbitMQ 3.12+**<br>Protocolo `AMQP 0-9-1`<br>Exchange `styleradar.auth.events` | **BD:** Almacena credenciales, roles, consentimiento legal y bitácora de accesos.<br>**Tipo BD:** PostgreSQL garantiza atomicidad en el registro de identidad y Redis gestiona códigos OTP con TTL de 300 segundos y lista negra de JWT.<br>**Frameworks:** Spring Security y JJWT estandarizan el cifrado BCrypt y los tokens firmados.<br>**Broker:** Consume los eventos de asignación de rol emitidos por `ms-tiendas` para otorgar permisos de `ADMIN_ALMACEN` o `REPRESENTANTE_FUNDACION`. |
-| **`ms-usuarios`**<br>Puerto `8082` | **CADche** | **Sí** | **Híbrida: Relacional + Documental Nativo + Caché**<br>`PostgreSQL 16` con soporte `JSONB` + `Redis 7` | `Java 21 LTS`, `Spring Boot 3.2.12`, `Spring Data JPA`, `Bean Validation`, `Flyway`, `MapStruct` | **RabbitMQ 3.12+**<br>Protocolo `AMQP 0-9-1`<br>Exchange `styleradar.usuarios.events` | **BD:** Almacena perfiles de usuario, tallas, estilos e historial de estados.<br>**Tipo BD:** Modelo relacional para el perfil estructurado y columnas `JSONB` con índices GIN para filtros flexibles de búsquedas guardadas.<br>**Frameworks:** Bean Validation protege contra expresiones regulares vulnerables y Java Records asegura inmutabilidad.<br>**Broker:** Consume eventos de asignación de rol comercial desde `ms-tiendas` y sincroniza estados de cuenta. |
-
----
-
-### Matriz Detallada del Stack Tecnológico y Alternativas Evaluadas
-
-| Capa / Componente | Tecnología Seleccionada | Versión | Alternativas Descartadas | Justificación Técnica de Elección y Descarte |
-| :--- | :--- | :--- | :--- | :--- |
-| **Lenguaje Core** | Java LTS | `17 / 21 LTS` | Node.js / TypeScript, Python 3.12 | Java 21 ofrece precisión aritmética de punto flotante de doble precisión para el cálculo geodésico de distancias mediante la fórmula de Haversine, `Records` inmutables para DTOs y tipado estricto para modelar los flujos de moderación y verificación documental. |
-| **Framework Empresarial** | Spring Boot | `3.2.12` | Quarkus, Micronaut, NestJS | Proporciona gestión nativa de peticiones `multipart/form-data` con control estricto de tamaño máximo de archivo hasta 6 MB, inyección de dependencias declarativa y endpoints de observabilidad con Actuator. |
-| **Motor de Base de Datos Principal** | PostgreSQL | `16` | MongoDB, MySQL 8 | PostgreSQL asegura integridad transaccional ACID para el registro jurídico por NIT, la asociación sin duplicados de administradores y la unicidad del orden de fotografías de vitrina. Además, soporta indexación sobre coordenadas geográficas de `latitud` y `longitud` y extensiones espaciales superiores a MySQL o bases documentales sin esquema. |
-| **Almacenamiento de Archivos Binarios** | Azure Blob Storage / S3 Compatible | `API REST v2` | Guardar archivos `BYTEA` o `BLOB` dentro de PostgreSQL | Los documentos RUT en formato PDF y las fotografías de fachada e interior en alta resolución se almacenan en un servicio de objetos externo, guardando en PostgreSQL únicamente la URL segura y los metadatos de tamaño y tipo MIME. Guardar binarios pesados dentro de las tablas SQL degradaría el rendimiento de las copias de seguridad y saturaría la memoria caché del motor relacional. |
-| **Caché Geoespacial y de Directorio** | Redis | `7.x` | Consultas repetitivas a disco en cada carga del mapa | Permite almacenar en memoria distribuida las proyecciones de lectura de los almacenes aprobados y sus coordenadas en Bogotá, reduciendo el tiempo de respuesta cuando múltiples compradores exploran simultáneamente el mapa interactivo de tiendas cercanas. |
-| **Control de Migraciones SQL** | Flyway | `10.20.1` | Liquibase, `ddl-auto: update` de Hibernate | Ejecuta de forma determinista y versionada los scripts SQL que crean las tablas `almacenes`, `administradores_almacen`, `fotos_almacen` y `fundaciones_aliadas`, junto con sus restricciones de clave primaria por NIT y claves únicas compuestas. |
-| **Broker de Mensajería** | RabbitMQ | `3.12+` | Apache Kafka, llamadas HTTP REST síncronas | Orquesta la publicación de eventos de verificación de tiendas, asignación de roles comerciales y actualización de umbrales de catálogo mediante Topic Exchanges durables. Se descartó la invocación HTTP síncrona para evitar que una interrupción temporal en `ms-catalogo` o `ms-notificaciones` aborte el proceso administrativo de aprobación de una tienda. |
-| **Mapeo de Objetos** | MapStruct + Lombok | `1.5.5.Final / 1.18.42` | ModelMapper, conversión manual repetitiva | Genera código de mapeo estático en tiempo de compilación entre los DTOs de la API, las entidades del dominio `Almacen`, `FotoAlmacen` y `FundacionAliada` y las entidades JPA, sin sobrecarga por reflexión. |
-| **Contrato y Documentación API** | SpringDoc OpenAPI | `2.3.0` | Springfox, documentación manual | Genera automáticamente el contrato OpenAPI 3.0 incluyendo la especificación de esquemas multipart para carga de RUT y fotografías, accesible en `/swagger-ui.html`. |
-| **Calidad, Pruebas y Cobertura** | JUnit 5, Mockito, Testcontainers, JaCoCo | `5.10.x / 1.19.8 / 0.8.11` | Pruebas manuales, base de datos H2 exclusiva | Garantiza pruebas unitarias rápidas sobre las reglas de negocio del dominio y pruebas de integración contra contenedores reales de PostgreSQL 16, manteniendo una cobertura verificable igual o superior al 80%. |
-
----
-
-### Análisis Detallado de las Decisiones Tecnológicas
-
-#### 6.1 ¿Requiere Base de Datos o no?
-
-**Decisión: Sí requiere base de datos propia.**
-
-El microservicio `ms-tiendas` constituye la fuente de verdad legal, comercial y geográfica de todos los almacenes de ropa y fundaciones aliadas dentro de StyleRadar. Aunque la capa de controladores REST es completamente sin estado para permitir el escalado horizontal detrás del API Gateway, el servicio requiere una base de datos propia denominada `styleradar_tiendas` para persistir información crítica de negocio:
-
-1. **Identidad jurídica y comercial de los almacenes:** El Número de Identificación Tributaria `NIT` como identificador único legal en Colombia, el nombre comercial, la descripción de la marca, la dirección física en Bogotá, el teléfono, el correo corporativo y las redes sociales.
-2. **Expediente de verificación documental y moderación:** Los metadatos del certificado RUT en formato PDF, el estado del flujo de revisión administrativa `PENDIENTE_VERIFICACION`, `APROBADO` o `RECHAZADO`, el motivo de rechazo en caso de inconsistencias, la fecha de decisión y el identificador del administrador de StyleRadar que ejecutó el dictamen.
-3. **Georreferenciación y horarios de atención:** Las coordenadas exactas de `latitud` y `longitud` dentro del perímetro urbano de Bogotá junto con los horarios de apertura y cierre, indispensables para posicionar la tienda en el mapa interactivo y calcular rutas y distancias hacia el comprador.
-4. **Vinculación de administradores y galería visual:** La relación entre cada NIT y los usuarios autorizados como `ADMIN_ALMACEN`, así como el registro ordenado de hasta 5 fotografías de fachada e interior por comercio.
-5. **Parámetros operativos de catálogo y fundaciones aliadas:** Los umbrales configurables de cada tienda para etiquetar prendas como `ÚLTIMAS UNIDADES` o `NUEVA PRENDA`, además del directorio de fundaciones sin ánimo de lucro verificadas para recibir donaciones del módulo de segunda mano.
-
-En cumplimiento del patrón **Database-per-Service**, ningún otro microservicio accede directamente a las tablas de `styleradar_tiendas`. Los servicios de catálogo o inventario conocen los cambios de estado o configuración exclusivamente a través de los eventos publicados por `ms-tiendas` o mediante consultas a su API pública.
-
-#### 6.2 Tipo de Base de Datos y Justificación del Modelo de Persistencia
-
-**Decisión: Modelo Relacional Georreferenciado en PostgreSQL 16 como motor transaccional primario, complementado con Azure Blob Storage para archivos binarios y Redis 7 para caché de lectura rápida.**
-
-El dominio de tiendas y fundaciones exige un alto grado de consistencia estructural y relacional que descarta el uso de una base de datos NoSQL documental como motor principal:
-
-* **Por qué una Base de Datos Relacional en PostgreSQL 16 como motor principal:**
-  Los datos de un comercio verificado poseen reglas de integridad estrictas que deben garantizarse mediante transacciones **ACID** y restricciones a nivel de esquema:
-  * **Integridad por clave natural jurídica `NIT`:** La tabla `almacenes` utiliza el `nit` como clave primaria e impone restricciones sobre las coordenadas geográficas con `latitud` entre -90 y 90 y `longitud` entre -180 y 180, así como sobre los parámetros operativos `umbral_ultimas_unidades` y `dias_vigencia_nueva_prenda` mayores o iguales a 1.
-  * **Relaciones maestro-detalle sin orfandad ni colisiones:** La tabla `administradores_almacen` emplea una restricción `UNIQUE (almacen_nit, usuario_id)` que impide vincular dos veces al mismo administrador en una tienda. De igual forma, la tabla `fotos_almacen` aplica una restricción `UNIQUE (almacen_nit, orden)` junto con `CHECK (orden BETWEEN 1 AND 5)`, asegurando a nivel de motor de base de datos que ningún almacén supere el límite de cinco fotografías ni tenga dos imágenes en la misma posición del carrusel, incluso si el administrador envía peticiones concurrentes.
-  * **Consultas georreferenciadas precisas:** PostgreSQL permite indexar los pares de coordenadas `latitud` y `longitud` para filtrar eficientemente los almacenes con estado `APROBADO` dentro de un cuadro delimitador geográfico en Bogotá antes de aplicar el cálculo trigonométrico exacto de distancia con la fórmula de Haversine.
-
-* **Por qué delegar los documentos PDF e imágenes a un almacenamiento de objetos Blob Storage en lugar de la base de datos:**
-  El registro de una tienda requiere adjuntar el certificado RUT en PDF de hasta 6 MB y hasta 5 fotografías de fachada e interior en formatos JPEG, PNG o WEBP. Almacenar estos flujos binarios directamente en columnas SQL incrementaría exponencialmente el tamaño de las tablas, ralentizaría las consultas relacionales y encarecería el almacenamiento transaccional. Por ello, `ms-tiendas` valida la firma mágica de los bytes del archivo en el dominio, delega el almacenamiento físico del binario a un contenedor de objetos externo y persiste en PostgreSQL únicamente la ruta firmada `rut_archivo_url` y `url`, el nombre original, el tipo MIME y el peso en bytes.
-
-* **Por qué Redis 7 como capa de caché complementaria:**
-  La consulta de tiendas cercanas en el mapa de Bogotá y la visualización de vitrinas de almacenes verificados tienen una proporción muy alta de lecturas frente a escrituras, dado que los datos jurídicos y la ubicación física de una sede rara vez cambian. Redis permite almacenar proyecciones rápidas de los almacenes aprobados bajo claves `store:profile:{nit}` para responder en pocos milisegundos sin consultar repetidamente el disco de PostgreSQL.
-
-#### 6.3 Frameworks, Lenguaje y Herramientas de Desarrollo
-
-**Decisión: Java 17/21 LTS con Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation, Flyway y MapStruct bajo Arquitectura Hexagonal.**
-
-Cada componente tecnológico fue seleccionado para proteger las reglas de negocio del dominio comercial y facilitar la evolución del microservicio:
-
-* **Java 21 LTS y Dominio Hexagonal Puro:** Las entidades centrales `Almacen`, `AdministradorAlmacen`, `FotoAlmacen` y `FundacionAliada`, los enumerados de estado y el servicio de validación `TiendaValidator` residen en el paquete `domain` sin ninguna dependencia hacia Spring o Hibernate. Cálculos críticos como la distancia geodésica Haversine entre la ubicación del comprador y cada sede física, la verificación de los primeros bytes de un archivo PDF con cabecera `%PDF` para evitar suplantación de extensiones y el control del límite de cinco fotografías se ejecutan directamente en Java puro dentro de `TiendaUseCase`. La clase `BeanConfig` en la capa de infraestructura realiza el ensamblaje manual de dependencias.
-* **Spring Boot 3.2.12 y gestión segura de carga Multipart:** En el adaptador de entrada REST `TiendaController`, Spring Boot gestiona la recepción de formularios `multipart/form-data` aplicando límites estrictos en el nivel del contenedor web de máximo 6 MB por archivo individual y 35 MB por petición completa, rechazando cargas excesivas con el código `413 Payload Too Large` antes de saturar la memoria heap de la JVM.
-* **Spring Data JPA, Hibernate 6 y Flyway 10.20.1:** El adaptador de salida `TiendaJpaAdapter` encapsula los cuatro repositorios JPA encargados de traducir las operaciones del dominio a sentencias SQL parametrizadas sobre PostgreSQL. Flyway garantiza que la estructura de las cuatro tablas del esquema `styleradar_tiendas` se cree y actualice de manera idempotente mediante scripts SQL controlados en el repositorio.
-* **MapStruct 1.5.5 y SpringDoc OpenAPI 2.3.0:** MapStruct genera en compilación los traductores entre los `Records` de petición/respuesta, los objetos de dominio y las entidades JPA. SpringDoc OpenAPI expone de forma interactiva los 9 endpoints del servicio en `/swagger-ui.html`, documentando claramente qué rutas son públicas, cuáles requieren el rol `ADMIN_ALMACEN` y cuáles son exclusivas de `ADMIN_STYLERADAR`.
-
-#### 6.4 Broker de Mensajería y Comunicación Orientada a Eventos
-
-**Decisión: RabbitMQ 3.12+ mediante el protocolo AMQP 0-9-1 con Topic Exchanges durables en `styleradar.tiendas.events`.**
-
-Las decisiones tomadas dentro de `ms-tiendas` tienen efectos directos sobre otros contextos delimitados del ecosistema StyleRadar: aprobar una tienda debe habilitar su catálogo, vincular un administrador debe otorgarle permisos de autenticación y modificar los umbrales de stock debe actualizar las etiquetas visuales del inventario. Ejecutar estas notificaciones mediante llamadas HTTP síncronas acoplaría la disponibilidad de `ms-tiendas` a la de otros cuatro microservicios.
-
-* **Por qué RabbitMQ como broker de mensajería:**
-  RabbitMQ proporciona desacoplamiento temporal y espacial mediante *Exchanges* de tipo `topic` y colas durables con confirmación de recepción. Si el microservicio de catálogo o el de notificaciones se encuentran en mantenimiento en el instante en que un administrador de StyleRadar aprueba el RUT de una tienda, el evento permanece resguardado en disco dentro de RabbitMQ y se procesa tan pronto el consumidor vuelve a estar en línea, con soporte nativo para reintentos y desvío a una cola de mensajes muertos `styleradar.dlx` en caso de errores de procesamiento.
-* **Eventos publicados por `ms-tiendas`:**
-  * `tienda.verificacion.decidida`: Se publica cuando un `ADMIN_STYLERADAR` aprueba o rechaza la solicitud de registro de un almacén tras revisar su RUT. Es consumido por `ms-catalogo` para activar o mantener oculta la vitrina del comercio en el mapa y por `ms-notificaciones` para informar el dictamen al correo del comerciante.
-  * `tienda.rol.asignado`: Se publica al vincular un usuario como `ADMIN_ALMACEN` de una tienda o al registrar una fundación aliada con su `REPRESENTANTE_FUNDACION`. Tanto `ms-auth` como `ms-usuarios` consumen este evento para actualizar los roles efectivos del usuario en sus propias bases de datos.
-  * `tienda.configuracion.actualizada`: Se publica cuando el administrador del almacén modifica el `umbralUltimasUnidades` o los `diasVigenciaNuevaPrenda`. Los servicios `ms-catalogo` y `ms-inventario` consumen este mensaje para recalcular de forma asíncrona las insignias de escasez y novedad de las prendas del comercio, eliminando la dependencia de lectura cruzada entre bases de datos identificada en la deuda técnica del monolito.
-* **Eventos consumidos por `ms-tiendas`:**
-  * `tienda.suscripcion.suspendida`: Proveniente de `ms-suscripciones` a través de la cola `q.tiendas.suscripcion`, permite actualizar el estado operativo de vigencia comercial de la tienda cuando vence su plan de suscripción.
+> Nota: El análisis formal exhaustivo basado en la Plantilla Maestra Oficial (Drivers de Calidad ISO/IEC 25010, Metodología MCDM/Pugh Matrix, Matrices de Decisión ADR-001 a ADR-005, Costos Cloud TCO/FinOps, Tech Radar, Matriz de Riesgos y Acta de Aprobación) se encuentra documentado en la [Sección 13: Análisis de Tecnologías del Servicio](#13-análisis-de-tecnologías-del-servicio).
 
 ---
 
@@ -1045,3 +972,307 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 | `SR-RF-63`, `SR-RF-64`, `SR-RF-65`, `SR-RF-43` | Gestión integral y consulta geolocalizada de fundaciones aliadas | `ADMIN_STYLERADAR`, `COMPRADOR` | Permite registrar (asignando rol `REPRESENTANTE_FUNDACION`), editar, desactivar fundaciones preservando historial y listarlas por cercanía Haversine al donante. |
 | `SR-RF-74` | Gestión de fotografías del almacén físico (Deuda Técnica #7) | `ADMIN_ALMACEN` | Permite subir, listar y eliminar hasta 5 fotografías de fachada/interior por tienda en formatos `JPEG`, `PNG` o `WEBP` con peso máximo de 5 MB por imagen. |
 | `SR-RNF-01` | Asociación y verificación de propiedad `ADMIN_ALMACEN` (Deuda Técnica #1) | `ADMIN_STYLERADAR`, `ADMIN_ALMACEN` | Valida que el usuario autenticado con rol `ADMIN_ALMACEN` sea administrador del NIT objetivo antes de autorizar mutaciones, previniendo vulnerabilidades BOLA/IDOR (`403 Forbidden`). |
+
+---
+
+<a id="13-análisis-de-tecnologías-del-servicio"></a>
+
+## <img src="https://img.shields.io/badge/13-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 13. ANÁLISIS DE TECNOLOGÍAS DEL SERVICIO (PLANTILLA MAESTRA OFICIAL)
+
+Este apartado constituye la transcripción y aplicación integral de la **Plantilla Maestra Oficial de Análisis de Tecnologías** de StyleRadar para el microservicio `ms-tiendas` (`CADCHE-Stores-Service`), desarrollada conforme al estándar de entrega de arquitectura de software para DOSW 2026.
+
+### Ficha Técnica del Documento
+
+* **Proyecto / Asignatura:** StyleRadar · DOSW 2026
+* **Microservicio:** `CADCHE-Stores-Service` (`ms-tiendas`, Puerto `8083`)
+* **Paquete Arquitectónico:** Paquete 1: Identidad
+* **Alcance Arquitectónico:** Evaluación multicriterio de 13 Microservicios, API Gateway y Arquitectura Orientada a Eventos
+* **Equipo Responsable (CADche):** Juan Nicolás Álvarez, Camilo Ortiz, Daniel Valero, Juan Diego Valderrama, Paula Alejandra Díaz
+* **Versión y Fecha:** v1.0 · Noviembre 2026
+
+---
+
+### 00. Resumen Ejecutivo y Estructura del Documento
+
+El presente documento define el marco formal para evaluar, justificar y documentar la selección del stack tecnológico del microservicio `ms-tiendas`, garantizando alineación entre los atributos de calidad definidos en la norma ISO/IEC 25010 y las restricciones presupuestales y operativas del proyecto StyleRadar.
+
+* **Servicios del Ecosistema:** 13 Microservicios + 1 API Gateway Perimetral
+* **Capas Evaluadas:** 8 capas tecnológicas de extremo a extremo
+* **Estándar de Empaquetado:** 100% Contenedores compatibles con OCI (Docker)
+* **Latencia Meta del Sistema:** Percentil P95 inferior a 200 ms en consultas operativas
+
+---
+
+### 01. Contexto y Drivers Arquitectónicos (ISO/IEC 25010)
+
+#### 1.1 Declaración del Problema y Justificación de Microservicios
+
+El sistema StyleRadar requiere desacoplar el procesamiento intensivo de inteligencia artificial (inferencia del probador virtual) del catálogo de alta concurrencia de lectura y de la administración de comercios aliados. Específicamente, `ms-tiendas` debe aislar el registro comercial por NIT, la verificación documental del RUT en formato PDF, la geolocalización de sedes físicas en Bogotá, el cálculo de cercanía por Haversine, la gestión de horarios y la moderación de tiendas y fundaciones aliadas. Si la recepción y validación de documentos pesados se ejecutara en el microservicio de catálogo o en un monolito, la carga de archivos binarios de hasta 6 MB degradaría los tiempos de respuesta del catálogo público durante las horas pico de compra. Por tanto, se adopta una arquitectura de microservicios con límites de contexto basados en Domain-Driven Design (DDD), donde `ms-tiendas` gestiona su propia persistencia y delega los archivos multimedia a un almacenamiento de objetos.
+
+#### 1.2 Atributos de Calidad Clave (ISO/IEC 25010)
+
+| Atributo de Calidad | Métrica / Escenario Objetivo | Impacto en la Selección Tecnológica |
+| :--- | :--- | :--- |
+| **Rendimiento y Latencia** | P95 < 200 ms en consultas de mapa y tiendas; P99 < 500 ms | Exige índices en coordenadas de latitud/longitud, caching distribuido L2 y frameworks con bajo overhead. |
+| **Escalabilidad Horizontal** | Soporte de 0 a 1,000 req/s en eventos de ferias de moda | Microservicios stateless en contenedores OCI; escalado elástico independiente por réplicas. |
+| **Consistencia de Datos** | ACID estricto en NIT, administradores y fotos; eventual en eventos | PostgreSQL para transaccionalidad relacional estricta; RabbitMQ para propagación de eventos asíncronos. |
+| **Disponibilidad y Resiliencia** | SLA 99.9%; tolerancia al fallo de servicios downstream | Circuit Breakers (Resilience4j), degradación elegante si el catálogo no responde al aprobar una tienda. |
+| **Seguridad y Privacidad** | Control estricto BOLA/IDOR; validación de firma mágica PDF | Autorización RBAC granular para `ADMIN_ALMACEN` sobre su propio NIT; validación de bytes `%PDF`. |
+| **Eficiencia de Costos (FinOps)** | Costo mensual < $35 USD en fase MVP / académica | Almacenamiento de archivos binarios en Blob Storage Hot LRS de bajo costo sin saturar la base relacional. |
+| **Mantenibilidad & Equipo** | Time-to-market de 8 semanas para el core MVP | Uso de tecnologías ampliamente dominadas por el equipo (Java 21 / Spring Boot) para mitigar riesgo de entrega. |
+
+#### 1.3 Restricciones Técnicas y Organizacionales
+
+El sistema debe empaquetarse en imágenes Docker compatibles con estándares OCI; las pruebas unitarias e integración deben alcanzar una cobertura mínima de JaCoCo igual o superior al 85% y superar el Quality Gate estricto de SonarQube con cero vulnerabilidades y cero code smells graves. La evaluación de tecnologías en esta plantilla sigue el método ATAM (Architecture Tradeoff Analysis Method), priorizando los drivers que generan mayor impacto en los riesgos del negocio y la viabilidad técnica del sistema.
+
+---
+
+### 02. Metodología de Evaluación Multicriterio (MCDM / Matriz de Pugh)
+
+Para evitar decisiones basadas en preferencias subjetivas, se utiliza una matriz de decisión cuantitativa multicriterio (MCDM / Matriz de Pugh), asignando ponderaciones porcentuales basadas en los drivers arquitectónicos de StyleRadar.
+
+#### 2.1 Criterios de Selección y Ponderaciones
+
+| Criterio | Peso (%) | Definición y Justificación | Métrica Objetiva de Medición |
+| :---: | :---: | :--- | :--- |
+| **C1: Rendimiento** | 25 % | Capacidad de atender alto throughput con latencia mínima P95 y bajo consumo de memoria RAM y CPU. | Benchmarks oficiales, tiempo de respuesta bajo carga (JMeter/k6), consumo de memoria por contenedor. |
+| **C2: Madurez & LTS** | 20 % | Estabilidad de APIs, soporte extendido (LTS), documentación oficial y tamaño del ecosistema. | Años en el mercado, frecuencia de parches CVE, comunidad activa en GitHub y respaldo de fundaciones. |
+| **C3: Velocidad Dev** | 20 % | Curva de aprendizaje del equipo, disponibilidad de librerías listas para producción y velocidad de prototipado. | Horas requeridas para implementar endpoints multipart con validación de dominio y persistencia relacional. |
+| **C4: Operabilidad** | 15 % | Facilidad de contenedorización con Docker, compatibilidad CI/CD y observabilidad con métricas y logs. | Tamaño de la imagen Docker final, soporte nativo de métricas de salud (Actuator / Healthchecks). |
+| **C5: Costo & TCO** | 20 % | Costo total de propiedad en nubes públicas, tipo de licenciamiento open-source y ausencia de vendor lock-in. | Licencia OSI (Apache 2.0 / MIT / PostgreSQL), costo de instancias administradas en Azure Calculator. |
+
+#### 2.2 Escala de Calificación Objetiva (Rúbrica 1 a 5)
+
+* **1 - 2 (Deficiente):** No cumple el driver. Curva prohibitiva, consumo desmedido de RAM o licenciamiento restrictivo.
+* **3 (Aceptable):** Cumple parcialmente con trade-offs significativos que requieren mitigación técnica adicional.
+* **4 - 5 (Sobresaliente):** Excelente desempeño, soporte LTS probado en la industria y alta productividad para el equipo.
+
+#### 2.3 Estándar de Architectural Decision Records (ADR)
+
+Cada decisión se documenta bajo el formato formal de ADR (Michael Nygard), sintetizando el contexto, las opciones evaluadas, la decisión final justificada y las consecuencias derivadas. La puntuación total ponderada se calcula mediante la fórmula oficial:
+
+$$\text{Puntaje Total} = \sum_{i=1}^{5} (\text{Calificación}_{i} \times \text{Peso}_{i})$$
+
+---
+
+### 03. Matrices de Decisión Técnicas Detalladas (ADRs de Capa)
+
+#### 3.1 Lenguaje & Runtime de Ejecución Backend (ADR-001)
+
+| Criterio (Peso) | Java 21 LTS (OpenJDK) | Node.js (TypeScript) | Go (Golang 1.22) | Python 3.12 (FastAPI) |
+| :--- | :---: | :---: | :---: | :---: |
+| C1: Rendimiento (25 %) | 5 | 4 | 5 | 3 |
+| C2: Madurez & LTS (20 %) | 5 | 4 | 4 | 4 |
+| C3: Velocidad Dev (20 %) | 4 | 4 | 3 | 5 |
+| C4: Operabilidad (15 %) | 5 | 4 | 5 | 3 |
+| C5: Costo & TCO (20 %) | 4 | 4 | 4 | 3 |
+| **Total Ponderado** | **4.65 / 5.00 (Seleccionado)** | **3.95 / 5.00** | **4.30 / 5.00** | **3.55 / 5.00** |
+
+* **Decisión ADR-001:** Se adopta Java 21 LTS como lenguaje estándar transversal para todos los microservicios backend de StyleRadar.
+* **Por qué Java 21:** Precisión aritmética en cálculos trigonométricos de coma flotante de doble precisión para la fórmula de Haversine; Records inmutables para representar datos de comercios y DTOs de auditoría; excelente soporte de hilos virtuales para operaciones de I/O de archivos.
+* **Por qué no los otros:** Node.js presenta menor precisión nativa y bloqueos en flujos de validación de streams binarios; Python tiene alto consumo de memoria y lentitud en operaciones matemáticas concurrentes debido al GIL.
+
+#### 3.2 Framework Backend & Microservicios (ADR-002)
+
+| Criterio (Peso) | Spring Boot 3.2.x | Quarkus 3.x | Micronaut 4.x | NestJS (Node/TS) |
+| :--- | :---: | :---: | :---: | :---: |
+| C1: Rendimiento (25 %) | 5 | 5 | 4 | 4 |
+| C2: Madurez & LTS (20 %) | 5 | 4 | 3 | 4 |
+| C3: Velocidad Dev (20 %) | 5 | 3 | 3 | 4 |
+| C4: Operabilidad (15 %) | 5 | 5 | 4 | 4 |
+| C5: Costo & TCO (20 %) | 4 | 5 | 5 | 4 |
+| **Total Ponderado** | **4.80 / 5.00 (Seleccionado)** | **4.40 / 5.00** | **3.80 / 5.00** | **3.95 / 5.00** |
+
+* **Decisión ADR-002:** Se adopta Spring Boot 3.2.x como framework base para la construcción del microservicio `ms-tiendas`.
+* **Por qué Spring Boot:** Soporte integrado para recepción de solicitudes `multipart/form-data` con límites estrictos de tamaño configurables por archivo (6 MB) y por petición (35 MB); integración nativa con Spring Data JPA y transaccionalidad declarativa `@Transactional`.
+* **Por qué no los otros:** Quarkus y Micronaut requieren configuraciones adicionales complejas para el manejo de partes binarias multipart en contenedores nativos; NestJS introduce una pila tecnológica heterogénea frente al resto de microservicios Java.
+
+#### 3.3 Persistencia Relacional Georreferenciada y Almacenamiento de Archivos (ADR-003)
+
+| Criterio (Peso) | PostgreSQL 16 + Blob Storage | MySQL 8.0 | MongoDB 7.0 (NoSQL) | Amazon Aurora / Cloud DB |
+| :--- | :---: | :---: | :---: | :---: |
+| C1: Rendimiento (25 %) | 5 | 4 | 4 | 5 |
+| C2: Madurez & LTS (20 %) | 5 | 5 | 4 | 5 |
+| C3: Velocidad Dev (20 %) | 5 | 4 | 4 | 4 |
+| C4: Operabilidad (15 %) | 5 | 4 | 4 | 5 |
+| C5: Costo & TCO (20 %) | 5 | 4 | 3 | 2 |
+| **Total Ponderado** | **4.95 / 5.00 (Seleccionado)** | **4.15 / 5.00** | **3.75 / 5.00** | **4.10 / 5.00** |
+
+* **Decisión ADR-003:** Se adopta PostgreSQL 16 para los datos relacionales de tiendas junto con Azure Blob Storage para el almacenamiento desacoplado de archivos binarios (PDFs de RUT y fotografías).
+* **Por qué PostgreSQL + Blob Storage:** PostgreSQL garantiza integridad transaccional estricta sobre la clave primaria natural `nit`, unicidad en la asignación de administradores (`UNIQUE (almacen_nit, usuario_id)`) y en la posición de imágenes (`UNIQUE (almacen_nit, orden)` con orden del 1 al 5). Guardar los binarios pesados en un servicio de objetos evita saturar las tablas relacionales y mantiene copias de seguridad SQL ligeras y rápidas.
+* **Por qué no los otros:** Almacenar binarios como `BYTEA` dentro de PostgreSQL o MySQL degradaría severamente la memoria del buffer pool; MongoDB no previene colisiones de posición de carrusel ni garantiza integridad referencial entre tiendas y administradores.
+
+#### 3.4 In-Memory Caching Geoespacial y de Directorio (ADR-004)
+
+| Criterio (Peso) | Redis 7.x | Memcached | Hazelcast IMDG | Ehcache (Local JVM) |
+| :--- | :---: | :---: | :---: | :---: |
+| C1: Rendimiento (25 %) | 5 | 5 | 4 | 5 |
+| C2: Madurez & LTS (20 %) | 5 | 5 | 4 | 4 |
+| C3: Velocidad Dev (20 %) | 5 | 3 | 3 | 4 |
+| C4: Operabilidad (15 %) | 5 | 4 | 3 | 5 |
+| C5: Costo & TCO (20 %) | 4 | 5 | 3 | 5 |
+| **Total Ponderado** | **4.80 / 5.00 (Seleccionado)** | **4.30 / 5.00** | **3.40 / 5.00** | **4.40 / 5.00** |
+
+* **Decisión ADR-004:** Se adopta Redis 7.x como capa de caché distribuido en memoria para directorios de tiendas aprobadas y coordenadas de sedes.
+* **Por qué Redis:** Provee tiempos de respuesta inferiores a un milisegundo al servir listas de tiendas aprobadas y sedes cercanas para la visualización del mapa en Bogotá, reduciendo drásticamente las lecturas recurrentes a disco en PostgreSQL.
+* **Por qué no los otros:** Memcached carece de soporte para estructuras de conjuntos y hashes necesarios para agrupar tiendas por categoría; Ehcache generaría información geográfica desactualizada entre distintas réplicas del microservicio.
+
+#### 3.5 Mensajería Asíncrona & Event-Driven Architecture (ADR-005)
+
+| Criterio (Peso) | RabbitMQ 3.12+ (AMQP 0-9-1) | Apache Kafka 3.6 | AWS SQS / SNS | Redis Streams |
+| :--- | :---: | :---: | :---: | :---: |
+| C1: Rendimiento (25 %) | 5 | 5 | 4 | 4 |
+| C2: Madurez & LTS (20 %) | 5 | 5 | 5 | 3 |
+| C3: Velocidad Dev (20 %) | 5 | 3 | 4 | 4 |
+| C4: Operabilidad (15 %) | 5 | 2 | 5 | 4 |
+| C5: Costo & TCO (20 %) | 5 | 2 | 3 | 5 |
+| **Total Ponderado** | **4.95 / 5.00 (Seleccionado)** | **3.40 / 5.00** | **4.15 / 5.00** | **3.95 / 5.00** |
+
+* **Decisión ADR-005:** Se adopta RabbitMQ 3.12+ con Topic Exchanges para propagar eventos de moderación, roles comerciales y configuración de catálogo.
+* **Por qué RabbitMQ:** Permite emitir eventos como `tienda.verificacion.decidida` y `tienda.rol.asignado` hacia múltiples consumidores (`ms-catalogo`, `ms-auth`, `ms-usuarios`, `ms-notificaciones`) de forma confiable, con confirmaciones de entrega y cola de descarte (DLQ), sin acoplar la disponibilidad de `ms-tiendas` al estado de otros servicios.
+* **Por qué no los otros:** Kafka requiere clústeres pesados con Zookeeper/KRaft que superan el presupuesto del proyecto; AWS SQS acopla la solución a infraestructura propietaria impidiendo pruebas locales continuas.
+
+---
+
+### 04. Análisis de Costos en la Nube (TCO Azure & FinOps)
+
+Para garantizar la viabilidad financiera del proyecto se proyecta el Costo Total de Propiedad (TCO) comparando el escenario de desarrollo/MVP contra el escenario de producción comercial escalada en Microsoft Azure.
+
+#### 4.1 Topología Cloud y Supuestos de Dimensionamiento
+
+Los microservicios se ejecutan en Azure Container Apps (serverless sobre Kubernetes gestionado). La base de datos corre en Azure Database for PostgreSQL Flexible Server. El almacenamiento estático se hospeda en Azure Blob Storage (Hot LRS) y el broker de mensajería en CloudAMQP.
+
+#### 4.2 Desglose Mensual Estimado de Costos (Azure Cloud Provider)
+
+| Capa de Servicio | SKU / Tier Fase MVP | SKU / Tier Fase Producción | Costo MVP ($) | Costo Prod ($) |
+| :--- | :--- | :--- | :---: | :---: |
+| **Cómputo (13 MS + GW)** | Azure Container Apps (Consumo < 180k vCPU-s) | Container Apps Dedicado (4 réplicas activas) | $0.00 (Free) | $58.00 / mes |
+| **Base de Datos Relacional** | PostgreSQL Flexible Server B1ms (1 vCPU, 2GB) | PostgreSQL Flexible Server B2s (2 vCPU, 4GB, HA) | $15.50 / mes | $42.00 / mes |
+| **Caché Distribuido** | Azure Cache for Redis Basic C0 (250 MB) | Azure Cache for Redis Standard C1 (1 GB Replicado) | $16.00 / mes | $38.00 / mes |
+| **Broker de Mensajería** | CloudAMQP Little Lemur (Plan Gratuito Compartido) | CloudAMQP Lemur (Dedicado 1 vCPU, 1GB) | $0.00 (Free) | $19.00 / mes |
+| **Storage & CDN** | Azure Blob Storage Hot (10 GB) | Azure Blob Storage (100 GB) + Azure Front Door | $1.50 / mes | $12.00 / mes |
+| **IA Probador Virtual** | FASHN AI API Free Tier (50 transformaciones) | FASHN AI Pro (500 transformaciones mensuales) | $0.00 (Free) | $45.00 / mes |
+| **Logs y Monitoreo** | Log Analytics / App Insights (5 GB gratis/mes) | Application Insights Pay-as-you-go | $0.00 (Free) | $12.00 / mes |
+| **TOTAL MENSUAL ESTIMADO (USD)** | | | **$33.00 / mes** | **$226.00 / mes** |
+
+#### 4.3 Directrices FinOps para Optimización de Costos
+
+1. **Escala a cero en valle:** Configurar reglas KEDA en Azure Container Apps para apagar réplicas inactivas entre 12:00 AM y 6:00 AM en entornos de desarrollo y staging.
+2. **Ciclo de vida en Blob Storage:** Configurar políticas de almacenamiento para mover PDFs de RUT verificados hace más de 6 meses a nivel de acceso Cool, reduciendo costos de retención.
+3. **Connection Pooling controlado:** HikariCP configurado a un máximo de 5 conexiones por pod en staging para evitar sobrepasar los límites de memoria RAM de la instancia PostgreSQL B1ms.
+
+---
+
+### 05. Radar Tecnológico (Tech Radar)
+
+El Technology Radar de StyleRadar categoriza las tecnologías según su nivel de adopción institucional, mitigando el riesgo de obsolescencia o dispersión técnica:
+
+#### Cuadrante 1: Lenguajes & Frameworks
+* **ADOPT:** Java 21 LTS, Spring Boot 3.2.x, React 18, Tailwind CSS, Vite.
+* **TRIAL:** Spring Cloud Gateway Reactive, Spring Data Specifications.
+* **ASSESS:** Virtual Threads en producción masiva, Keycloak OpenID Connect.
+* **HOLD:** Monolito no modular, Node.js sin TypeScript, frameworks sin tipado.
+
+#### Cuadrante 2: Almacenamiento & Datos
+* **ADOPT:** PostgreSQL 16, PostGIS, Redis 7 (Cache L2 & Locks), Azure Blob Storage.
+* **TRIAL:** Índices GIN Full-Text Search en PostgreSQL para búsqueda textil.
+* **ASSESS:** pgvector para búsqueda por similitud semántica de prendas.
+* **HOLD:** MongoDB para transacciones de stock, MySQL sin soporte geoespacial.
+
+#### Cuadrante 3: Plataforma & DevOps
+* **ADOPT:** Docker, Docker Compose, Azure Container Apps, GitHub Actions.
+* **TRIAL:** CloudAMQP RabbitMQ gestionado, Azure Front Door CDN.
+* **ASSESS:** Kubernetes (AKS) bare-metal, Istio Service Mesh, OpenTelemetry.
+* **HOLD:** Instancias GPU dedicadas sin auto-escalado, despliegues manuales SSH.
+
+#### Cuadrante 4: Herramientas & Calidad
+* **ADOPT:** JUnit 5, Mockito, Testcontainers, SonarQube, JaCoCo, Flyway.
+* **TRIAL:** FASHN AI VTON API, SpringDoc OpenAPI (Swagger 3 UI).
+* **ASSESS:** Playwright para pruebas E2E automatizadas en web móvil.
+* **HOLD:** Apache Kafka para comunicación simple entre 13 microservicios.
+
+*Criterio de transición:* Una tecnología pasa de TRIAL a ADOPT únicamente tras validar su desempeño en un sprint productivo, haber alcanzado cobertura de pruebas igual o superior al 85% y contar con documentación de arquitectura aprobada.
+
+---
+
+### 06. Matriz de Riesgos Técnicos y Estrategias de Mitigación
+
+| ID | Riesgo Técnico Identificado | Prob. / Imp. | Impacto Potencial | Estrategia de Mitigación Diseñada |
+| :---: | :--- | :---: | :--- | :--- |
+| **R1** | Vendor Lock-In de Servicios Cloud | Baja / Medio | Dificultad de migrar la infraestructura si los costos de Azure aumentan imprevistamente. | Empaquetado OCI estándar (Docker), uso de APIs abiertas (PostgreSQL, AMQP 0-9-1) y repositorios agnósticos de almacenamiento. |
+| **R2** | Latencia Elevada en Inferencia IA | Alta / Alto | Tiempos de espera de 8 a 15 segundos en el probador virtual degradando la UX del usuario. | Procesamiento asíncrono con colas RabbitMQ; polling o WebSockets en frontend; compresión previa de fotos a 720p. |
+| **R3** | Agotamiento de Pool de Conexiones DB | Media / Crítico | 13 microservicios x N réplicas saturando el límite de conexiones de PostgreSQL Flexible Server. | Configuración restrictiva de HikariCP (`maximum-pool-size: 5`) por pod; uso de PgBouncer en capas de persistencia compartidas. |
+| **R4** | Inconsistencia Distribuida en Inventario | Media / Crítico | Sobreventa de prendas de talla única en eventos de alta concurrencia de compras. | Bloqueos distribuidos en Redis (`Redlock`) con TTL de 5 minutos durante checkout y patrón Transaccional Outbox. |
+| **R5** | Deuda Técnica por Curva de Aprendizaje | Baja / Medio | Errores de configuración o lentitud de entrega por adopción de stacks desconocidos. | Unificación del stack core en Java 21 / Spring Boot dominado por el equipo; Quality Gate obligatorio en CI/CD con SonarQube. |
+
+#### Riesgo Crítico Específico de `ms-tiendas`: Carga de Archivos Maliciosos o Agotamiento de Disco por Imágenes
+* **Riesgo:** Carga de scripts ejecutables camuflados con extensión `.pdf` en el formulario de registro de tienda, o saturación del ancho de banda y memoria por imágenes masivas que degraden el contenedor.
+* **Mitigación:** Validación en dominio puro de la cabecera binaria del archivo (`%PDF` para documentos RUT); validación de tipo MIME real con Apache Tika / Java NIO; límite estricto de 6 MB por archivo; delegación inmediata del flujo binario a Azure Blob Storage conservando únicamente la URL segura y metadatos en PostgreSQL.
+
+---
+
+### 07. Matriz de Asignación Tecnológica por Microservicio (13 Servicios + GW)
+
+Consolidación técnica oficial del ecosistema StyleRadar:
+
+| Servicio / Puerto | Paquete de Dominio | Persistencia Primaria | Caché / In-Memory | Eventos RabbitMQ / Herramientas Clave |
+| :--- | :--- | :--- | :--- | :--- |
+| **`sr-api-gateway`** (`:8080`) | Perímetro | Sin estado (Stateless) | Redis (Rate Limiting) | Spring Cloud Gateway, Nimbus JWT RS256 |
+| **`ms-tiendas`** (`:8083`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_tiendas`) + Blob Storage** | **Redis 7 (Metadatos tienda)** | **Azure Blob Storage (Fotos tiendas aliadas, RUT PDF)** |
+| **`ms-auth`** (`:8081`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_auth`)** | **Redis 7 (Blacklist JWT, OTP 300s)** | **Emisión JWT RS256, BCrypt, Exchange `styleradar.auth.events`** |
+| **`ms-usuarios`** (`:8082`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_usuarios`) con JSONB** | **Redis 7 (Perfiles activos)** | **Publica: `usuario.perfil.actualizado`; Spring Security** |
+| **`ms-inventario`** (`:8084`) | P2: Catálogo | PostgreSQL (`stock_tallas`) | Redis Redlock (Reservas) | Publica: `stock.agotado`; Escucha: `orden.pagada` |
+| **`ms-item-catalogo`** (`:8085`) | P2: Catálogo | PostgreSQL + GIN Search | Redis (Catálogo L2 TTL 1h) | Azure Blob (Fotos prendas); Moderación RF-87 |
+| **`ms-probador-virtual`** (`:8086`) | P3: Experiencia | PostgreSQL (Historial VTON) | Redis (Status cola VTON) | FASHN AI API, Azure Blob, RabbitMQ async |
+| **`ms-favoritos-interac`** (`:8087`) | P3: Experiencia | PostgreSQL (Favoritos) | Redis (Contadores likes) | Publica: `prenda.favorito.agregado` |
+| **`ms-pagos-suscripc`** (`:8088`) | P4: Transacciones | PostgreSQL (Suscripciones) | Redis (Idempotencia) | Wompi / PSE Webhooks; Publica: `pago.exitoso` |
+| **`ms-geolocalizacion`** (`:8089`) | P2: Catálogo | PostgreSQL + PostGIS | Redis (Coordenadas sedes) | Consultas ST_DWithin radio Bogotá, Nominatim |
+| **`ms-notificaciones`** (`:8090`) | P5: Soporte | PostgreSQL (Logs envíos) | Redis (Plantillas correo) | Escucha topics RabbitMQ; JavaMail / WebSockets |
+| **`ms-estadisticas`** (`:8091`) | P5: Soporte | PostgreSQL (Vistas mat.) | Redis (KPIs de tiendas) | Consumidor asíncrono de métricas de catálogo |
+| **`ms-resenas`** (`:8092`) | P3: Experiencia | PostgreSQL (Reseñas/Calific.) | Redis (Promedios rating) | Publica: `resena.publicada`; filtro antispam |
+| **`ms-auditoria-logs`** (`:8093`) | P5: Soporte | PostgreSQL (`audit_events`) | Buffer en memoria | RabbitMQ Fanout Exchange (Auditoría transversal) |
+
+*Aislamiento por base de datos (Database-per-Service):* Cada microservicio posee su propio esquema o base de datos aislada en PostgreSQL para garantizar bajo acoplamiento e independencia total de despliegue.
+
+#### Justificación de las Cuatro Preguntas Clave para `ms-tiendas`:
+
+1. **¿Requiere Base de Datos o no?**
+   **Sí requiere base de datos propia.** El microservicio es la única fuente de verdad jurídica y comercial de los almacenes aliados de StyleRadar. Persiste el NIT como identificador fiscal único, los expedientes de revisión del certificado RUT en PDF, los estados del flujo de moderación (`PENDIENTE_VERIFICACION`, `APROBADO`, `RECHAZADO`), las coordenadas geográficas de sedes físicas en Bogotá, los horarios comerciales, los enlaces a administradores autorizados, la galería fotográfica de vitrinas y el registro de fundaciones aliadas para donaciones de moda circular.
+
+2. **Tipo de Base de Datos y Motor Seleccionado:**
+   **Persistencia Relacional Georreferenciada en PostgreSQL 16 + Azure Blob Storage para archivos binarios + Caché en Redis 7.** PostgreSQL garantiza atomicidad transaccional y reglas de integridad estructural: clave primaria sobre `nit`, unicidad compuesta para administradores (`UNIQUE (almacen_nit, usuario_id)`) y restricciones de verificación para el orden del carrusel de 5 fotos (`CHECK (orden BETWEEN 1 AND 5)`). Los archivos pesados de RUT e imágenes se delegan a Blob Storage, conservando en la base de datos únicamente metadatos y URLs firmadas. Redis acelera la consulta de tiendas verificadas para el renderizado del mapa.
+
+3. **Frameworks, Lenguaje y Herramientas:**
+   **Java 21 LTS, Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation 3, Flyway 10 y MapStruct 1.5.5.** Java 21 permite implementar la fórmula trigonométrica de Haversine con alta precisión de coma flotante en dominio puro. Spring Boot gestiona el límite de subida multipart (hasta 6 MB por archivo) impidiendo desbordamiento de memoria. Flyway mantiene sincronizado el esquema relacional `styleradar_tiendas`, y MapStruct mapea entidades y DTOs en compilación sin sobrecarga de reflexión. La clase `BeanConfig` garantiza la pureza del dominio hexagonal.
+
+4. **Broker de Mensajería:**
+   **RabbitMQ 3.12+ con protocolo AMQP 0-9-1.** Se utiliza para notificar decisiones comerciales al ecosistema mediante el Exchange `styleradar.tiendas.events`. Publica el evento `tienda.verificacion.decidida` hacia `ms-catalogo` y `ms-notificaciones` al aprobar o rechazar un comercio, `tienda.rol.asignado` hacia `ms-auth` y `ms-usuarios` para conceder el rol de `ADMIN_ALMACEN` o `REPRESENTANTE_FUNDACION`, y `tienda.configuracion.actualizada` hacia `ms-catalogo` e `ms-inventario` para propagar umbrales de stock sin generar dependencias síncronas.
+
+---
+
+### 08. Conclusiones Arquitectónicas y Validación Formal
+
+#### 8.1 Resumen de Decisiones y Factores de Éxito
+
+La adopción de Java 21 LTS y Spring Boot 3.2.x garantiza un ecosistema robusto, tipado y altamente mantenible. La persistencia relacional con PostgreSQL 16 combinada con Azure Blob Storage resuelve eficazmente la gestión documental del RUT y fotografías de tiendas físicas en Bogotá sin degradar el rendimiento transaccional. La integración de RabbitMQ 3.12+ desacopla la moderación de tiendas y la propagación de roles comerciales, asegurando una arquitectura elástica y resiliente para StyleRadar.
+
+#### 8.2 Roadmap de Evolución Tecnológica
+
+| Fase / Sprint | Objetivo Tecnológico Clave | Criterio de Aceptación |
+| :--- | :--- | :--- |
+| **Sprint 1 (Semanas 1-2)** | Core arquitectónico: Gateway, Autenticación JWT y DB schemas. | Tokens validados en Gateway; Flyway migraciones ejecutadas. |
+| **Sprint 2 (Semanas 3-4)** | Catálogo, geolocalización PostGIS y stock con Redis Redlock. | Búsquedas geoespaciales < 200 ms; prevención de sobreventa. |
+| **Sprint 3 (Semanas 5-6)** | Integración de pagos (Wompi) y probador virtual (FASHN AI). | Webhooks procesados con idempotencia; inferencia asíncrona. |
+| **Sprint 4 (Semanas 7-8)** | Pruebas E2E, Quality Gate SonarQube ≥ 85 % y despliegue cloud. | 0 vulnerabilidades; pipeline CI/CD en Azure automatizado. |
+
+#### 8.3 Acta de Validación y Firmas del Equipo de Arquitectura
+
+| Rol en el Proyecto | Nombre del Ingeniero | Decisión / Estado | Firma / Aprobación |
+| :--- | :--- | :---: | :---: |
+| **Líder de Proyecto / Product Owner** | Juan Nicolás Álvarez | APROBADO | `J. Nicolás Álvarez` |
+| **Arquitecto de Software / Tech Lead** | Camilo Ortiz | APROBADO | `Camilo Ortiz` |
+| **Scrum Master / Backend Developer** | Daniel Valero | APROBADO | `Daniel Valero` |
+| **Fullstack / Integración Pagos** | Juan Diego Valderrama | APROBADO | `J. D. Valderrama` |
+| **QA Lead & DevOps Engineer** | Paula Alejandra Díaz | APROBADO | `Paula A. Díaz` |
+
+*Aprobación para el Desarrollo:* El presente documento constituye la línea base técnica (Technical Baseline) autorizada por el equipo CADche para el desarrollo de los microservicios de StyleRadar.
