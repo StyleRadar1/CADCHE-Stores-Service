@@ -182,24 +182,145 @@ flowchart TD
     <tr>
       <td align="center" style="padding: 20px;">
         <p>
-          <img src="https://img.shields.io/badge/ESPACIO_DE_DIAGRAMA-DRAW.IO_/_PLANTUML-12063A?style=for-the-badge" alt="Diagrama Opcional" /><br />
-          <strong><font color="#5600EF" size="3">DIAGRAMA DE ARQUITECTURA HEXAGONAL Y UML EXPORTADO</font></strong>
+          <img src="https://img.shields.io/badge/ESPACIO_DE_DIAGRAMA-DRAW.IO_/_PLANTUML-12063A?style=for-the-badge" alt="Diagramas de Arquitectura" /><br />
+          <strong><font color="#5600EF" size="3">DIAGRAMAS DE ARQUITECTURA HEXAGONAL Y UML DEL SERVICIO</font></strong>
         </p>
         <p>
-          <sub>Los diagramas de clases, componentes específico, entidad-relación y secuencia del servicio se versionan en <code>docs/uml/</code>. Archivos fuente Draw.io: <a href="docs/uml/DiagramaClases.drawio"><code>DiagramaClases.drawio</code></a> · <a href="docs/uml/DiagramaBaseDatos.drawio"><code>DiagramaBaseDatos.drawio</code></a> · <a href="docs/uml/DiagramaComponentesEspecifico.drawio"><code>DiagramaComponentesEspecifico.drawio</code></a>.</sub>
-        </p>
-        <p>
-          <strong>Diagrama de Clases (<code>ms-tiendas</code>)</strong><br />
-          <img src="docs/uml/DiagramaClases.png" width="95%" alt="Diagrama de Clases ms-tiendas" /><br /><br />
-          <strong>Diagrama de Base de Datos Relacional y No Relacional (<code>ms-tiendas</code>)</strong><br />
-          <img src="docs/uml/DiagramaBaseDatos.png" width="95%" alt="Diagrama de Base de Datos ms-tiendas" /><br /><br />
-          <strong>Diagrama de Componentes Específico en Arquitectura Hexagonal (<code>ms-tiendas</code>)</strong><br />
-          <img src="docs/uml/DiagramaComponentesEspecifico.png" width="95%" alt="Diagrama de Componentes Específico ms-tiendas" /><br />
+          <sub>Los diagramas de clases, base de datos, componentes específico y secuencia se versionan en <code>docs/uml/</code>. Archivos fuente Draw.io: <a href="docs/uml/DiagramaClases.drawio"><code>DiagramaClases.drawio</code></a> · <a href="docs/uml/DiagramaBaseDatos.drawio"><code>DiagramaBaseDatos.drawio</code></a> · <a href="docs/uml/DiagramaComponentesEspecifico.drawio"><code>DiagramaComponentesEspecifico.drawio</code></a>.</sub>
         </p>
       </td>
     </tr>
   </table>
 </div>
+
+#### 7.1 Diagrama de Clases de Dominio (`ms-tiendas`)
+
+<div align="center">
+  <img src="docs/uml/DiagramaClases.png" width="95%" alt="Diagrama de Clases ms-tiendas" /><br />
+  <sub>Figura 7.1: Diagrama de clases del núcleo de dominio puro para ms-tiendas (Draw.io editable en <a href="docs/uml/DiagramaClases.drawio"><code>docs/uml/DiagramaClases.drawio</code></a>).</sub>
+</div>
+
+##### Justificación de Diseño y Principios Arquitecturales
+El diagrama de clases de `ms-tiendas` modela las entidades comerciales, los horarios operativos, las coordenadas espaciales y el ciclo de vida de moderación bajo Domain-Driven Design:
+- **Encapsulación de Reglas Comerciales Complejas**: La verificación de solapamiento de horarios de atención y el cálculo trigonométrico de distancias geográficas son tratados como responsabilidades intrínsecas de dominio puro (0% dependencias de librerías geoespaciales externas o Spring).
+- **Inmutabilidad de Coordenadas y NIT**: Los atributos tributarios y espaciales se aíslan en Value Objects inmutables (`Nit`, `CoordenadaGeografica`, `HorarioDia`), asegurando que ninguna latitud/longitud o formato de NIT inválido pueda ser construido o procesado.
+- **Auditoría Legal de Moderación**: El historial de decisiones de aprobación y rechazo de tiendas (`HistorialModeracionTienda`) forma parte del modelo conceptual de dominio para garantizar trazabilidad inalterable de cada dictamen de verificación.
+
+##### Explicación Detallada de los Elementos
+1. **Agregado Raíz `Tienda`**:
+   - `id`: Identificador único UUID del comercio.
+   - `nit`: Value Object que valida la estructura tributaria del NIT y su dígito de verificación.
+   - `razonSocial`, `nombreComercial`, `descripcion`: Datos legales y de marca.
+   - `telefono`, `emailContacto`: Medios de comunicación corporativos.
+   - `estado`: Estado de verificación operativa (`PENDIENTE_APROBACION`, `APROBADA`, `RECHAZADA`, `SUSPENDIDA`).
+   - `horarios`: Colección de entidades `HorarioAtencion`.
+   - `ubicacion`: Entidad `UbicacionGeografica`.
+   - Métodos de negocio: `registrarHorario()`, `eliminarHorario()`, `actualizarUbicacion()`, `solicitarRevision()`, `aprobar()`, `rechazar()`.
+2. **Entidad `HorarioAtencion`**:
+   - Representa los turnos de apertura y cierre por día de la semana.
+   - Atributos: `diaSemana` (enumeración: `LUNES` a `DOMINGO`), `horaApertura`, `horaCierre`, `esFestivo`.
+   - Invariantes: `horaApertura` debe ser estrictamente anterior a `horaCierre`.
+3. **Entidad `UbicacionGeografica`**:
+   - Modela el punto físico del local comercial.
+   - Atributos: `coordenada` (Value Object con `latitud` y `longitud` validadas en rango de -90 a 90 y -180 a 180), `direccion`, `ciudad`, `zonaComercial`.
+4. **Validadores y Calculadores de Dominio**:
+   - `TiendaValidator`: Valida completitud de datos comerciales, longitud de nombres y consistencia de NIT.
+   - `HorarioSolapamientoValidator`: Verifica que no existan traslapes o colisiones de franjas horarias dentro de un mismo día.
+   - `DistanciaHaversineCalculator`: Implementa la fórmula trigonométrica del semiverseno (Haversine) sobre la esfera terrestre para calcular distancias en kilómetros entre dos coordenadas sin dependencias de base de datos ni librerías externas.
+5. **Puertos de Entrada y Salida**:
+   - Puertos de Entrada: `GestionarTiendaUseCase`, `BuscarTiendasCercanasUseCase`, `ModerarTiendaUseCase`.
+   - Puertos de Salida: `TiendaRepositoryPort`, `UbicacionGeograficaRepositoryPort`, `HistorialModeracionRepositoryPort`, `EventPublisherPort`.
+
+---
+
+#### 7.2 Diagrama de Base de Datos Relacional y Georreferenciada (`ms-tiendas`)
+
+<div align="center">
+  <img src="docs/uml/DiagramaBaseDatos.png" width="95%" alt="Diagrama de Base de Datos ms-tiendas" /><br />
+  <sub>Figura 7.2: Esquema de base de datos relacional y georreferenciado PostgreSQL 15 para ms-tiendas (Draw.io editable en <a href="docs/uml/DiagramaBaseDatos.drawio"><code>docs/uml/DiagramaBaseDatos.drawio</code></a>).</sub>
+</div>
+
+##### Justificación del Modelo Relacional (Database-per-Service & Georreferenciación)
+El microservicio `ms-tiendas` se apoya exclusivamente en un modelo relacional robusto en PostgreSQL 15:
+- **Consistencia Transaccional y Normalización**: Los datos comerciales de tiendas, las sucursales, los horarios de apertura y las auditorías de moderación presentan relaciones estrictas de 1 a 1 y 1 a N. El borrado o suspensión de una tienda debe propagarse o bloquearse según reglas de integridad referencial (`ON DELETE CASCADE`), garantizando que jamás existan horarios o ubicaciones flotantes.
+- **Consultas Geoespaciales y Cercanía**: PostgreSQL permite almacenar coordenadas de `latitud` y `longitud` con tipos numéricos precisos (`DECIMAL(10, 8)` y `DECIMAL(11, 8)`). Un índice compuesto sobre `(latitud, longitud)` optimiza el filtrado mediante bounding box antes de ejecutar el cálculo preciso de la distancia Haversine, permitiendo responder con alta velocidad a la búsqueda de tiendas en un radio de $X$ km.
+- **Justificación de no requerir NoSQL**: A diferencia de sesiones volátiles o catálogos no estructurados, la información de tiendas y su verificación jurídica es altamente estable, transaccional y requiere auditoría inmutable. No se justifica introducir la complejidad de un motor NoSQL secundario.
+
+##### Explicación Detallada del Esquema de Datos
+1. **Esquema Relacional PostgreSQL (`styleradar_tiendas`)**:
+   - **Tabla `tiendas`**:
+     - `id (UUID, PK)`: Identificador global de la tienda.
+     - `nit (VARCHAR(20), UNIQUE, NOT NULL)`: Número de Identificación Tributaria único.
+     - `razon_social (VARCHAR(150), NOT NULL)`: Razón social jurídica.
+     - `nombre_comercial (VARCHAR(150), NOT NULL)`: Nombre visible para compradores.
+     - `descripcion (TEXT, NULL)`: Reseña y propuesta de moda del comercio.
+     - `telefono (VARCHAR(25), NOT NULL)`: Teléfono de contacto comercial.
+     - `email_contacto (VARCHAR(150), NOT NULL)`: Correo corporativo.
+     - `estado (VARCHAR(30), NOT NULL)`: `PENDIENTE_APROBACION`, `APROBADA`, `RECHAZADA`, `SUSPENDIDA`.
+     - `created_at, updated_at (TIMESTAMP WITH TIME ZONE, NOT NULL)`: Auditoría temporal.
+   - **Tabla `horarios_atencion`**:
+     - `id (UUID, PK)`: Identificador del turno horario.
+     - `tienda_id (UUID, FK, NOT NULL)`: Referencia a `tiendas(id)` con `ON DELETE CASCADE`.
+     - `dia_semana (VARCHAR(20), NOT NULL)`: Día (`LUNES` a `DOMINGO`).
+     - `hora_apertura (TIME, NOT NULL)`: Hora de inicio del servicio.
+     - `hora_cierre (TIME, NOT NULL)`: Hora de cierre del servicio.
+     - `es_festivo (BOOLEAN, DEFAULT FALSE)`: Indicador de atención en feriados.
+     - Restricción: `CHECK (hora_apertura < hora_cierre)`.
+   - **Tabla `ubicaciones_geograficas`**:
+     - `id (UUID, PK)`: Identificador de ubicación.
+     - `tienda_id (UUID, FK, UNIQUE, NOT NULL)`: Relación 1:1 estricta con `tiendas(id)` con `ON DELETE CASCADE`.
+     - `latitud (DECIMAL(10, 8), NOT NULL)`: Coordenada de latitud.
+     - `longitud (DECIMAL(11, 8), NOT NULL)`: Coordenada de longitud.
+     - `direccion (VARCHAR(200), NOT NULL)`: Dirección física del local.
+     - `ciudad (VARCHAR(100), NOT NULL)`: Ciudad de ubicación.
+     - `zona_comercial (VARCHAR(100), NULL)`: Centro comercial o barrio emblemático.
+     - Índice: `CREATE INDEX idx_ubicacion_coords ON ubicaciones_geograficas (latitud, longitud);`.
+   - **Tabla `historial_moderaciones`**:
+     - `id (UUID, PK)`: Identificador del dictamen.
+     - `tienda_id (UUID, FK, NOT NULL)`: Tienda evaluada.
+     - `decision (VARCHAR(30), NOT NULL)`: `APROBADA` o `RECHAZADA`.
+     - `motivo (TEXT, NOT NULL)`: Argumentación detallada de la decisión.
+     - `admin_id (UUID, NOT NULL)`: Identificador del administrador evaluador.
+     - `fecha_decision (TIMESTAMP WITH TIME ZONE, NOT NULL)`: Marca temporal de la resolución.
+
+---
+
+#### 7.3 Diagrama de Componentes Específico en Arquitectura Hexagonal (`ms-tiendas`)
+
+<div align="center">
+  <img src="docs/uml/DiagramaComponentesEspecifico.png" width="95%" alt="Diagrama de Componentes Específico ms-tiendas" /><br />
+  <sub>Figura 7.3: Diagrama de componentes específico en arquitectura hexagonal para ms-tiendas (Draw.io editable en <a href="docs/uml/DiagramaComponentesEspecifico.drawio"><code>docs/uml/DiagramaComponentesEspecifico.drawio</code></a>).</sub>
+</div>
+
+##### Justificación del Enfoque Hexagonal (Puertos y Adaptadores)
+`ms-tiendas` sigue de forma irrestricta la separación por capas hexagonal:
+- **Aislamiento de Lógica Geoespacial**: Las fórmulas de distancia y validaciones de solapamiento de horarios residen en `domain/model/` y `domain/validator/`. Ninguna fórmula matemática ni lógica de negocio depende de PostGIS ni de repositorios SQL.
+- **Independencia de Frameworks en Aplicación**: Los casos de uso (`*UseCaseImpl`) y servicios de aplicación (`*ServiceImpl`) se cablean mediante inyección manual en `BeanConfig.java`, garantizando portabilidad absoluta y tests unitarios ultra-rápidos.
+- **Event-Driven Integration**: Las decisiones de moderación aprobadas disparan eventos asíncronos hacia RabbitMQ para notificar a los microservicios de catálogos y compras sin acoplamiento temporal ni llamadas REST síncronas bloqueantes.
+
+##### Explicación Detallada de los Flujos de Componentes
+1. **Flujo 1: Registro y Gestión de Perfil de Tienda y Horarios (SR-RF-16, SR-RF-17)**:
+   - **Entrada (Driving)**: `TiendaController` (`adapter/in/rest/`) implementa `TiendaApi` y gestiona las solicitudes de registro de comercio y horarios.
+   - **Puerto In y Aplicación**: Conexión a `GestionarTiendaUseCase` ejecutado por `GestionarTiendaUseCaseImpl`, apoyado en `TiendaDtoInMapper`, `HorarioDtoInMapper` y `TiendaDtoOutMapper`.
+   - **Servicio y Dominio**: `TiendaServiceImpl` y `HorarioAtencionServiceImpl` operan sobre el agregado `Tienda`, el Value Object `HorarioAtencion` y el validador puro `TiendaValidator` (0% Spring).
+   - **Salida**: `TiendaPersistenceMapper` y `TiendaRepositoryAdapter` persisten el agregado mediante `SpringDataTiendaRepo` en PostgreSQL 15.
+2. **Flujo 2: Georreferenciación de Tiendas y Búsqueda por Radio / Cercanía (SR-RF-16, SR-RF-26)**:
+   - **Entrada**: `GeolocalizacionTiendaController` expone `PUT /tiendas/{id}/ubicacion` y `GET /tiendas/cercanas?lat=&lng=&radioKm=`.
+   - **Puerto In y Aplicación**: Invoca `BuscarTiendasCercanasUseCase` implementado en `BuscarTiendasCercanasUseCaseImpl`, coordinado con `GeolocalizacionDtoInMapper` y `TiendaCercanaDtoOutMapper`.
+   - **Servicio y Dominio**: `GeolocalizacionServiceImpl` utiliza el modelo `UbicacionGeografica`, el Value Object `CoordenadaGeografica` y el calculador de semiverseno `DistanciaHaversineCalculator`.
+   - **Salida**: `UbicacionPersistenceMapper` y `UbicacionGeograficaRepositoryAdapter` aprovechan el índice de coordenadas de PostgreSQL para acotar candidatos y retornar tiendas dentro del radio configurado.
+3. **Flujo 3: Moderación, Estados Operativos de Tienda y Eventos AMQP (SR-RF-64, SR-RF-65)**:
+   - **Entrada**: `ModeracionTiendaController` (`adapter/in/rest/`) expone los endpoints de revisión para administradores (`PATCH /admin/tiendas/{id}/aprobar`, `/rechazar`).
+   - **Puerto In y Aplicación**: Conexión a `ModerarTiendaUseCase` y ejecución en `ModerarTiendaUseCaseImpl`, asistido por `ModeracionTiendaDtoInMapper` y `ModeracionTiendaDtoOutMapper`.
+   - **Servicio y Dominio**: `ModeracionTiendaServiceImpl` valida las transiciones mediante `ModeracionTiendaValidator` e instancia el evento de integración `TiendaAprobadaEvent`.
+   - **Salida**: `HistorialModeracionPersistenceMapper` persiste el veredicto en PostgreSQL a través de `HistorialModeracionRepositoryAdapter`, y `RabbitMqEventPublisherAdapter` publica el mensaje al Topic Exchange `tiendas.events` (`store.approved`).
+4. **Banda Transversal de Infraestructura**:
+   - `BeanConfig.java`: Cableado manual `@Bean` para use cases y servicios de aplicación.
+   - `SecurityConfig.java` & `JwtAuthFilter`: Control RBAC estricto (`@PreAuthorize("hasRole('ADMINISTRADOR')")` o rol `TIENDA` con verificación de ownership de la tienda consultada).
+   - `GlobalExceptionHandler.java`: Normalización de errores de negocio (`TiendaNotFoundException`, `InvalidModerationTransitionException`) bajo estándar RFC 7807 Problem Details.
+   - `RabbitMqConfig.java`: Configuración del Topic Exchange `tiendas.events`, colas durables y cola DLQ.
+   - `OpenApiConfig.java`: Swagger 3 con esquemas de autenticación y documentación de endpoints.
+   - `Flyway SQL Migrations` (`V1__init_schema.sql`): Versionamiento automatizado del esquema relacional `styleradar_tiendas`.
 
 ### Estructura Oficial de Paquetes en `src/main/java/`
 
