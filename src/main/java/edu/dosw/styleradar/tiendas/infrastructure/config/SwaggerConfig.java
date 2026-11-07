@@ -28,7 +28,7 @@ public class SwaggerConfig {
                         .bearerFormat("JWT")
                         .description("Token JWT emitido por ms-auth (HS256)")))
                 .servers(List.of(
-                        new Server().url("http://localhost:8083").description("Servidor local ms-tiendas"),
+                        new Server().url("http://localhost:8140").description("Servidor local ms-tiendas"),
                         new Server().url("http://localhost:8080").description("API Gateway StyleRadar")))
                 .info(new Info()
                         .title("StyleRadar - Stores Service API (ms-tiendas)")

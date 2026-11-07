@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: ms-tiendas
     ports:
-      - "8083:8083"
+      - "8140:8140"
     environment:
       DB_URL: jdbc:postgresql://tiendas-db:5432/${POSTGRES_DB}
       DB_USERNAME: ${POSTGRES_USER}
