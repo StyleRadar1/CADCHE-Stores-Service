@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataAdministradorAlmacenRepository;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataAlmacenRepository;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataFundacionRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,6 +29,9 @@ class SwaggerOpenApiTest {
 
     @MockBean
     private SpringDataAdministradorAlmacenRepository springDataAdministradorAlmacenRepository;
+
+    @MockBean
+    private SpringDataFundacionRepository springDataFundacionRepository;
 
     @Test
     void debeExponerEspecificacionOpenApiYEndpointsDeTiendas() throws Exception {

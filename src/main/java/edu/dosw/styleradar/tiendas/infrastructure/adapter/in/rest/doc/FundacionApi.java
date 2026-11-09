@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
@@ -18,6 +19,7 @@ import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,16 +46,21 @@ public interface FundacionApi {
                                     value = "{\"nombre\":\"Fundación Abrigo Solidario\",\"descripcion\":\"Recolección de prendas en buen estado para comunidades vulnerables de Bogotá\",\"direccion\":\"Calle 85 # 15-32, Chapinero, Bogotá\",\"telefono\":\"+57 601 742 8899\",\"email\":\"contacto@abrigosolidario.org\",\"latitud\":4.6712,\"longitud\":-74.0531,\"categoriasAceptadas\":[\"SUPERIOR\",\"INFERIOR\",\"CALZADO\"],\"representanteId\":24,\"urlCertificadoPersoneriaJuridica\":\"https://styleradarblob.blob.core.windows.net/fundaciones/certificado-abrigo-solidario.pdf\",\"causasApoyadas\":\"Niñez vulnerable y adultos mayores\",\"horarioAtencion\":\"Lunes a Sábado de 08:00 a 17:00\",\"politicasDonacion\":\"Se reciben prendas limpias en estado Bueno, Muy bueno o Como nuevo\"}"))))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Fundación registrada exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos o incompletos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o expirado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Rol sin permiso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Representante inexistente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "409", description = "Nombre duplicado o representante ya asignado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "422", description = "Representante con cuenta no activa", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PostMapping("/api/v1/admin/fundaciones")
-    ResponseEntity<FundacionResponseDTO> registrar(@Valid @RequestBody FundacionRequestDTO request);
+    ResponseEntity<FundacionResponseDTO> registrar(
+            @Valid @RequestBody FundacionRequestDTO request,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Listar todas las fundaciones aliadas (SR-RF-63)",
@@ -61,11 +68,15 @@ public interface FundacionApi {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Fundaciones consultadas exitosamente"),
             @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o expirado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Rol sin permiso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping("/api/v1/admin/fundaciones")
-    ResponseEntity<List<FundacionResponseDTO>> listarTodas();
+    ResponseEntity<List<FundacionResponseDTO>> listarTodas(
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Editar fundación aliada (SR-RF-64)",

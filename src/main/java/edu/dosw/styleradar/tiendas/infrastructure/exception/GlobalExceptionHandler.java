@@ -21,6 +21,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,10 +63,10 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
-    @ExceptionHandler(AlmacenYaDecididoException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAlmacenYaDecidido(
-            AlmacenYaDecididoException exception, HttpServletRequest request) {
-        log.warn("Conflicto al decidir almacén (409) en {}: {}", request.getRequestURI(), exception.getMessage());
+    @ExceptionHandler({AlmacenYaDecididoException.class, FundacionYaRegistradaException.class})
+    public ResponseEntity<ErrorResponseDTO> handleConflicto(
+            RuntimeException exception, HttpServletRequest request) {
+        log.warn("Conflicto al procesar recurso (409) en {}: {}", request.getRequestURI(), exception.getMessage());
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
