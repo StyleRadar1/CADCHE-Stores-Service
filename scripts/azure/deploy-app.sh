@@ -12,7 +12,7 @@ echo "=========================================================="
 echo "  STYLE RADAR - COMPILACIÓN Y DESPLIEGUE DE MS-TIENDAS"
 echo "=========================================================="
 
-echo "[1/3] Compilando JAR con Maven..."
+echo "[1/4] Compilando artefacto ejecutable con Maven..."
 mvn clean package -DskipTests
 
 JAR_PATH="target/ms-tiendas-1.0.0-SNAPSHOT.jar"
@@ -32,14 +32,24 @@ deploy_to() {
   echo "  Desplegando en Ambiente: ${ENV_NAME^^} ($APP)"
   echo "=========================================================="
 
-  echo "[2/3] Configurando runtime nativo Java 17 (Microsoft OpenJDK)..."
+  echo "[2/4] Configurando runtime nativo Java 17 y puerto oficial :8140..."
   az webapp config set \
     --resource-group "$RG" \
     --name "$APP" \
     --linux-fx-version "JAVA|17-java17" \
     --output none
 
-  echo "[3/3] Subiendo y desplegando artefacto $JAR_PATH..."
+  az webapp config appsettings set \
+    --resource-group "$RG" \
+    --name "$APP" \
+    --settings \
+      WEBSITES_PORT=8140 \
+      PORT=8140 \
+      JAVA_OPTS="-Dserver.port=8140 -Djava.security.egd=file:/dev/./urandom" \
+      SPRING_PROFILES_ACTIVE="$ENV_NAME" \
+    --output none
+
+  echo "[3/4] Subiendo y desplegando artefacto $JAR_PATH en Azure..."
   az webapp deploy \
     --resource-group "$RG" \
     --name "$APP" \
@@ -47,12 +57,25 @@ deploy_to() {
     --type jar \
     --output none
 
-  echo "Iniciando servicio..."
+  echo "[4/4] Iniciando servicio..."
   az webapp start --resource-group "$RG" --name "$APP" --output none
 
   echo ""
   echo ">> Estado del servicio:"
   az webapp show --resource-group "$RG" --name "$APP" --query "{Nombre:name, Estado:state, Host:defaultHostName}" -o table
+
+  echo ""
+  echo ">> Esperando inicialización de Spring Boot y migraciones Flyway..."
+  URL_DOCS="https://${APP}.azurewebsites.net/v3/api-docs"
+  for i in $(seq 1 15); do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL_DOCS" || true)
+    if [ "$STATUS" = "200" ]; then
+      echo ">> ¡Swagger OpenAPI respondiendo HTTP 200 OK en intento $i!"
+      break
+    fi
+    echo "Intento $i: HTTP $STATUS (iniciando contexto de Spring Boot...)"
+    sleep 8
+  done
 
   echo ""
   echo ">> Swagger UI en Vivo: https://${APP}.azurewebsites.net/swagger-ui/index.html"
@@ -71,6 +94,5 @@ fi
 
 echo ""
 echo "=========================================================="
-echo "  ¡DESPLIEGUE COMPLETADO CON ÉXITO!"
+echo "  ¡DESPLIEGUE FINALIZADO EXITOSAMENTE!"
 echo "=========================================================="
-
