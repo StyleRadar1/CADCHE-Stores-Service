@@ -22,3 +22,4 @@ public class ActualizarUmbralRequestDTO {
     @Schema(description = "Cantidad máxima de unidades disponibles en inventario para considerar la prenda como ULTIMAS_UNIDADES", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer umbralUltimasUnidades;
 }
+

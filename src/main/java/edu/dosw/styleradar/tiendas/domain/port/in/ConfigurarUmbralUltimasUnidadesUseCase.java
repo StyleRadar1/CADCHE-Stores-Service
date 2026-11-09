@@ -9,3 +9,4 @@ public interface ConfigurarUmbralUltimasUnidadesUseCase {
 
     ConfiguracionCatalogoAlmacenResponseDTO configurarCatalogo(String nit, ConfiguracionCatalogoAlmacenRequestDTO request, Long usuarioId);
 }
+

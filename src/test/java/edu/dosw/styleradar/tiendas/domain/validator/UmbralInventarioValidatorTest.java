@@ -55,3 +55,4 @@ class UmbralInventarioValidatorTest {
                 .hasMessageContaining("no puede superar el límite");
     }
 }
+

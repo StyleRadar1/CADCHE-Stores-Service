@@ -41,3 +41,4 @@ public class AdministradorAlmacenEntity {
     @Builder.Default
     private Instant fechaAsignacion = Instant.now();
 }
+

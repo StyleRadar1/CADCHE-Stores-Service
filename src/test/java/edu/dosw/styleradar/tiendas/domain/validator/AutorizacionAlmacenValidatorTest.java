@@ -66,3 +66,4 @@ class AutorizacionAlmacenValidatorTest {
         verify(repositoryPort, never()).esAdministradorDeAlmacen(NIT, null);
     }
 }
+

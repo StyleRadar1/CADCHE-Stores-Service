@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaAlmacenRequestDTO;
@@ -27,7 +28,9 @@ import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.AlmacenApi;
 import jakarta.validation.Valid;
@@ -40,6 +43,8 @@ public class AlmacenController implements AlmacenApi {
 
     private final ConfigurarUmbralUltimasUnidadesUseCase configurarUmbralUseCase;
     private final ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
+    private final ConfigurarPeriodoNuevaLlegadaUseCase configurarPeriodoUseCase;
+    private final ConsultarPeriodoNuevaLlegadaUseCase consultarPeriodoUseCase;
 
     @Override
     public ResponseEntity<PageResponseDTO<AlmacenResponseDTO>> consultar(
@@ -114,6 +119,21 @@ public class AlmacenController implements AlmacenApi {
     @Override
     public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(@PathVariable String nit) {
         ConfiguracionCatalogoAlmacenResponseDTO response = consultarUmbralUseCase.consultarConfiguracion(nit);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarDiasNuevaLlegada(
+            @PathVariable String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Valid @RequestBody ActualizarPeriodoRequestDTO request) {
+        ConfiguracionCatalogoAlmacenResponseDTO response = configurarPeriodoUseCase.configurarPeriodo(nit, request.diasNuevaLlegada(), usuarioId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(@PathVariable String nit) {
+        ConfiguracionCatalogoAlmacenResponseDTO response = consultarPeriodoUseCase.consultarPeriodo(nit);
         return ResponseEntity.ok(response);
     }
 

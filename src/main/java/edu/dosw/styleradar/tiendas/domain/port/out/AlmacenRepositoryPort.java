@@ -16,3 +16,4 @@ public interface AlmacenRepositoryPort {
 
     void asociarAdministrador(String nit, Long usuarioId);
 }
+

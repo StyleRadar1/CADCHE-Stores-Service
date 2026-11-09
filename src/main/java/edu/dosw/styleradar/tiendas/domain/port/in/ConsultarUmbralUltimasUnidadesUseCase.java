@@ -6,3 +6,4 @@ public interface ConsultarUmbralUltimasUnidadesUseCase {
 
     ConfiguracionCatalogoAlmacenResponseDTO consultarConfiguracion(String nit);
 }
+

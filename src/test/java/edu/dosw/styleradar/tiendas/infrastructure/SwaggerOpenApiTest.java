@@ -41,6 +41,8 @@ class SwaggerOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/configuracion-catalogo'].put").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/umbral-ultimas-unidades'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/umbral-ultimas-unidades'].put").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/dias-nueva-llegada'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/dias-nueva-llegada'].put").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades'].patch").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada'].patch").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/fotografias'].post").exists())

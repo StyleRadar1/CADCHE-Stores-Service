@@ -12,6 +12,7 @@ import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator;
+import edu.dosw.styleradar.tiendas.domain.validator.PeriodoNuevaLlegadaValidator;
 import edu.dosw.styleradar.tiendas.domain.validator.UmbralInventarioValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class ConfigurarUmbralUltimasUnidadesUseCaseImpl implements ConfigurarUmb
 
     private final AlmacenRepositoryPort repositoryPort;
     private final UmbralInventarioValidator umbralValidator;
+    private final PeriodoNuevaLlegadaValidator periodoValidator;
     private final AutorizacionAlmacenValidator autorizacionValidator;
 
     @Override
@@ -57,6 +59,7 @@ public class ConfigurarUmbralUltimasUnidadesUseCaseImpl implements ConfigurarUmb
 
         // 1. Validar dominio
         umbralValidator.validar(request.getUmbralUltimasUnidades());
+        periodoValidator.validar(request.getDiasNuevaLlegada());
 
         // 2. Verificar existencia
         Almacen almacen = repositoryPort.findByNit(nit)
@@ -83,3 +86,4 @@ public class ConfigurarUmbralUltimasUnidadesUseCaseImpl implements ConfigurarUmb
         );
     }
 }
+

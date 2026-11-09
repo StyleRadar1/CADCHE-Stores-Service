@@ -241,6 +241,52 @@ public interface AlmacenApi {
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
     @Operation(
+            summary = "Configurar exclusivamente los días de nueva llegada (SR-RF-60)",
+            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Configura la ventana temporal en días durante los cuales una prenda recién creada es marcada como 'Nueva llegada' (por defecto 7 días).",
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Periodo de nueva llegada actualizado exitosamente para el almacén",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Periodo inválido (0 días o menos)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "El usuario no administra el almacén especificado",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Almacén no encontrado",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @PutMapping("/{nit}/dias-nueva-llegada")
+    ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarDiasNuevaLlegada(
+            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
+            @Parameter(description = "ID del usuario autenticado", example = "10") @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Valid @RequestBody edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO request);
+
+    @Operation(
+            summary = "Consultar el periodo de días de nueva llegada (SR-RF-60)",
+            description = "Público o interno para ms-inventario/ms-catalogo. Consulta el periodo configurado. Si no existe configuración previa, retorna el valor por defecto de 7 días.",
+            security = {})
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Periodo consultado exitosamente",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Almacén no encontrado",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @GetMapping("/{nit}/dias-nueva-llegada")
+    ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(
+            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
+
+    @Operation(
             summary = "Marcar prenda como últimas unidades según el umbral del almacén (SR-RF-59)",
             description = "ROLE_ADMIN_ALMACEN propietario del NIT. Identifica y marca una prenda del almacén como 'Últimas unidades' (ULTIMAS_UNIDADES) "
                     + "cuando su inventario alcanza el umbral personalizado definido para el almacén (por defecto <= 3 unidades).",

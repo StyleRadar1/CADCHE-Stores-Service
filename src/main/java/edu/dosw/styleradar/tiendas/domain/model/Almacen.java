@@ -39,7 +39,7 @@ public class Almacen {
     }
 
     public int getDiasNuevaLlegadaEfectivo() {
-        return diasNuevaLlegada != null ? diasNuevaLlegada : 7;
+        return diasNuevaLlegada != null ? diasNuevaLlegada : PeriodoNuevaLlegada.VALOR_POR_DEFECTO;
     }
 
     public void configurarUmbralUltimasUnidades(int nuevoUmbral) {
@@ -48,13 +48,18 @@ public class Almacen {
         this.fechaActualizacionCatalogo = Instant.now();
     }
 
+    public void configurarDiasNuevaLlegada(int dias) {
+        PeriodoNuevaLlegada vo = PeriodoNuevaLlegada.de(dias);
+        this.diasNuevaLlegada = vo.getDias();
+        this.fechaActualizacionCatalogo = Instant.now();
+    }
+
     public void configurarCatalogo(int umbral, int dias) {
-        UmbralUltimasUnidades vo = UmbralUltimasUnidades.de(umbral);
-        if (dias < 1 || dias > 60) {
-            throw new IllegalArgumentException("El periodo de nueva llegada debe estar entre 1 y 60 días");
-        }
-        this.umbralUltimasUnidades = vo.getValor();
-        this.diasNuevaLlegada = dias;
+        UmbralUltimasUnidades uVo = UmbralUltimasUnidades.de(umbral);
+        PeriodoNuevaLlegada pVo = PeriodoNuevaLlegada.de(dias);
+        this.umbralUltimasUnidades = uVo.getValor();
+        this.diasNuevaLlegada = pVo.getDias();
         this.fechaActualizacionCatalogo = Instant.now();
     }
 }
+

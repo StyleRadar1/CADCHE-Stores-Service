@@ -43,3 +43,4 @@ public class ConsultarUmbralUltimasUnidadesUseCaseImpl implements ConsultarUmbra
         );
     }
 }
+

@@ -31,3 +31,4 @@ CREATE TABLE IF NOT EXISTS administradores_almacenes (
 
 CREATE INDEX IF NOT EXISTS idx_almacenes_nombre ON almacenes(nombre_comercial);
 CREATE INDEX IF NOT EXISTS idx_admin_almacenes_usuario ON administradores_almacenes(usuario_id);
+

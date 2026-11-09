@@ -59,3 +59,4 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
         }
     }
 }
+

@@ -75,3 +75,4 @@ public class AlmacenEntity {
     @Builder.Default
     private Set<CategoriaAlmacen> categorias = new HashSet<>();
 }
+

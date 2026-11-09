@@ -21,19 +21,23 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.ConfiguracionCatalogoAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.PeriodoInvalidoException;
 import edu.dosw.styleradar.tiendas.domain.exception.UmbralInvalidoException;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
 
 @WebMvcTest(AlmacenController.class)
 @Import(GlobalExceptionHandler.class)
-@DisplayName("Pruebas de Integración de API REST - Controlador AlmacenController (SR-RF-59)")
+@DisplayName("Pruebas de Integración de API REST - Controlador AlmacenController (SR-RF-59 / SR-RF-60)")
 class AlmacenControllerIntegrationTest {
 
     @Autowired
@@ -47,6 +51,12 @@ class AlmacenControllerIntegrationTest {
 
     @MockBean
     private ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
+
+    @MockBean
+    private ConfigurarPeriodoNuevaLlegadaUseCase configurarPeriodoUseCase;
+
+    @MockBean
+    private ConsultarPeriodoNuevaLlegadaUseCase consultarPeriodoUseCase;
 
     private static final String NIT = "900123456";
 
@@ -182,4 +192,85 @@ class AlmacenControllerIntegrationTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("No se encontró ningún almacén registrado con el NIT: 000000000"));
     }
+
+    // --- Pruebas específicas SR-RF-60: Marcar prenda como nueva llegada ---
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un almacén sin periodo propio, cuando se consulta, entonces aplica el valor por defecto de 7 días (HTTP 200)")
+    void debeConsultarPeriodoConValorPorDefectoDe7Dias() throws Exception {
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 3, 7, Instant.now());
+        when(consultarPeriodoUseCase.consultarPeriodo(NIT)).thenReturn(respuestaMock);
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value(NIT))
+                .andExpect(jsonPath("$.diasNuevaLlegada").value(7));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un periodo válido, cuando lo guardo, entonces queda configurado para mi almacén (HTTP 200)")
+    void debeActualizarPeriodoValidoExitosamente() throws Exception {
+        ActualizarPeriodoRequestDTO request = new ActualizarPeriodoRequestDTO(14);
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 3, 14, Instant.now());
+
+        when(configurarPeriodoUseCase.configurarPeriodo(eq(NIT), eq(14), eq(10L)))
+                .thenReturn(respuestaMock);
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.diasNuevaLlegada").value(14));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un periodo de 0 días o menos, cuando lo guardo, entonces recibo 400 (Bad Request)")
+    void debeRechazarPeriodoCeroONegativoEnEndpointDedicado() throws Exception {
+        String jsonPayload = """
+                {
+                    "diasNuevaLlegada": 0
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un almacén que no es mío, cuando cambio su periodo, entonces recibo 403 (Forbidden)")
+    void debeRechazarModificacionPeriodoAlmacenAjenoConHttp403() throws Exception {
+        ActualizarPeriodoRequestDTO request = new ActualizarPeriodoRequestDTO(10);
+
+        when(configurarPeriodoUseCase.configurarPeriodo(eq(NIT), eq(10), eq(999L)))
+                .thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .header("X-User-Id", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+    }
+
+    @Test
+    @DisplayName("SR-RF-60: Debe retornar HTTP 404 cuando el almacén consultado en periodo no existe")
+    void debeRetornar404CuandoAlmacenNoExisteEnPeriodo() throws Exception {
+        when(consultarPeriodoUseCase.consultarPeriodo("000000000"))
+                .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/dias-nueva-llegada", "000000000")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
 }
+

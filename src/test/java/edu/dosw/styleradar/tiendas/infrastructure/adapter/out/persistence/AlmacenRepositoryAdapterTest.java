@@ -74,6 +74,7 @@ class AlmacenRepositoryAdapterTest {
         assertThat(resultado).isNotNull();
         assertThat(resultado.getNit()).isEqualTo(NIT);
         assertThat(resultado.getUmbralUltimasUnidades()).isEqualTo(4);
+        assertThat(resultado.getDiasNuevaLlegada()).isEqualTo(10);
         verify(almacenRepository).save(any(AlmacenEntity.class));
     }
 
@@ -84,6 +85,7 @@ class AlmacenRepositoryAdapterTest {
                 .nit(NIT)
                 .nombreComercial("Tienda Centro")
                 .umbralUltimasUnidades(5)
+                .diasNuevaLlegada(12)
                 .build();
 
         when(almacenRepository.findByNit(NIT)).thenReturn(Optional.of(entidad));
@@ -93,6 +95,7 @@ class AlmacenRepositoryAdapterTest {
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getNit()).isEqualTo(NIT);
         assertThat(resultado.get().getUmbralUltimasUnidades()).isEqualTo(5);
+        assertThat(resultado.get().getDiasNuevaLlegada()).isEqualTo(12);
     }
 
     @Test

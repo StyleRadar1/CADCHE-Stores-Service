@@ -12,3 +12,4 @@ public interface SpringDataAlmacenRepository extends JpaRepository<AlmacenEntity
 
     Optional<AlmacenEntity> findByNit(String nit);
 }
+

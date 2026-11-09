@@ -37,3 +37,4 @@ public final class UmbralUltimasUnidades {
         return new UmbralUltimasUnidades(VALOR_POR_DEFECTO);
     }
 }
+

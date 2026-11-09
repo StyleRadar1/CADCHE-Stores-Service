@@ -17,3 +17,4 @@ public interface SpringDataAdministradorAlmacenRepository extends JpaRepository<
 
     List<AdministradorAlmacenEntity> findByAlmacenNit(String almacenNit);
 }
+

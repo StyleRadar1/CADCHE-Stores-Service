@@ -27,6 +27,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.UmbralInvalidoException;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator;
+import edu.dosw.styleradar.tiendas.domain.validator.PeriodoNuevaLlegadaValidator;
 import edu.dosw.styleradar.tiendas.domain.validator.UmbralInventarioValidator;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +39,9 @@ class ConfigurarUmbralUltimasUnidadesUseCaseTest {
 
     @Mock
     private UmbralInventarioValidator umbralValidator;
+
+    @Mock
+    private PeriodoNuevaLlegadaValidator periodoValidator;
 
     @Mock
     private AutorizacionAlmacenValidator autorizacionValidator;
@@ -130,6 +134,7 @@ class ConfigurarUmbralUltimasUnidadesUseCaseTest {
     void debeConfigurarCatalogoCompletoExitosamente() {
         ConfiguracionCatalogoAlmacenRequestDTO request = new ConfiguracionCatalogoAlmacenRequestDTO(7, 20);
         doNothing().when(umbralValidator).validar(7);
+        doNothing().when(periodoValidator).validar(20);
         when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenExistente));
         doNothing().when(autorizacionValidator).validarAcceso(NIT, USUARIO_ID, repositoryPort);
         when(repositoryPort.save(any(Almacen.class))).thenAnswer(invocation -> invocation.getArgument(0));

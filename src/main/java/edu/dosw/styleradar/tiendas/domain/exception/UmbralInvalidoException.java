@@ -5,3 +5,4 @@ public class UmbralInvalidoException extends ReglaDeNegocioException {
         super(mensaje);
     }
 }
+
