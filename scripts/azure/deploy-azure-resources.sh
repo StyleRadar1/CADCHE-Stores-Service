@@ -129,7 +129,7 @@ deploy_environment() {
       --resource-group "$RG" \
       --plan "$PLAN_NAME" \
       --name "$APP_NAME" \
-      --deployment-container-image-name "eclipse-temurin:17-jre" \
+      --runtime "JAVA|17-java17" \
       --output none
   fi
 

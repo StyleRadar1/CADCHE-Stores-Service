@@ -119,7 +119,7 @@ function Deploy-StyleRadarEnvironment {
         --resource-group $rg `
         --plan $planName `
         --name $appName `
-        --deployment-container-image-name "eclipse-temurin:17-jre" `
+        --runtime "JAVA|17-java17" `
         --output none
 
     # 6. Variables de Entorno del Ambiente (Puerto Oficial 8140)
