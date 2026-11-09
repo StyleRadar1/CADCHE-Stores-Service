@@ -16,6 +16,9 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
+ENV PORT=8083
+ENV WEBSITES_PORT=8083
+
 EXPOSE 8083
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]

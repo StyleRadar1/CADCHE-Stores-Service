@@ -1,0 +1,123 @@
+name: CD PROD - Tiendas
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: styleradar-tiendas
+  AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME_PROD || 'styleradar-tiendas-prod' }}
+
+jobs:
+  test:
+    name: Verificación, Tests y Análisis Estático
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Compilar y ejecutar pruebas completas
+        run: mvn -B clean verify
+
+      - name: Análisis estático con SpotBugs
+        run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.excludeFilterFile=spotbugs-exclude.xml
+
+  build-push:
+    name: Compilar Imagen de Versión en Docker Hub
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compilar y publicar imagen OCI de Producción
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-prod:
+    name: Despliegue en Azure App Service (Producción)
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html
+    steps:
+      - name: Autenticar en Microsoft Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configurar App Settings en Azure App Service
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            RG=$(az webapp list --query "[?name=='${{ env.AZURE_WEBAPP_NAME }}'].resourceGroup | [0]" -o tsv)
+            if [ -z "$RG" ]; then
+              RG="${{ secrets.AZURE_RESOURCE_GROUP || 'rg-styleradar-prod' }}"
+            fi
+            echo "Configurando App Service: ${{ env.AZURE_WEBAPP_NAME }} en Resource Group: $RG"
+            az webapp config appsettings set \
+              --name "${{ env.AZURE_WEBAPP_NAME }}" \
+              --resource-group "$RG" \
+              --output none \
+              --settings \
+                WEBSITES_PORT=8083 \
+                PORT=8083 \
+                SPRING_PROFILES_ACTIVE=prod \
+                DB_URL="${{ secrets.DB_URL_PROD }}" \
+                DB_USERNAME="${{ secrets.DB_USERNAME_PROD }}" \
+                DB_PASSWORD="${{ secrets.DB_PASSWORD_PROD }}" \
+                AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_PROD || 'https://styleradarblob.blob.core.windows.net' }}" \
+                SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+
+      - name: Desplegar Contenedor en Azure Web App
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+      - name: Smoke Test - Verificación Swagger y Health Check
+        run: |
+          URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
+          echo "Ejecutando Smoke Test contra: $URL"
+          for i in $(seq 1 25); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
+            echo "Intento $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Swagger OpenAPI UI desplegado y respondiendo 200 OK en Producción!"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Advertencia: La API tardó en iniciar o no respondió HTTP 200 en $URL"
+          exit 1
+
