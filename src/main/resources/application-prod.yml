@@ -8,7 +8,7 @@ spring:
       on-profile: prod
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://styleradar-pg-prod.postgres.database.azure.com:5432/styleradar_tiendas?sslmode=require}
+    url: ${DB_URL:jdbc:postgresql://styleradar-pg-free.postgres.database.azure.com:5432/styleradar_tiendas_prod?sslmode=require}
     username: ${DB_USERNAME:styleradaradmin}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver

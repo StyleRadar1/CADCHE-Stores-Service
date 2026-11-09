@@ -1,27 +1,29 @@
 ﻿# ==============================================================================
-# STYLE RADAR - DESPLIEGUE AZURE CLOUD (AZURE FOR STUDENTS)
+# STYLE RADAR - DESPLIEGUE AZURE CLOUD (NIVEL 100% GRATIS / AZURE FOR STUDENTS)
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
-# Este script aprovisiona toda la infraestructura en Azure optimizada para 
-# aprovechar al máximo los 100 USD de crédito gratuito de Azure for Students.
+# Este script aprovisiona la infraestructura en Azure utilizando la capa GRATUITA
+# de Azure Database for PostgreSQL Flexible Server (750 horas/mes gratis de B1ms
+# y 32 GB de almacenamiento sin costo) para que el gasto sea $0.00 USD.
+# Aloja las dos bases de datos (QA y PROD) en la misma instancia gratuita.
 # ==============================================================================
 
 param (
     [string]$SubscriptionId = "",
     [string]$Location = "eastus",
-    [string]$ResourceGroup = "rg-styleradar-qa",
-    [string]$PostgresServer = "styleradar-pg-qa",
+    [string]$ResourceGroup = "rg-styleradar-free",
+    [string]$PostgresServer = "styleradar-pg-free",
     [string]$AdminUser = "styleradaradmin",
     [string]$AdminPassword = "",
-    [string]$AppServiceName = "styleradar-tiendas-qa",
-    [string]$AppServicePlan = "plan-styleradar-qa",
-    [string]$StorageAccount = "styleradarblobqa"
+    [string]$AppServicePlan = "plan-styleradar-free",
+    [string]$AppServiceSku = "F1",  # F1 = 100% Gratis (60 min CPU/día), o B1 Basic (~$12/mes con crédito)
+    [string]$StorageAccount = "styleradarblobfree"
 )
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  StyleRadar · Despliegue en Microsoft Azure (Estudiantes)" -ForegroundColor Cyan
+Write-Host "  StyleRadar · Despliegue Azure Gratuito (Capa Free Tier) " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Verificar inicio de sesión en Azure
@@ -43,9 +45,9 @@ Write-Host "`n[2/7] Creando Resource Group '$ResourceGroup' en '$Location'..." -
 az group create --name $ResourceGroup --location $Location --output none
 Write-Host "Resource Group listo." -ForegroundColor Green
 
-# 3. Aprovisionar Azure Database for PostgreSQL Flexible Server
-# Usamos Standard_B1ms (Burstable: 1 vCPU, 2GB RAM, 32GB Storage), cuesta ~$15/mes cubierto por créditos
-Write-Host "`n[3/7] Aprovisionando Azure Database for PostgreSQL Flexible Server..." -ForegroundColor Yellow
+# 3. Aprovisionar Azure Database for PostgreSQL Flexible Server (Free Tier)
+# NOTA: Standard_B1ms con 32GB califica para el beneficio de 750 horas/mes gratis en Azure.
+Write-Host "`n[3/7] Aprovisionando PostgreSQL Flexible Server Gratuito (Standard_B1ms, 32GB)..." -ForegroundColor Yellow
 if ([string]::IsNullOrWhiteSpace($AdminPassword)) {
     $AdminPassword = "StyleRadarPass" + (Get-Random -Minimum 1000 -Maximum 9999) + "!"
     Write-Host "Contraseña generada para PostgreSQL: $AdminPassword" -ForegroundColor Magenta
@@ -65,14 +67,22 @@ az postgres flexible-server create `
     --yes `
     --output none
 
-Write-Host "Servidor PostgreSQL activo: $PostgresServer.postgres.database.azure.com" -ForegroundColor Green
+Write-Host "Servidor PostgreSQL Free Tier activo: $PostgresServer.postgres.database.azure.com" -ForegroundColor Green
 
-# Crear base de datos para ms-tiendas
-Write-Host "Creando base de datos 'styleradar_tiendas'..." -ForegroundColor Yellow
+# Crear base de datos para QA
+Write-Host "Creando base de datos QA 'styleradar_tiendas_qa'..." -ForegroundColor Yellow
 az postgres flexible-server db create `
     --resource-group $ResourceGroup `
     --server-name $PostgresServer `
-    --database-name styleradar_tiendas `
+    --database-name styleradar_tiendas_qa `
+    --output none
+
+# Crear base de datos para PROD en la misma instancia para no consumir horas extra
+Write-Host "Creando base de datos PROD 'styleradar_tiendas_prod'..." -ForegroundColor Yellow
+az postgres flexible-server db create `
+    --resource-group $ResourceGroup `
+    --server-name $PostgresServer `
+    --database-name styleradar_tiendas_prod `
     --output none
 
 # Habilitar acceso de Azure Services en Firewall
@@ -84,7 +94,7 @@ az postgres flexible-server firewall-rule create `
     --end-ip-address 0.0.0.0 `
     --output none
 
-# 4. Aprovisionar Azure Blob Storage (Para fotos de tiendas y RUT PDF)
+# 4. Aprovisionar Azure Blob Storage
 Write-Host "`n[4/7] Aprovisionando Azure Blob Storage '$StorageAccount'..." -ForegroundColor Yellow
 az storage account create `
     --resource-group $ResourceGroup `
@@ -104,55 +114,85 @@ az storage container create `
     --public-access blob `
     --output none
 
-Write-Host "Contenedor de blobs 'tiendas' listo con acceso público de lectura." -ForegroundColor Green
+Write-Host "Contenedor de blobs 'tiendas' listo." -ForegroundColor Green
 
-# 5. Aprovisionar Azure App Service (Linux B1 Basic o F1 Free)
-Write-Host "`n[5/7] Aprovisionando App Service Plan y Web App..." -ForegroundColor Yellow
+# 5. Aprovisionar Azure App Service Plan (F1 Free o B1)
+Write-Host "`n[5/7] Aprovisionando App Service Plan ($AppServiceSku)..." -ForegroundColor Yellow
 az appservice plan create `
     --name $AppServicePlan `
     --resource-group $ResourceGroup `
     --is-linux `
-    --sku B1 `
+    --sku $AppServiceSku `
     --location $Location `
     --output none
 
+# Crear Web App QA
+$qaAppName = "styleradar-tiendas-qa"
+Write-Host "Creando Web App QA '$qaAppName'..." -ForegroundColor Yellow
 az webapp create `
     --resource-group $ResourceGroup `
     --plan $AppServicePlan `
-    --name $AppServiceName `
+    --name $qaAppName `
+    --deployment-container-image-name "eclipse-temurin:17-jre" `
+    --output none
+
+# Crear Web App PROD
+$prodAppName = "styleradar-tiendas-prod"
+Write-Host "Creando Web App PROD '$prodAppName'..." -ForegroundColor Yellow
+az webapp create `
+    --resource-group $ResourceGroup `
+    --plan $AppServicePlan `
+    --name $prodAppName `
     --deployment-container-image-name "eclipse-temurin:17-jre" `
     --output none
 
 # 6. Configurar Variables de Entorno (App Settings)
-Write-Host "`n[6/7] Configurando variables de entorno en el App Service..." -ForegroundColor Yellow
-$dbUrl = "jdbc:postgresql://$PostgresServer.postgres.database.azure.com:5432/styleradar_tiendas?sslmode=require"
+Write-Host "`n[6/7] Configurando App Settings en Web Apps..." -ForegroundColor Yellow
 $blobEndpoint = "https://$StorageAccount.blob.core.windows.net"
+$dbUrlQa = "jdbc:postgresql://$PostgresServer.postgres.database.azure.com:5432/styleradar_tiendas_qa?sslmode=require"
+$dbUrlProd = "jdbc:postgresql://$PostgresServer.postgres.database.azure.com:5432/styleradar_tiendas_prod?sslmode=require"
 
+# Configurar QA
 az webapp config appsettings set `
-    --name $AppServiceName `
+    --name $qaAppName `
     --resource-group $ResourceGroup `
     --settings `
         WEBSITES_PORT=8140 `
         PORT=8140 `
         SPRING_PROFILES_ACTIVE=qa `
-        DB_URL="$dbUrl" `
+        DB_URL="$dbUrlQa" `
         DB_USERNAME="$AdminUser" `
         DB_PASSWORD="$AdminPassword" `
         AZURE_STORAGE_BLOB_ENDPOINT="$blobEndpoint" `
-        SWAGGER_SERVER_URL="https://$AppServiceName.azurewebsites.net" `
+        SWAGGER_SERVER_URL="https://$qaAppName.azurewebsites.net" `
     --output none
 
-# 7. Resumen de Conexión y Swagger URLs
+# Configurar PROD
+az webapp config appsettings set `
+    --name $prodAppName `
+    --resource-group $ResourceGroup `
+    --settings `
+        WEBSITES_PORT=8140 `
+        PORT=8140 `
+        SPRING_PROFILES_ACTIVE=prod `
+        DB_URL="$dbUrlProd" `
+        DB_USERNAME="$AdminUser" `
+        DB_PASSWORD="$AdminPassword" `
+        AZURE_STORAGE_BLOB_ENDPOINT="$blobEndpoint" `
+        SWAGGER_SERVER_URL="https://$prodAppName.azurewebsites.net" `
+    --output none
+
+# 7. Resumen de Despliegue
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host "  ¡DESPLIEGUE EN AZURE COMPLETADO CON ÉXITO!" -ForegroundColor Green
+Write-Host "  ¡DESPLIEGUE EN AZURE (TIER GRATUITO) COMPLETADO!" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "Swagger UI QA (En vivo):   https://$AppServiceName.azurewebsites.net/swagger-ui/index.html" -ForegroundColor Cyan
-Write-Host "OpenAPI JSON Spec:         https://$AppServiceName.azurewebsites.net/v3/api-docs" -ForegroundColor Cyan
-Write-Host "Health Check:              https://$AppServiceName.azurewebsites.net/actuator/health" -ForegroundColor Cyan
+Write-Host "Costo Mensual Estimado:    $0.00 USD (Aprovecha las 750h/mes gratis de PostgreSQL B1ms)" -ForegroundColor Magenta
+Write-Host "Swagger UI QA (En vivo):   https://$qaAppName.azurewebsites.net/swagger-ui/index.html" -ForegroundColor Cyan
+Write-Host "Swagger UI PROD (En vivo): https://$prodAppName.azurewebsites.net/swagger-ui/index.html" -ForegroundColor Cyan
 Write-Host "PostgreSQL Server:         $PostgresServer.postgres.database.azure.com:5432" -ForegroundColor Yellow
-Write-Host "Base de Datos:             styleradar_tiendas" -ForegroundColor Yellow
-Write-Host "Usuario BD:                $AdminUser" -ForegroundColor Yellow
+Write-Host "Base de Datos QA:          styleradar_tiendas_qa" -ForegroundColor Yellow
+Write-Host "Base de Datos PROD:        styleradar_tiendas_prod" -ForegroundColor Yellow
+Write-Host "Usuario Administrador:     $AdminUser" -ForegroundColor Yellow
 Write-Host "Contraseña BD:             $AdminPassword" -ForegroundColor Yellow
 Write-Host "Azure Blob Endpoint:       $blobEndpoint" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Green
-
