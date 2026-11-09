@@ -18,6 +18,12 @@ ADMIN_USER="${ADMIN_USER:-styleradaradmin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-StyleRadarPass2026!}"
 APP_SERVICE_SKU="${APP_SERVICE_SKU:-F1}" # F1 = 100% Gratis ($0 USD), o B1 Basic
 
+# Registrar proveedores obligatorios de Azure
+echo "Verificando registro de proveedores Azure (Storage, Web, DB)..."
+az provider register --namespace Microsoft.Storage --output none 2>/dev/null || true
+az provider register --namespace Microsoft.Web --output none 2>/dev/null || true
+az provider register --namespace Microsoft.DBforPostgreSQL --output none 2>/dev/null || true
+
 deploy_environment() {
   local ENV_NAME="$1"
   local RG="rg-styleradar-${ENV_NAME}"
