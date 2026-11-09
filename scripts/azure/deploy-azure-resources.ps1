@@ -12,7 +12,7 @@
 param (
     [ValidateSet("qa", "prod", "all")]
     [string]$Environment = "qa",
-    [string]$Location = "eastus",
+    [string]$Location = "eastus2",
     [string]$AppServiceSku = "F1",  # F1 = 100% Gratis ($0 USD), o B1 Basic
     [string]$AdminUser = "styleradaradmin",
     [string]$AdminPassword = ""

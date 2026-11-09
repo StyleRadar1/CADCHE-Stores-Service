@@ -13,8 +13,8 @@
 set -euo pipefail
 
 ENVIRONMENT="${1:-qa}" # Opciones: qa | prod | all
-LOCATION="eastus"
-ADMIN_USER="styleradaradmin"
+LOCATION="${2:-${LOCATION:-eastus2}}"
+ADMIN_USER="${ADMIN_USER:-styleradaradmin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-StyleRadarPass2026!}"
 APP_SERVICE_SKU="${APP_SERVICE_SKU:-F1}" # F1 = 100% Gratis ($0 USD), o B1 Basic
 
