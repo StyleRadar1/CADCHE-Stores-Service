@@ -1,9 +1,20 @@
-name: CD QA - Tiendas
+# ==============================================================================
+# STYLE RADAR - PIPELINE CI/CD QA (Semana 11/12 · DOSW · ECI)
+# Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
+# Flujo: Build -> Tests -> SpotBugs -> Cobertura JaCoCo -> Docker Hub -> Azure QA
+# ==============================================================================
+
+name: CI/CD QA - Tiendas
 
 on:
   push:
     branches:
       - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
   workflow_dispatch:
 
 env:
@@ -12,31 +23,52 @@ env:
 
 jobs:
   test:
-    name: Verificación, Tests y Análisis Estático
+    name: 🧪 Build, Tests, SpotBugs y Cobertura
     runs-on: ubuntu-latest
+
     steps:
-      - name: Descargar código fuente
+      - name: Checkout del código fuente
         uses: actions/checkout@v4
 
-      - name: Configurar Java 17
+      - name: Configurar Java 17 Temurin
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
 
-      - name: Compilar y ejecutar pruebas completas
-        run: mvn -B clean verify
+      - name: Cache de dependencias Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-      - name: Análisis estático con SpotBugs
+      - name: Compilar y ejecutar pruebas completas con JaCoCo
+        run: mvn -B clean verify --no-transfer-progress
+
+      - name: Análisis estático con SpotBugs (0 advertencias toleradas)
         run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.excludeFilterFile=spotbugs-exclude.xml
 
-  build-push:
-    name: Compilar Imagen OCI en Docker Hub
+      - name: Publicar reporte de cobertura JaCoCo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-qa
+          path: target/site/jacoco/
+          retention-days: 14
+
+  build-and-push:
+    name: 🐳 Build y Push Imagen Docker Hub
     needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+
     steps:
-      - name: Descargar código fuente
+      - name: Checkout del código fuente
         uses: actions/checkout@v4
 
       - name: Configurar Docker Buildx
@@ -48,32 +80,41 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Compilar y publicar imagen OCI
+      - name: Extraer metadatos y tags para Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=qa-
+            type=raw,value=qa-latest
+
+      - name: Compilar y publicar imagen OCI multi-stage
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy-qa:
-    name: Despliegue en Azure App Service (QA)
-    needs: build-push
+    name: 🚀 Desplegar a Azure QA
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment:
       name: qa
       url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html
+
     steps:
-      - name: Autenticar en Microsoft Azure
+      - name: Autenticación en Microsoft Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Configurar App Settings en Azure App Service
+      - name: Configurar App Settings y Puerto :8140 en Azure App Service QA
         uses: azure/cli@v2
         with:
           inlineScript: |
@@ -96,14 +137,14 @@ jobs:
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_QA || 'https://styleradarblobqa.blob.core.windows.net' }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
 
-      - name: Desplegar Contenedor en Azure Web App
+      - name: Desplegar Contenedor Docker en Azure Web App (QA)
         id: deploy
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-${{ github.sha }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-latest
 
-      - name: Smoke Test - Verificación Swagger y Health Check
+      - name: Smoke Test - Verificación Swagger OpenAPI en Vivo
         run: |
           URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           echo "Ejecutando Smoke Test contra: $URL"
@@ -111,11 +152,10 @@ jobs:
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
             echo "Intento $i: HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
-              echo "Swagger OpenAPI UI desplegado y respondiendo 200 OK!"
+              echo ">> ¡Swagger OpenAPI UI desplegado y respondiendo 200 OK en QA!"
               exit 0
             fi
             sleep 15
           done
           echo "Advertencia: La API tardó en iniciar o no respondió HTTP 200 en $URL"
           exit 1
-
