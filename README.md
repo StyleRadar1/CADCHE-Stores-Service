@@ -1,7 +1,7 @@
 <!-- ==============================================================================
   STYLE RADAR 
-  Asignatura: DOSW · 2026
-  Estándar obligatorio unificado para los 13 microservicios del proyecto StyleRadar.
+  Arquitectura e Ingeniería de Microservicios · 2026
+  Estándar obligatorio unificado para los microservicios del proyecto StyleRadar.
 ============================================================================== -->
 
 <div align="center">
@@ -24,11 +24,14 @@
   </p>
 
   <p align="center">
-    <a href="https://styleradar-backend-prod.azurewebsites.net/swagger-ui/index.html">
+    <a href="https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html">
       <img src="https://img.shields.io/badge/PROD-Active-16A34A?style=for-the-badge&logo=azure-app-services&logoColor=white" alt="PROD Deployment" />
     </a>
-    <a href="https://styleradar-backend-qa.azurewebsites.net/swagger-ui/index.html">
+    <a href="https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html">
       <img src="https://img.shields.io/badge/QA-Active-5600EF?style=for-the-badge&logo=azure-app-services&logoColor=white" alt="QA Deployment" />
+    </a>
+    <a href="https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml">
+      <img src="https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml/badge.svg" alt="CI/CD QA Tiendas" />
     </a>
     <a href="https://sonarcloud.io/organizations/styleradar/projects">
       <img src="https://img.shields.io/badge/SonarQube-Quality_Gate_Passed-16A34A?style=for-the-badge&logo=sonarqube&logoColor=white" alt="Quality Gate" />
@@ -37,7 +40,7 @@
       <img src="https://img.shields.io/badge/JaCoCo_Coverage-%E2%89%A5_85%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" />
     </a>
     <a href="#6-tecnologías-y-dependencias">
-      <img src="https://img.shields.io/badge/Java-21_LTS-12063A?style=for-the-badge&logo=openjdk&logoColor=C4B5FD" alt="Java 21" />
+      <img src="https://img.shields.io/badge/Java-17_/_21_LTS-12063A?style=for-the-badge&logo=openjdk&logoColor=C4B5FD" alt="Java LTS" />
     </a>
     <a href="#6-tecnologías-y-dependencias">
       <img src="https://img.shields.io/badge/Spring_Boot-3.2.12-12063A?style=for-the-badge&logo=spring&logoColor=C4B5FD" alt="Spring Boot 3.2.12" />
@@ -107,7 +110,7 @@ Este microservicio encapsula exclusivamente la lógica de negocio correspondient
 
 ## <img src="https://img.shields.io/badge/02-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 2. EQUIPO Y RESPONSABLES
 
-Desarrollado y mantenido por el **Squad `CADche` (`CADCHE`)** para la asignatura DOSW 2026.
+Desarrollado y mantenido por el **Squad `CADche` (`CADCHE`)** para la plataforma StyleRadar.
 
 <div align="center">
 
@@ -371,13 +374,13 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 
 ### Matriz Oficial de Enlaces por Entorno (PROD, QA, LOCAL)
 
-| Entorno | Estado | Propósito | URL Base del Servicio | Swagger OpenAPI UI | Health Check |
-| :--- | :---: | :--- | :--- | :--- | :--- |
-| **Producción (PROD)** | Active | Despliegue productivo de StyleRadar | `https://styleradar-backend-prod.azurewebsites.net` | [Swagger UI PROD](https://styleradar-backend-prod.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-backend-prod.azurewebsites.net/actuator/health) |
-| **Calidad / Pruebas (QA)** | Active | Pruebas integradas de Sprint y QA | `https://styleradar-backend-qa.azurewebsites.net` | [Swagger UI QA](https://styleradar-backend-qa.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-backend-qa.azurewebsites.net/actuator/health) |
-| **Desarrollo Local (DEV)** | Local | Entorno de desarrollo local en máquina | `http://localhost:8140` | [Swagger UI Local](http://localhost:8140/swagger-ui.html) | [`/actuator/health`](http://localhost:8140/actuator/health) |
+| Entorno | Estado | Propósito | URL Base del Servicio | Swagger OpenAPI UI | OpenAPI JSON Contract | Health Check |
+| :--- | :---: | :--- | :--- | :--- | :--- | :--- |
+| **Producción (PROD)** | Active | Despliegue productivo de StyleRadar | `https://styleradar-tiendas-prod.azurewebsites.net` | [Swagger UI PROD](https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html) | [`/v3/api-docs`](https://styleradar-tiendas-prod.azurewebsites.net/v3/api-docs) | [`/actuator/health`](https://styleradar-tiendas-prod.azurewebsites.net/actuator/health) |
+| **Calidad / Pruebas (QA)** | Active | Pruebas integradas de Sprint y QA | `https://styleradar-tiendas-qa.azurewebsites.net` | [Swagger UI QA](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html) | [`/v3/api-docs`](https://styleradar-tiendas-qa.azurewebsites.net/v3/api-docs) | [`/actuator/health`](https://styleradar-tiendas-qa.azurewebsites.net/actuator/health) |
+| **Desarrollo Local (DEV)** | Local | Entorno de desarrollo local en máquina | `http://localhost:8140` | [Swagger UI Local](http://localhost:8140/swagger-ui/index.html) | [`/v3/api-docs`](http://localhost:8140/v3/api-docs) | [`/actuator/health`](http://localhost:8140/actuator/health) |
 
-* **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8140/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA).
+* **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8140/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA con 18 endpoints activos).
 
 
 <div align="center">
@@ -498,23 +501,46 @@ curl -X PUT "http://localhost:8140/api/v1/almacenes/900123456-7/configuracion-ca
 
 ## <img src="https://img.shields.io/badge/05-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 5. EVENTOS QUE PUBLICA Y CONSUME
 
-La comunicación asíncrona entre microservicios se orquesta a través de **RabbitMQ 3.12** utilizando Topic Exchanges durables.
+La comunicación asíncrona entre microservicios se orquesta a través de **RabbitMQ 3.12+** utilizando Topic/Direct Exchanges durables y Dead Letter Exchanges (DLX) para garantizar entrega resiliente y desacoplamiento.
 
-* **Exchange Principal de Dominio:** `styleradar.tiendas.events` / `styleradar.events` (`topic`, durable)
-* **Exchange de Auditoría:** `styleradar.audit` (`fanout`, durable)
+* **Exchange de Fundaciones Aliadas:** `styleradar.fundaciones.exchange` (`topic`, durable - configurable vía `styleradar.rabbitmq.exchange.fundaciones`)
+* **Exchange Principal de Tiendas:** `styleradar.tiendas.events` (`topic`, durable)
+* **Exchange de Auditoría Transversal:** `styleradar.audit` (`fanout`, durable)
 * **Dead Letter Exchange (DLX):** `styleradar.dlx`
 
 ### Matriz de Eventos AMQP
 
-| Tipo | Routing Key | Cola (Queue) | Microservicio Emisor / Receptor | Cuándo se Dispara / Acción |
-| :---: | :--- | :--- | :--- | :--- |
-| **PUBLICA** | `tienda.verificacion.decidida` | N/A (Exchange) | `ms-tiendas` &rarr; `ms-catalogo`, `ms-notificaciones` | Se publica cuando `ADMIN_STYLERADAR` aprueba o rechaza la verificación de un almacén (`SR-RF-62`), habilitando su visibilidad en el mapa y catálogo. |
-| **PUBLICA** | `tienda.rol.asignado` | N/A (Exchange) | `ms-tiendas` &rarr; `ms-auth`, `ms-usuarios` | Se publica al asociar un `ADMIN_ALMACEN` (`SR-RNF-01`) o registrar una fundación aliada con `REPRESENTANTE_FUNDACION` (`SR-RF-63`). |
-| **PUBLICA** | `tienda.configuracion.actualizada` | N/A (Exchange) | `ms-tiendas` &rarr; `ms-catalogo`, `ms-inventario` | Propaga el nuevo `umbralUltimasUnidades` y `diasVigenciaNuevaPrenda` (`SR-RF-59`, `SR-RF-60`, Deuda Técnica #8). |
-| **CONSUME** | `tienda.suscripcion.suspendida` | `q.tiendas.suscripcion` | `ms-suscripciones` &rarr; `ms-tiendas` | Actualiza el estado de vigencia del plan de suscripción del almacén (`SR-RF-67`, `SR-RF-68`). |
+| Tipo | Exchange | Routing Key | Cola (Queue) | Microservicio Emisor / Receptor | Cuándo se Dispara / Acción |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **PUBLICA** | `styleradar.fundaciones.exchange` | `fundacion.desactivada` | `q.donaciones.reasignacion` (DLX: `styleradar.dlx`) | `ms-tiendas` (`:8140`) &rarr; `ms-segunda-vida-donaciones` (`:8520`) | Se dispara al ejecutar la desactivación lógica de una fundación aliada (`SR-RF-65`). Permite al microservicio de donaciones reasignar automáticamente las donaciones huérfanas hacia otras fundaciones activas cercanas. |
+| **PUBLICA** | `styleradar.tiendas.events` | `tienda.verificacion.decidida` | N/A (Exchange) | `ms-tiendas` &rarr; `ms-catalogo`, `ms-notificaciones` | Se publica cuando `ADMIN_STYLERADAR` aprueba o rechaza la verificación de un almacén (`SR-RF-62`), habilitando su visibilidad en el mapa y catálogo. |
+| **PUBLICA** | `styleradar.tiendas.events` | `tienda.rol.asignado` | N/A (Exchange) | `ms-tiendas` &rarr; `ms-auth`, `ms-usuarios` | Se publica al asociar un `ADMIN_ALMACEN` (`SR-RNF-01`) o registrar una fundación aliada con `REPRESENTANTE_FUNDACION` (`SR-RF-63`). |
+| **PUBLICA** | `styleradar.tiendas.events` | `tienda.configuracion.actualizada` | N/A (Exchange) | `ms-tiendas` &rarr; `ms-catalogo`, `ms-inventario` | Propaga el nuevo `umbralUltimasUnidades` y `diasVigenciaNuevaPrenda` (`SR-RF-59`, `SR-RF-60`, Deuda Técnica #8). |
+| **CONSUME** | `styleradar.tiendas.events` | `tienda.suscripcion.suspendida` | `q.tiendas.suscripcion` | `ms-suscripciones` &rarr; `ms-tiendas` | Actualiza el estado de vigencia del plan de suscripción del almacén (`SR-RF-67`, `SR-RF-68`). |
 
 <details>
-<summary><b>Click para ver Esquema JSON del Evento Publicado (con Idempotencia)</b></summary>
+<summary><b>Click para ver Esquema JSON de FundacionDesactivadaEvent (SR-RF-65)</b></summary>
+
+<br>
+
+Evento de integración disparado por el caso de uso `DesactivarFundacionUseCase` y propagado por `RabbitMQFundacionEventPublisherAdapter`:
+
+```json
+{
+  "fundacionId": 105,
+  "nombreFundacion": "Fundación Moda Sostenible Bogotá",
+  "representanteId": 42,
+  "fechaDesactivacion": "2026-11-09T18:30:00Z",
+  "motivo": "Cese de operaciones de recolección textil y redistribución regional"
+}
+```
+
+> **Resiliencia y Aislamiento:** El adaptador implementa captura de excepciones `AmqpException`. Si el broker RabbitMQ presenta indisponibilidad transitoria, la desactivación de la fundación se confirma en PostgreSQL y el error se registra en el log operativo (`log.warn`) para evitar bloqueos en el flujo de negocio del usuario administrador.
+
+</details>
+
+<details>
+<summary><b>Click para ver Esquema JSON de Verificación de Almacén (con Idempotencia)</b></summary>
 
 <br>
 
@@ -572,108 +598,161 @@ El stack del microservicio cumple con el estándar unificado de arquitectura de 
 * **Apache Maven:** Versión 3.9+ instalada (`mvn -version`).
 * **Docker Engine & Docker Compose:** Versión 24+ en ejecución (`docker --version`).
 
-### Ejecución Local con Maven (Perfil Dev / Test)
+### Ejecución Local con Maven (Infraestructura Contenerizada)
+
+Para desarrollar localmente manteniendo la base de datos, el almacenamiento blob y el broker en contenedores aislados:
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clonar el repositorio y situarse en la raíz del proyecto
 git clone https://github.com/StyleRadar1/CADCHE-Stores-Service.git
 cd CADCHE-Stores-Service
 
-# 2. Levantar servicios de infraestructura en Docker (PostgreSQL, RabbitMQ)
-docker compose up -d postgres rabbitmq
+# 2. Levantar la infraestructura auxiliar (PostgreSQL 16, Azurite Blob y RabbitMQ 3)
+docker compose up -d tiendas-db tiendas-blob tiendas-rabbitmq
 
-# 3. Ejecutar el microservicio localmente con PostgreSQL (perfil dev)
+# 3. Compilar y ejecutar el microservicio localmente en el puerto oficial :8140
 mvn clean spring-boot:run -Dspring-boot.run.profiles=dev
 
-# Alternativa rápida sin PostgreSQL externo (usando configuración en memoria de test)
-mvn spring-boot:run -Dspring-boot.run.useTestClasspath=true -Dspring-boot.run.profiles=test
+# Alternativa: Ejecutar suite de pruebas completa con cobertura JaCoCo
+mvn clean verify
 ```
 
-### Ejecución Contenerizada Completa con Docker
+### Ejecución Contenerizada Completa con Docker Compose (Recomendada)
+
+El archivo `docker-compose.yml` orquesta los 4 contenedores requeridos por la arquitectura hexagonal del microservicio:
+
+| Contenedor | Imagen | Puerto Host:Contenedor | Función Arquitectónica |
+| :--- | :--- | :---: | :--- |
+| `ms-tiendas` | OCI Multi-stage Build (`Dockerfile`) | `8140:8140` | Microservicio Spring Boot Hexagonal Core |
+| `tiendas-db` | `postgres:16-alpine` | `5432:5432` | Adaptador de persistencia relacional (`styleradar_tiendas`) |
+| `tiendas-blob` | `mcr.microsoft.com/azure-storage/azurite:latest` | `10000:10000` | Emulador local de Azure Blob Storage (RUT PDF y fotos) |
+| `tiendas-rabbitmq` | `rabbitmq:3-management-alpine` | `5672:5672`<br>`15672:15672` | Broker AMQP de eventos y consola web de administración |
+
+```bash
+# 1. Construir imágenes y levantar los 4 contenedores en segundo plano
+docker compose up --build -d
+
+# 2. Verificar el estado de los servicios (deben reportar 'healthy' o 'running')
+docker compose ps
+
+# 3. Inspeccionar logs en vivo del microservicio
+docker compose logs -f ms-tiendas
+
+# 4. Detener y remover contenedores conservando volúmenes de datos
+docker compose down
+```
 
 <details>
-<summary><b>Click para ver Instrucciones de Docker y docker-compose.yml de Ejemplo</b></summary>
+<summary><b>Click para inspeccionar el docker-compose.yml de Arquitectura Hexagonal</b></summary>
 
 <br>
 
-```bash
-# Compilar y empaquetar el JAR ejecutable omitiendo tests
-mvn clean package -DskipTests
-
-# Construir la imagen OCI local
-docker build -t styleradar/ms-tiendas:v1.0 .
-
-# Ejecutar el contenedor conectado a la red compartida de StyleRadar
-docker run -d \
-  --name ms-tiendas \
-  --network styleradar-net \
-  -p 8140:8140 \
-  --env-file .env \
-  styleradar/ms-tiendas:v1.0
-```
-
-#### Archivo `docker-compose.yml` de Soporte
-
 ```yaml
-version: '3.8'
+version: '3.9'
+
+services:
+  ms-tiendas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ms-tiendas
+    restart: unless-stopped
+    ports:
+      - "8140:8140"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8140
+      DB_HOST: tiendas-db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-styleradar_tiendas}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      AZURE_STORAGE_BLOB_ENDPOINT: http://tiendas-blob:10000/devstoreaccount1
+      RABBITMQ_HOST: tiendas-rabbitmq
+      RABBITMQ_PORT: 5672
+      SWAGGER_SERVER_URL: http://localhost:8140
+    depends_on:
+      tiendas-db:
+        condition: service_healthy
+      tiendas-blob:
+        condition: service_started
+      tiendas-rabbitmq:
+        condition: service_healthy
+    networks:
+      - styleradar-net
+
+  tiendas-db:
+    image: postgres:16-alpine
+    container_name: tiendas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-styleradar_tiendas}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - tiendas-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-styleradar_tiendas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - styleradar-net
+
+  tiendas-blob:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: tiendas-blob
+    restart: unless-stopped
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
+    ports:
+      - "10000:10000"
+    volumes:
+      - tiendas-blob-data:/data
+    networks:
+      - styleradar-net
+
+  tiendas-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: tiendas-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"     # AMQP Broker
+      - "15672:15672"   # Management Web Console (http://localhost:15672)
+    volumes:
+      - tiendas-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - styleradar-net
+
+volumes:
+  tiendas-db-data:
+    driver: local
+  tiendas-blob-data:
+    driver: local
+  tiendas-rabbitmq-data:
+    driver: local
 
 networks:
   styleradar-net:
     driver: bridge
-
-services:
-  ms-tiendas:
-    build: .
-    container_name: ms-tiendas
-    restart: always
-    ports:
-      - "8140:8140"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_PORT=8140
-      - DB_URL=jdbc:postgresql://postgres:5432/styleradar_tiendas
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - JPA_DDL_AUTO=validate
-      - FLYWAY_ENABLED=true
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-    depends_on:
-      - postgres
-      - rabbitmq
-    networks:
-      - styleradar-net
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: sr-postgres-tiendas
-    environment:
-      POSTGRES_DB: styleradar_tiendas
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
-    networks:
-      - styleradar-net
-
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    container_name: sr-rabbitmq-tiendas
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    networks:
-      - styleradar-net
 ```
 
 </details>
 
-### Comprobación de Salud (Health Check)
+### Comprobación de Salud y Consola Web
 
-```bash
-curl -s http://localhost:8140/actuator/health | jq .
-# Esperado: {"status":"UP"}
-```
+* **Health Check del Microservicio:** `curl -s http://localhost:8140/actuator/health` &rarr; `{"status":"UP"}`
+* **Swagger UI Local:** `http://localhost:8140/swagger-ui/index.html`
+* **Consola RabbitMQ Management:** `http://localhost:15672` (Credenciales por defecto: `guest` / `guest`)
 
 <div align="center">
   <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
@@ -701,28 +780,51 @@ curl -s http://localhost:8140/actuator/health | jq .
 
 <a id="8-variables-de-entorno"></a>
 
-## <img src="https://img.shields.io/badge/08-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 8. VARIABLES DE ENTORNO
+## <img src="https://img.shields.io/badge/08-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 8. VARIABLES DE ENTORNO Y MATRIZ DE BASES DE DATOS POR AMBIENTE
 
-Todas las configuraciones sensibles y dependientes de entorno se externalizan mediante variables de sistema conformes al estándar **Twelve-Factor App**.
+Todas las configuraciones sensibles y dependientes de entorno se externalizan mediante variables de sistema conformes al estándar **Twelve-Factor App**. La persistencia relacional y el almacenamiento de objetos mantienen aislamiento físico y lógico estricto entre entornos para garantizar cero contaminación de datos de prueba en producción.
 
-| Variable | Descripción | Valor por Defecto (`dev`) | Requerido en Prod |
+### Matriz de Aislamiento de Base de Datos y Almacenamiento por Ambiente
+
+| Parámetro / Recurso | Calidad / Pruebas (QA) | Producción (PROD) | Desarrollo Local (DEV) |
+| :--- | :--- | :--- | :--- |
+| **Servidor PostgreSQL** | `styleradar-pg-qa.postgres.database.azure.com` | `styleradar-pg-prod.postgres.database.azure.com` | `localhost` / `tiendas-db` |
+| **Puerto PostgreSQL** | `5432` (SSL obligatorio: `require`) | `5432` (SSL obligatorio: `require`) | `5432` (Docker) |
+| **Nombre de Base de Datos** | `styleradar_tiendas` | `styleradar_tiendas` | `styleradar_tiendas` |
+| **Usuario Administrador BD** | `styleradaradmin` | `styleradaradmin` | `postgres` |
+| **Estrategia DDL / Flyway** | `validate` · Migraciones Flyway `V1..V4` | `validate` · Migraciones Flyway `V1..V4` | `validate` / `update` · Flyway |
+| **Cuenta Almacenamiento Blob** | `https://styleradarblobqa.blob.core.windows.net` | `https://styleradarblobprod.blob.core.windows.net` | `http://localhost:10000/devstoreaccount1` (Azurite) |
+| **Contenedor Blob RUT / Fotos** | `tiendas` | `tiendas` | `tiendas` |
+| **Broker de Eventos (AMQP)** | `amqp://styleradar-rabbitmq-qa:5672` | `amqp://styleradar-rabbitmq-prod:5672` | `localhost:5672` (`tiendas-rabbitmq`) |
+| **Región Cloud Azure** | Central US (Flexible Server B1ms) | Central US (BD B1ms) / East US 2 (App) | Máquina de desarrollo (Docker Engine) |
+| **Puerto de Escucha App** | `8140` | `8140` | `8140` |
+| **Host / URL Base** | `https://styleradar-tiendas-qa.azurewebsites.net` | `https://styleradar-tiendas-prod.azurewebsites.net` | `http://localhost:8140` |
+
+### Variables de Configuración del Microservicio
+
+| Variable | Descripción | Valor por Defecto (`dev`) | Requerido en Azure (QA/PROD) |
 | :--- | :--- | :--- | :---: |
-| `SERVER_PORT` | Puerto de escucha HTTP del microservicio | `8140` | Sí |
-| `SPRING_PROFILES_ACTIVE` | Perfil de configuración Spring Boot activo | `dev` | Sí |
-| `DB_URL` | URL JDBC de conexión a PostgreSQL | `jdbc:postgresql://localhost:5432/styleradar_tiendas` | Sí |
-| `DB_USERNAME` | Usuario de conexión a la base de datos | `postgres` | Sí |
-| `DB_PASSWORD` | Contraseña del usuario de base de datos | `postgres` | Sí |
-| `JPA_DDL_AUTO` | Estrategia de validación de esquema Hibernate | `validate` | Sí |
-| `FLYWAY_ENABLED` | Ejecución automática de migraciones Flyway | `false` (`true` en prod) | Sí |
-| `RABBITMQ_HOST` | Hostname del broker de mensajería RabbitMQ | `localhost` | Sí |
+| `SERVER_PORT` | Puerto de escucha HTTP del microservicio | `8140` | Sí (`8140`) |
+| `SPRING_PROFILES_ACTIVE` | Perfil Spring Boot activo (`dev`, `docker`, `qa`, `prod`) | `dev` | Sí |
+| `DB_HOST` | Hostname del servidor PostgreSQL | `localhost` (`tiendas-db` en Docker) | Sí |
+| `DB_PORT` | Puerto TCP de conexión PostgreSQL | `5432` | Sí |
+| `DB_NAME` | Nombre de la base de datos relacional | `styleradar_tiendas` | Sí |
+| `DB_USER` / `DB_USERNAME` | Usuario de conexión a la base de datos | `postgres` | Sí (`styleradaradmin`) |
+| `DB_PASSWORD` | Contraseña del usuario de base de datos | `postgres` | Sí (Inyectada como Secret) |
+| `DB_URL` | Cadena JDBC de conexión completa (opcional si se definen componentes) | `jdbc:postgresql://localhost:5432/styleradar_tiendas` | Sí |
+| `JPA_DDL_AUTO` | Estrategia de validación de esquema Hibernate | `validate` | Sí (`validate`) |
+| `FLYWAY_ENABLED` | Ejecución automática de migraciones Flyway | `true` | Sí (`true`) |
+| `AZURE_STORAGE_BLOB_ENDPOINT` | Endpoint base de Azure Blob Storage o emulador Azurite | `http://localhost:10000/devstoreaccount1` | Sí (`https://styleradarblob{qa,prod}.blob.core.windows.net`) |
+| `AZURE_STORAGE_CONTAINER_NAME` | Nombre del contenedor para RUT PDF y fotos | `tiendas` | Sí (`tiendas`) |
+| `RABBITMQ_HOST` | Hostname del broker RabbitMQ | `localhost` (`tiendas-rabbitmq` en Docker) | Sí |
 | `RABBITMQ_PORT` | Puerto AMQP de RabbitMQ | `5672` | Sí |
-| `RABBITMQ_USERNAME` | Usuario de conexión a RabbitMQ | `guest` | Sí |
-| `RABBITMQ_PASSWORD` | Contraseña de conexión a RabbitMQ | `guest` | Sí |
-| `STORAGE_BUCKET_URL` | URL base del servicio de almacenamiento de archivos (RUT PDF y fotos de tienda) | `https://cdn.styleradar.com` | Sí |
-| `JWT_SECRET` | Clave secreta o pública para validar tokens JWT | `<SECRET_KEY_256_BITS>` | Sí |
+| `RABBITMQ_USERNAME` | Usuario de autenticación RabbitMQ | `guest` | Sí |
+| `RABBITMQ_PASSWORD` | Contraseña de autenticación RabbitMQ | `guest` | Sí |
+| `JWT_SECRET` | Clave secreta simétrica HMAC-SHA256 para validación de tokens | `<SECRET_KEY_256_BITS>` | Sí (Inyectada como Secret) |
+| `SWAGGER_SERVER_URL` | URL base expuesta en el desplegable de Swagger UI | `http://localhost:8140` | Sí (URL oficial del App Service) |
 
 <details>
-<summary><b>Click para copiar la Plantilla de Archivo .env.example</b></summary>
+<summary><b>Click para copiar la Plantilla de Archivo .env.example Actualizada</b></summary>
 
 <br>
 
@@ -732,25 +834,30 @@ Todas las configuraciones sensibles y dependientes de entorno se externalizan me
 # ==============================================================================
 SERVER_PORT=8140
 SPRING_PROFILES_ACTIVE=dev
+SWAGGER_SERVER_URL=http://localhost:8140
 
-# Persistencia PostgreSQL
-DB_URL=jdbc:postgresql://localhost:5432/styleradar_tiendas
-DB_USERNAME=postgres
+# Persistencia PostgreSQL 16
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=styleradar_tiendas
+DB_USER=postgres
 DB_PASSWORD=postgres
+DB_URL=jdbc:postgresql://localhost:5432/styleradar_tiendas
 JPA_DDL_AUTO=validate
-FLYWAY_ENABLED=false
+FLYWAY_ENABLED=true
 
-# Event Broker RabbitMQ
+# Almacenamiento de Documentos RUT PDF y Fotografías (Azurite Local)
+AZURE_STORAGE_BLOB_ENDPOINT=http://localhost:10000/devstoreaccount1
+AZURE_STORAGE_CONTAINER_NAME=tiendas
+
+# Event Broker RabbitMQ 3
 RABBITMQ_HOST=localhost
 RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=guest
 RABBITMQ_PASSWORD=guest
 
-# Almacenamiento de Documentos (RUT PDF y Galería Fotográfica)
-STORAGE_BUCKET_URL=https://cdn.styleradar.com
-
 # Seguridad JWT
-JWT_SECRET=change_this_secret_in_production_minimum_32_characters
+JWT_SECRET=change_this_secret_in_production_minimum_32_characters_hmac256
 ```
 
 </details>
@@ -820,8 +927,8 @@ El ciclo de vida del software implementa integración continua y entrega continu
 
 | Pipeline | Entorno Destino | Desencadenador (Trigger) | Quality Gate Exigido | Badge de Estado |
 | :--- | :--- | :--- | :--- | :---: |
-| **CI - Staging / QA** | Calidad (`QA`) | Pull Request o Push a rama `develop` | Build OK + Tests Unitarios/Integración + JaCoCo ≥ 85% + SonarQube OK | [![QA Pipeline](https://img.shields.io/badge/Pipeline_QA-Passing-5600EF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions) |
-| **CD - Producción (PROD)** | Producción (`PROD`) | Merge a rama `main` / `master` tras validación QA | Aprobación manual + Imagen OCI desplegada en Azure App Service | [![PROD Pipeline](https://img.shields.io/badge/Pipeline_PROD-Passing-16A34A?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions) |
+| **CI/CD - QA** | Calidad (`QA`) | Push o PR a rama `feature/*`, `develop` o `main` | Build Maven + Tests Unitarios/Integración (231 pruebas OK) + SpotBugs (0 bugs) + JaCoCo ≥ 85% + Docker Hub Push + Despliegue Azure App Service | [![QA Pipeline](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml/badge.svg)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml) |
+| **CD - Producción (PROD)** | Producción (`PROD`) | Tag de versión `v*.*.*` o ejecución manual `workflow_dispatch` | Quality Gate QA Aprobado + Gate de Aprobación Manual en GitHub Environment `production` + Despliegue Azure App Service PROD | [![PROD Pipeline](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-prod.yml/badge.svg)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-prod.yml) |
 | **Quality Gate SonarQube** | Transversal | Ejecutado en cada build de CI | 0 Vulnerabilidades, 0 Bugs, Deuda Técnica &lt; 5% | [![Quality Gate](https://img.shields.io/badge/SonarQube-Quality_Gate_Passed-16A34A?style=for-the-badge&logo=sonarqube&logoColor=white)](https://sonarcloud.io/organizations/styleradar/projects) |
 
 ### Diagrama del Flujo Automatizado (Pipeline Stages)
@@ -933,10 +1040,10 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 
 * **Épica Oficial del Microservicio (Jira):** [https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog](https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog)
 * **Tablero Scrum del Squad CADche (Jira):** [https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog](https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog)
-* **API Swagger en Producción (PROD):** [https://styleradar-backend-prod.azurewebsites.net/swagger-ui/index.html](https://styleradar-backend-prod.azurewebsites.net/swagger-ui/index.html)
-* **API Swagger en Calidad (QA):** [https://styleradar-backend-qa.azurewebsites.net/swagger-ui/index.html](https://styleradar-backend-qa.azurewebsites.net/swagger-ui/index.html)
+* **API Swagger en Producción (PROD):** [https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html](https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html)
+* **API Swagger en Calidad (QA):** [https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html)
 * **Colección de Pruebas Postman:** [CatrachoINXS/StyleRadar-Backend/tree/main/postman](https://github.com/CatrachoINXS/StyleRadar-Backend/tree/main/postman)
-* **Contenedor OCI Oficial (Docker Hub):** [hub.docker.com/r/juanamunoz/styleradar](https://hub.docker.com/r/juanamunoz/styleradar)
+* **Contenedor OCI Oficial (Docker Hub):** [hub.docker.com/r/juanamunoz/styleradar-tiendas](https://hub.docker.com/r/juanamunoz/styleradar-tiendas)
 * **Video de Respaldo de la Demostración:** [Demostración Funcional en Google Drive](https://drive.google.com/file/d/1W6dklNVi8Bp8LQUx1dkGrkMlly0gRjd7/view?usp=sharing)
 
 
@@ -979,11 +1086,11 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 
 ## <img src="https://img.shields.io/badge/13-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 13. ANÁLISIS DE TECNOLOGÍAS DEL SERVICIO (PLANTILLA MAESTRA OFICIAL)
 
-Este apartado constituye la transcripción y aplicación integral de la **Plantilla Maestra Oficial de Análisis de Tecnologías** de StyleRadar para el microservicio `ms-tiendas` (`CADCHE-Stores-Service`), desarrollada conforme al estándar de entrega de arquitectura de software para DOSW 2026.
+Este apartado constituye la transcripción y aplicación integral de la **Plantilla Maestra Oficial de Análisis de Tecnologías** de StyleRadar para el microservicio `ms-tiendas` (`CADCHE-Stores-Service`), desarrollada conforme al estándar de entrega de arquitectura de software de StyleRadar 2026.
 
 ### Ficha Técnica del Documento
 
-* **Proyecto / Asignatura:** StyleRadar · DOSW 2026
+* **Proyecto:** StyleRadar · 2026
 * **Microservicio:** `CADCHE-Stores-Service` (`ms-tiendas`, Puerto `8140`)
 * **Paquete Arquitectónico:** Paquete 1: Identidad
 * **Alcance Arquitectónico:** Evaluación multicriterio de 13 Microservicios, API Gateway y Arquitectura Orientada a Eventos
