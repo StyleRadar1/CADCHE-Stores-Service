@@ -26,6 +26,11 @@ public class AlmacenPersistenceMapper {
                 .umbralUltimasUnidades(entity.getUmbralUltimasUnidades())
                 .diasNuevaLlegada(entity.getDiasNuevaLlegada())
                 .fechaActualizacionCatalogo(entity.getFechaActualizacionCatalogo())
+                .estadoVerificacion(entity.getEstadoVerificacion())
+                .urlRutPdf(entity.getUrlRutPdf())
+                .fechaDecisionVerificacion(entity.getFechaDecisionVerificacion())
+                .administradorDecisionId(entity.getAdministradorDecisionId())
+                .motivoVerificacion(entity.getMotivoVerificacion())
                 .categorias(entity.getCategorias() != null ? new HashSet<>(entity.getCategorias()) : new HashSet<>())
                 .build();
     }
@@ -46,8 +51,12 @@ public class AlmacenPersistenceMapper {
                 .umbralUltimasUnidades(domain.getUmbralUltimasUnidades())
                 .diasNuevaLlegada(domain.getDiasNuevaLlegada())
                 .fechaActualizacionCatalogo(domain.getFechaActualizacionCatalogo())
+                .estadoVerificacion(domain.getEstadoVerificacion())
+                .urlRutPdf(domain.getUrlRutPdf())
+                .fechaDecisionVerificacion(domain.getFechaDecisionVerificacion())
+                .administradorDecisionId(domain.getAdministradorDecisionId())
+                .motivoVerificacion(domain.getMotivoVerificacion())
                 .categorias(domain.getCategorias() != null ? new HashSet<>(domain.getCategorias()) : new HashSet<>())
                 .build();
     }
 }
-

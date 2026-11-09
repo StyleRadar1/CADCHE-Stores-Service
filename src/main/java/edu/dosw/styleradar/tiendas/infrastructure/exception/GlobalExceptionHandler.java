@@ -19,7 +19,10 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
+import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,6 +59,22 @@ public class GlobalExceptionHandler {
             AlmacenNoEncontradoException exception, HttpServletRequest request) {
         log.warn("Recurso no encontrado (404) en {}: {}", request.getRequestURI(), exception.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(AlmacenYaDecididoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAlmacenYaDecidido(
+            AlmacenYaDecididoException exception, HttpServletRequest request) {
+        log.warn("Conflicto al decidir almacén (409) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.CONFLICT, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler({RutRequeridoParaAprobacionException.class, AlmacenYaPendienteException.class})
+    public ResponseEntity<ErrorResponseDTO> handleEntidadNoProcesable(
+            RuntimeException exception, HttpServletRequest request) {
+        log.warn("Operación no procesable (422) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 

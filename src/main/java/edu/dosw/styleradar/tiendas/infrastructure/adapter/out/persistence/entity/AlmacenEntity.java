@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
+import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -64,6 +65,23 @@ public class AlmacenEntity {
     @Column(name = "fecha_actualizacion_catalogo")
     private Instant fechaActualizacionCatalogo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_verificacion", length = 30)
+    @Builder.Default
+    private EstadoVerificacionAlmacen estadoVerificacion = EstadoVerificacionAlmacen.PENDIENTE;
+
+    @Column(name = "url_rut_pdf", length = 500)
+    private String urlRutPdf;
+
+    @Column(name = "fecha_decision_verificacion")
+    private Instant fechaDecisionVerificacion;
+
+    @Column(name = "administrador_decision_id")
+    private Long administradorDecisionId;
+
+    @Column(name = "motivo_verificacion", length = 1000)
+    private String motivoVerificacion;
+
     @ElementCollection
     @CollectionTable(
             name = "almacen_categorias",
@@ -75,4 +93,3 @@ public class AlmacenEntity {
     @Builder.Default
     private Set<CategoriaAlmacen> categorias = new HashSet<>();
 }
-

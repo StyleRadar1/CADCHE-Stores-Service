@@ -3,9 +3,12 @@ package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence;
 import java.time.Instant;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AdministradorAlmacenEntity;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AlmacenEntity;
@@ -58,5 +61,14 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
             administradorRepository.save(vinculo);
         }
     }
-}
 
+    @Override
+    public Page<Almacen> findByEstadoVerificacion(EstadoVerificacionAlmacen estado, Pageable pageable) {
+        return almacenRepository.findByEstadoVerificacion(estado, pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public Page<Almacen> findAllVerificacion(Pageable pageable) {
+        return almacenRepository.findAll(pageable).map(mapper::toDomain);
+    }
+}
