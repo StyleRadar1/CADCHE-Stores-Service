@@ -1,9 +1,11 @@
 package edu.dosw.styleradar.tiendas.infrastructure.config;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,17 +21,34 @@ import io.swagger.v3.oas.models.servers.Server;
 @Configuration
 public class SwaggerConfig {
 
+    @Value("${swagger.server-url:}")
+    private String customServerUrl;
+
     @Bean
     OpenAPI storesServiceOpenAPI() {
+        List<Server> servers = new ArrayList<>();
+
+        if (customServerUrl != null && !customServerUrl.isBlank()) {
+            servers.add(new Server().url(customServerUrl).description("Servidor Activo Cloud (Configurado)"));
+        }
+
+        // Entornos Cloud en Azure (QA y PROD)
+        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Microservicio Tiendas (:8140)"));
+        servers.add(new Server().url("https://styleradar-backend-qa.azurewebsites.net").description("Azure QA - API Gateway (:8080)"));
+        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Microservicio Tiendas (:8140)"));
+        servers.add(new Server().url("https://styleradar-backend-prod.azurewebsites.net").description("Azure PROD - API Gateway (:8080)"));
+
+        // Entornos Locales
+        servers.add(new Server().url("http://localhost:8140").description("Servidor Local ms-tiendas (:8140)"));
+        servers.add(new Server().url("http://localhost:8080").description("API Gateway Local (:8080)"));
+
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT")
-                        .description("Token JWT emitido por ms-auth (HS256)")))
-                .servers(List.of(
-                        new Server().url("http://localhost:8083").description("Servidor local ms-tiendas"),
-                        new Server().url("http://localhost:8080").description("API Gateway StyleRadar")))
+                        .description("Token JWT emitido por ms-auth (HS256 / RS256)")))
+                .servers(servers)
                 .info(new Info()
                         .title("StyleRadar - Stores Service API (ms-tiendas)")
                         .description("Especificación OpenAPI 3.0 del microservicio de gestión de tiendas y fundaciones aliadas de StyleRadar. "

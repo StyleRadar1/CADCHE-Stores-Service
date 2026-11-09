@@ -17,12 +17,71 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
+import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
+import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
+import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler({ReglaDeNegocioException.class, ArchivoNoEsImagenException.class})
+    public ResponseEntity<ErrorResponseDTO> handleReglaDeNegocio(
+            RuntimeException exception, HttpServletRequest request) {
+        log.warn("Regla de negocio no satisfecha en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(
+            IllegalArgumentException exception, HttpServletRequest request) {
+        log.warn("Argumento inválido en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(AccesoDenegadoAlmacenException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccesoDenegado(
+            AccesoDenegadoAlmacenException exception, HttpServletRequest request) {
+        log.warn("Acceso denegado (403 BOLA/IDOR) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler({AlmacenNoEncontradoException.class, FundacionNoEncontradaException.class})
+    public ResponseEntity<ErrorResponseDTO> handleRecursoNoEncontrado(
+            RuntimeException exception, HttpServletRequest request) {
+        log.warn("Recurso no encontrado (404) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler({AlmacenYaDecididoException.class, FundacionYaRegistradaException.class, FundacionYaDesactivadaException.class})
+    public ResponseEntity<ErrorResponseDTO> handleConflicto(
+            RuntimeException exception, HttpServletRequest request) {
+        log.warn("Conflicto al procesar recurso (409) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.CONFLICT, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler({RutRequeridoParaAprobacionException.class, AlmacenYaPendienteException.class, LimiteFotografiasSuperadoException.class})
+    public ResponseEntity<ErrorResponseDTO> handleEntidadNoProcesable(
+            RuntimeException exception, HttpServletRequest request) {
+        log.warn("Operación no procesable (422) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidation(
@@ -85,4 +144,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(errorResponse);
     }
 }
-

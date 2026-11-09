@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.DecisionVerificacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.VerificacionConsultaRequestDTO;
@@ -16,6 +17,7 @@ import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,51 +31,71 @@ import jakarta.validation.Valid;
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Operación correcta"),
-        @ApiResponse(responseCode = "400", description = "Request inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Request inválido o motivo de rechazo ausente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
         @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o cuenta bloqueada", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-        @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+        @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR (Control de acceso BOLA/IDOR)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
         @ApiResponse(responseCode = "404", description = "Almacén inexistente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-        @ApiResponse(responseCode = "409", description = "Conflicto de concurrencia", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-        @ApiResponse(responseCode = "422", description = "Transición inválida o revisión repetida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+        @ApiResponse(responseCode = "409", description = "Almacén ya decidido previamente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+        @ApiResponse(responseCode = "422", description = "Transición inválida o almacén sin documento RUT en PDF", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
         @ApiResponse(responseCode = "500", description = "Fallo técnico", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
 })
 public interface VerificacionAlmacenApi {
 
     @Operation(
             summary = "Consultar almacenes para verificación (SR-RF-62)",
-            description = "ROLE_ADMIN_STYLERADAR. Filtro de estado opcional; sin filtro incluye NULL legado sin aprobación. "
-                    + "page=0, size=20; máximo 100. Orden nombreComercial ASC, nit ASC; incluye almacenes sin coordenadas.")
+            description = "ROLE_ADMIN_STYLERADAR. Filtro de estado opcional; sin filtro incluye almacenes pendientes y decididos. "
+                    + "page=0, size=20; máximo 100. Orden nombreComercial ASC, nit ASC.")
     @GetMapping("/verificacion")
     ResponseEntity<PageResponseDTO<VerificacionAlmacenResponseDTO>> consultar(
-            @Valid @ParameterObject @ModelAttribute VerificacionConsultaRequestDTO request);
+            @Valid @ParameterObject @ModelAttribute VerificacionConsultaRequestDTO request,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Revisar datos de un almacén por NIT (SR-RF-62)",
-            description = "ROLE_ADMIN_STYLERADAR. Retorna los datos de registro, contacto y la última decisión de verificación.")
+            description = "ROLE_ADMIN_STYLERADAR. Retorna los datos de registro, contacto, personería jurídica (NIT y RUT PDF) y la última decisión de verificación.")
     @GetMapping("/{nit}/verificacion")
     ResponseEntity<VerificacionAlmacenResponseDTO> consultarUno(
-            @Parameter(description = "NIT del almacén a revisar", example = "900123456-1") @PathVariable String nit);
+            @Parameter(description = "NIT del almacén a revisar", example = "900123456-1") @PathVariable String nit,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Aprobar o rechazar vinculación pendiente (SR-RF-62)",
             description = "ROLE_ADMIN_STYLERADAR. Solo aplica cuando el almacén está en estado PENDIENTE. "
-                    + "El rechazo exige motivo no vacío de máximo 1000 caracteres; la aprobación permite omitirlo.")
+                    + "Para APROBAR exige que el almacén cuente con RUT en PDF (de lo contrario retorna 422). "
+                    + "Si ya fue decidido previamente retorna 409. El rechazo exige motivo explicativo.")
     @PatchMapping("/{nit}/verificacion")
     ResponseEntity<VerificacionAlmacenResponseDTO> decidir(
             @Parameter(description = "NIT del almacén pendiente de decisión", example = "900123456-1") @PathVariable String nit,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(examples = {
-                            @ExampleObject(name = "APROBADO", value = "{\"decision\":\"APROBADO\",\"motivo\":\"Datos revisados\"}"),
-                            @ExampleObject(name = "RECHAZADO", value = "{\"decision\":\"RECHAZADO\",\"motivo\":\"Información insuficiente\"}")
+                            @ExampleObject(name = "APROBADO", value = "{\"decision\":\"APROBADO\",\"motivo\":\"Datos y RUT en PDF verificados correctamente\"}"),
+                            @ExampleObject(name = "RECHAZADO", value = "{\"decision\":\"RECHAZADO\",\"motivo\":\"El RUT presentado no coincide con la actividad económica\"}")
                     }))
-            @Valid @RequestBody DecisionVerificacionRequestDTO request);
+            @Valid @RequestBody DecisionVerificacionRequestDTO request,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @Parameter(in = ParameterIn.HEADER, description = "ID del administrador que realiza la decisión", example = "1")
+            @RequestHeader(value = "X-User-Id", required = false) Long adminId);
 
     @Operation(
             summary = "Iniciar o reabrir revisión de un almacén (SR-RF-62)",
-            description = "ROLE_ADMIN_STYLERADAR. Pasa un almacén con estado NULL, APROBADO o RECHAZADO a PENDIENTE. "
-                    + "Si ya se encuentra en PENDIENTE devuelve 422. Conserva metadatos de la última decisión hasta finalizar la nueva evaluación.")
+            description = "ROLE_ADMIN_STYLERADAR. Pasa un almacén con estado APROBADO o RECHAZADO a PENDIENTE. "
+                    + "Si ya se encuentra en PENDIENTE devuelve 422.")
     @PostMapping("/{nit}/verificacion/solicitar-revision")
     ResponseEntity<VerificacionAlmacenResponseDTO> solicitarRevision(
-            @Parameter(description = "NIT del almacén para iniciar revisión", example = "900123456-1") @PathVariable String nit);
+            @Parameter(description = "NIT del almacén para iniciar revisión", example = "900123456-1") @PathVariable String nit,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @Parameter(in = ParameterIn.HEADER, description = "ID del administrador que solicita la revisión", example = "1")
+            @RequestHeader(value = "X-User-Id", required = false) Long adminId);
 }
-

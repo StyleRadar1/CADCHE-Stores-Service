@@ -8,8 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataAdministradorAlmacenRepository;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataAlmacenRepository;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataFotografiaTiendaRepository;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataFundacionRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -19,6 +25,18 @@ class SwaggerOpenApiTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private SpringDataAlmacenRepository springDataAlmacenRepository;
+
+    @MockBean
+    private SpringDataAdministradorAlmacenRepository springDataAdministradorAlmacenRepository;
+
+    @MockBean
+    private SpringDataFundacionRepository springDataFundacionRepository;
+
+    @MockBean
+    private SpringDataFotografiaTiendaRepository springDataFotografiaTiendaRepository;
+
     @Test
     void debeExponerEspecificacionOpenApiYEndpointsDeTiendas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
@@ -27,7 +45,12 @@ class SwaggerOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes'].post").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/configuracion-catalogo'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/configuracion-catalogo'].put").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/umbral-ultimas-unidades'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/umbral-ultimas-unidades'].put").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/dias-nueva-llegada'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/dias-nueva-llegada'].put").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades'].patch").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada'].patch").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/almacenes/{nit}/fotografias'].post").exists())
