@@ -45,8 +45,13 @@ deploy_environment() {
   echo "=========================================================="
 
   # 1. Resource Group
-  echo "[1/6] Creando Resource Group '$RG' en '$LOCATION'..."
-  az group create --name "$RG" --location "$LOCATION" --output none
+  echo "[1/6] Verificando Resource Group '$RG'..."
+  if [ "$(az group exists --name "$RG")" = "false" ]; then
+    echo "Creando Resource Group '$RG' en '$LOCATION'..."
+    az group create --name "$RG" --location "$LOCATION" --output none
+  else
+    echo "Resource Group '$RG' ya existe. Continuando..."
+  fi
 
   # 2. Servidor PostgreSQL Flexible Server Dedicado e Independiente (Free Tier Standard_B1ms, 32GB)
   if az postgres flexible-server show --resource-group "$RG" --name "$PG_SERVER" &>/dev/null; then

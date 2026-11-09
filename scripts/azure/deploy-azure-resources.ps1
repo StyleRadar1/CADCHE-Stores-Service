@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # STYLE RADAR - DESPLIEGUE AZURE CLOUD (TIER F1 / GRATIS Y AISLAMIENTO TOTAL)
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
@@ -43,8 +43,14 @@ function Deploy-StyleRadarEnvironment {
     Write-Host "==========================================================" -ForegroundColor Cyan
 
     # 1. Resource Group
-    Write-Host "[1/6] Creando Resource Group '$rg'..." -ForegroundColor Yellow
-    az group create --name $rg --location $Location --output none
+    Write-Host "[1/6] Verificando Resource Group '$rg'..." -ForegroundColor Yellow
+    $rgExists = az group exists --name $rg
+    if ($rgExists -eq "false") {
+        Write-Host "Creando Resource Group '$rg' en '$Location'..." -ForegroundColor Yellow
+        az group create --name $rg --location $Location --output none
+    } else {
+        Write-Host "Resource Group '$rg' ya existe. Continuando..." -ForegroundColor Green
+    }
 
     # 2. Servidor PostgreSQL Flexible Server Dedicado e Independiente (Free Tier Standard_B1ms, 32GB)
     Write-Host "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Gratuito..." -ForegroundColor Yellow
