@@ -1,7 +1,7 @@
 # ==============================================================================
-# STYLE RADAR - PIPELINE CD PROD (Semana 11/12 · DOSW · ECI)
+# STYLE RADAR - PIPELINE CD PROD
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
-# Flujo: Release Tag (v*.*.*) -> Docker Hub -> Aprobación Manual -> Azure PROD
+# Flujo: Release Tag (v*.*.*) -> Docker Hub -> Aprobacion Manual -> Azure PROD
 # ==============================================================================
 
 name: CD PROD - Tiendas
@@ -18,19 +18,19 @@ env:
 
 jobs:
   build-prod:
-    name: 🐳 Build y Push Imagen Producción
+    name: Build y Push Imagen Produccion
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
 
     steps:
-      - name: Checkout del código fuente
+      - name: Checkout del codigo fuente
         uses: actions/checkout@v4
 
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Iniciar sesión en Docker Hub
+      - name: Iniciar sesion en Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -45,7 +45,7 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest
 
-      - name: Compilar y publicar imagen OCI de Producción
+      - name: Compilar y publicar imagen OCI de Produccion
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -57,7 +57,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-prod:
-    name: 🚀 Desplegar a Azure Producción
+    name: Desplegar a Azure Produccion
     needs: build-prod
     runs-on: ubuntu-latest
     environment:
@@ -65,12 +65,12 @@ jobs:
       url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html
 
     steps:
-      - name: Autenticación en Microsoft Azure
+      - name: Autenticacion en Microsoft Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Configurar App Settings y Puerto :8140 en Azure App Service PROD
+      - name: Configurar App Settings y Puerto 8140 en Azure App Service PROD
         uses: azure/cli@v2
         with:
           inlineScript: |
@@ -100,7 +100,7 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build-prod.outputs.version || 'latest' }}
 
-      - name: Smoke Test - Verificación Swagger OpenAPI en Vivo
+      - name: Smoke Test - Verificacion Swagger OpenAPI en Vivo
         run: |
           URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           echo "Ejecutando Smoke Test contra: $URL"
@@ -108,24 +108,24 @@ jobs:
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
             echo "Intento $i: HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
-              echo ">> ¡Swagger OpenAPI UI desplegado y respondiendo 200 OK en Producción!"
+              echo "Swagger OpenAPI UI desplegado y respondiendo 200 OK en Produccion"
               exit 0
             fi
             sleep 15
           done
-          echo "Advertencia: La API tardó en iniciar o no respondió HTTP 200 en $URL"
+          echo "Advertencia: La API tardo en iniciar o no respondio HTTP 200 en $URL"
           exit 1
 
   notify:
-    name: 📣 Resumen del Despliegue
+    name: Resumen del Despliegue
     needs: deploy-prod
     runs-on: ubuntu-latest
     steps:
-      - name: Resumen del despliegue en Producción
+      - name: Resumen del despliegue en Produccion
         run: |
           echo "=========================================================="
-          echo "✅ PROD desplegado exitosamente"
-          echo "Versión: ${{ github.ref_name }}"
+          echo "PROD desplegado exitosamente"
+          echo "Version: ${{ github.ref_name }}"
           echo "URL Swagger UI: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html"
           echo "URL OpenAPI Spec: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           echo "=========================================================="

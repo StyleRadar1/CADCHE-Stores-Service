@@ -1,5 +1,5 @@
 # ==============================================================================
-# STYLE RADAR - PIPELINE CI/CD QA (Semana 11/12 · DOSW · ECI)
+# STYLE RADAR - PIPELINE CI/CD QA
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # Flujo: Build -> Tests -> SpotBugs -> Cobertura JaCoCo -> Docker Hub -> Azure QA
 # ==============================================================================
@@ -23,11 +23,11 @@ env:
 
 jobs:
   test:
-    name: 🧪 Build, Tests, SpotBugs y Cobertura
+    name: Build, Tests, SpotBugs y Cobertura
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del código fuente
+      - name: Checkout del codigo fuente
         uses: actions/checkout@v4
 
       - name: Configurar Java 17 Temurin
@@ -48,7 +48,7 @@ jobs:
       - name: Compilar y ejecutar pruebas completas con JaCoCo
         run: mvn -B clean verify --no-transfer-progress
 
-      - name: Análisis estático con SpotBugs (0 advertencias toleradas)
+      - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
         run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.excludeFilterFile=spotbugs-exclude.xml
 
       - name: Publicar reporte de cobertura JaCoCo
@@ -60,7 +60,7 @@ jobs:
           retention-days: 14
 
   build-and-push:
-    name: 🐳 Build y Push Imagen Docker Hub
+    name: Build y Push Imagen Docker Hub
     needs: test
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -68,13 +68,13 @@ jobs:
       image-tag: ${{ steps.meta.outputs.version }}
 
     steps:
-      - name: Checkout del código fuente
+      - name: Checkout del codigo fuente
         uses: actions/checkout@v4
 
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Iniciar sesión en Docker Hub
+      - name: Iniciar sesion en Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -101,7 +101,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-qa:
-    name: 🚀 Desplegar a Azure QA
+    name: Desplegar a Azure QA
     needs: build-and-push
     runs-on: ubuntu-latest
     environment:
@@ -109,12 +109,12 @@ jobs:
       url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html
 
     steps:
-      - name: Autenticación en Microsoft Azure
+      - name: Autenticacion en Microsoft Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Configurar App Settings y Puerto :8140 en Azure App Service QA
+      - name: Configurar App Settings y Puerto 8140 en Azure App Service QA
         uses: azure/cli@v2
         with:
           inlineScript: |
@@ -144,7 +144,7 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-latest
 
-      - name: Smoke Test - Verificación Swagger OpenAPI en Vivo
+      - name: Smoke Test - Verificacion Swagger OpenAPI en Vivo
         run: |
           URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           echo "Ejecutando Smoke Test contra: $URL"
@@ -152,10 +152,10 @@ jobs:
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
             echo "Intento $i: HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
-              echo ">> ¡Swagger OpenAPI UI desplegado y respondiendo 200 OK en QA!"
+              echo "Swagger OpenAPI UI desplegado y respondiendo 200 OK en QA"
               exit 0
             fi
             sleep 15
           done
-          echo "Advertencia: La API tardó en iniciar o no respondió HTTP 200 en $URL"
+          echo "Advertencia: La API tardo en iniciar o no respondio HTTP 200 en $URL"
           exit 1

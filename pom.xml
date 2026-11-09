@@ -185,7 +185,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Reporte de Cobertura JaCoCo (Semana 11 DOSW) -->
+            <!-- Reporte de Cobertura JaCoCo -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
