@@ -1,16 +1,19 @@
 ﻿# ==============================================================================
-# STYLE RADAR - DESPLIEGUE AZURE CLOUD (AISLAMIENTO TOTAL: QA Y PROD INDEPENDIENTES)
+# STYLE RADAR - DESPLIEGUE AZURE CLOUD (TIER F1 / GRATIS Y AISLAMIENTO TOTAL)
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
-# REGLA ARQUITECTÓNICA ESTRICTA:
-# Base de datos desplegada en cada ambiente. QA y PROD NUNCA comparten base de datos,
-# servidor de base de datos, ni cuenta de almacenamiento Blob.
+# REGLAS ARQUITECTÓNICAS Y DE COSTOS:
+# 1. Base de datos desplegada en cada ambiente. QA y PROD NUNCA comparten BD ni servidor.
+# 2. App Service Plan configurado en Tier F1 (Free Tier = $0.00 USD).
+# 3. Azure PostgreSQL Flexible Server configurado en Tier Gratuito (Standard_B1ms, 32GB = $0.00 USD).
+# 4. Azure Blob Storage en Standard_LRS (consumo < $1.00 USD al mes).
 # ==============================================================================
 
 param (
     [ValidateSet("qa", "prod", "all")]
     [string]$Environment = "qa",
     [string]$Location = "eastus",
+    [string]$AppServiceSku = "F1",  # F1 = 100% Gratis ($0 USD), o B1 Basic
     [string]$AdminUser = "styleradaradmin",
     [string]$AdminPassword = ""
 )
@@ -29,21 +32,22 @@ function Deploy-StyleRadarEnvironment {
     $storageName = "styleradarblob$EnvName"
 
     Write-Host "`n==========================================================" -ForegroundColor Cyan
-    Write-Host "  Desplegando Ambiente Exclusivo: $($EnvName.ToUpper())" -ForegroundColor Cyan
+    Write-Host "  Desplegando Ambiente Exclusivo: $($EnvName.ToUpper()) (Tier F1 / Free)" -ForegroundColor Cyan
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "Resource Group:    $rg" -ForegroundColor Gray
-    Write-Host "PostgreSQL Server: $pgServer" -ForegroundColor Gray
-    Write-Host "Base de Datos:     styleradar_tiendas (Totalmente aislada)" -ForegroundColor Gray
-    Write-Host "Web App Service:   $appName" -ForegroundColor Gray
-    Write-Host "Blob Storage:      $storageName" -ForegroundColor Gray
+    Write-Host "App Service Tier:  $AppServiceSku (Free: `$0.00 USD)" -ForegroundColor Gray
+    Write-Host "PostgreSQL Server: $pgServer (Standard_B1ms, 32GB: `$0.00 USD)" -ForegroundColor Gray
+    Write-Host "Base de Datos:     styleradar_tiendas (Exclusiva para $EnvName)" -ForegroundColor Gray
+    Write-Host "Web App Service:   $appName (Puerto Oficial :8140)" -ForegroundColor Gray
+    Write-Host "Blob Storage:      $storageName (Standard_LRS: < `$1.00 USD/mes)" -ForegroundColor Gray
     Write-Host "==========================================================" -ForegroundColor Cyan
 
     # 1. Resource Group
     Write-Host "[1/6] Creando Resource Group '$rg'..." -ForegroundColor Yellow
     az group create --name $rg --location $Location --output none
 
-    # 2. Servidor PostgreSQL Flexible Server Dedicado
-    Write-Host "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Dedicado..." -ForegroundColor Yellow
+    # 2. Servidor PostgreSQL Flexible Server Dedicado e Independiente (Free Tier Standard_B1ms, 32GB)
+    Write-Host "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Gratuito..." -ForegroundColor Yellow
     az postgres flexible-server create `
         --resource-group $rg `
         --name $pgServer `
@@ -58,7 +62,7 @@ function Deploy-StyleRadarEnvironment {
         --yes `
         --output none
 
-    # 3. Base de Datos propia del ambiente
+    # 3. Base de Datos propia del ambiente (QA y PROD no comparten)
     Write-Host "[3/6] Creando Base de Datos 'styleradar_tiendas' en $pgServer..." -ForegroundColor Yellow
     az postgres flexible-server db create `
         --resource-group $rg `
@@ -75,7 +79,7 @@ function Deploy-StyleRadarEnvironment {
         --end-ip-address 0.0.0.0 `
         --output none
 
-    # 4. Azure Blob Storage Dedicado
+    # 4. Azure Blob Storage Dedicado (< $1.00 USD/mes)
     Write-Host "[4/6] Aprovisionando Storage Account '$storageName'..." -ForegroundColor Yellow
     az storage account create `
         --resource-group $rg `
@@ -95,13 +99,13 @@ function Deploy-StyleRadarEnvironment {
         --public-access blob `
         --output none
 
-    # 5. App Service Plan y Web App Dedicada (Puerto 8140)
-    Write-Host "[5/6] Creando App Service Plan y Web App..." -ForegroundColor Yellow
+    # 5. App Service Plan en Tier F1 (Free) y Web App Dedicada (Puerto 8140)
+    Write-Host "[5/6] Creando App Service Plan ($AppServiceSku Free) y Web App..." -ForegroundColor Yellow
     az appservice plan create `
         --name $planName `
         --resource-group $rg `
         --is-linux `
-        --sku B1 `
+        --sku $AppServiceSku `
         --location $Location `
         --output none
 
@@ -112,7 +116,7 @@ function Deploy-StyleRadarEnvironment {
         --deployment-container-image-name "eclipse-temurin:17-jre" `
         --output none
 
-    # 6. Variables de Entorno del Ambiente
+    # 6. Variables de Entorno del Ambiente (Puerto Oficial 8140)
     Write-Host "[6/6] Configurando App Settings en $appName..." -ForegroundColor Yellow
     $dbUrl = "jdbc:postgresql://$pgServer.postgres.database.azure.com:5432/styleradar_tiendas?sslmode=require"
     $blobEndpoint = "https://$storageName.blob.core.windows.net"
@@ -134,6 +138,9 @@ function Deploy-StyleRadarEnvironment {
     Write-Host "`n==========================================================" -ForegroundColor Green
     Write-Host "  ¡AMBIENTE $($EnvName.ToUpper()) DESPLEGADO EXITOSAMENTE!" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
+    Write-Host "App Service Tier:    $AppServiceSku (Free: `$0.00 USD)" -ForegroundColor Magenta
+    Write-Host "PostgreSQL Tier:     Standard_B1ms (Free Tier: `$0.00 USD)" -ForegroundColor Magenta
+    Write-Host "Blob Storage:        $storageName (Standard_LRS: < `$1.00 USD/mes)" -ForegroundColor Magenta
     Write-Host "Swagger UI en Vivo:  https://$appName.azurewebsites.net/swagger-ui/index.html" -ForegroundColor Cyan
     Write-Host "OpenAPI JSON Spec:   https://$appName.azurewebsites.net/v3/api-docs" -ForegroundColor Cyan
     Write-Host "Health Check:        https://$appName.azurewebsites.net/actuator/health" -ForegroundColor Cyan

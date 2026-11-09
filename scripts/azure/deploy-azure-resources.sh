@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# STYLE RADAR - DESPLIEGUE AZURE CLOUD (AISLAMIENTO TOTAL: QA Y PROD INDEPENDIENTES)
+# STYLE RADAR - DESPLIEGUE AZURE CLOUD (TIER F1 / GRATIS Y AISLAMIENTO TOTAL)
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
-# REGLA ARQUITECTÓNICA ESTRICTA:
-# Base de datos desplegada en cada ambiente. QA y PROD NUNCA comparten base de datos,
-# servidor de base de datos, ni cuenta de almacenamiento Blob.
+# REGLAS ARQUITECTÓNICAS Y DE COSTOS:
+# 1. Base de datos desplegada en cada ambiente. QA y PROD NUNCA comparten BD ni servidor.
+# 2. App Service Plan configurado en Tier F1 (Free Tier = $0.00 USD).
+# 3. Azure PostgreSQL Flexible Server configurado en Tier Gratuito (Standard_B1ms, 32GB = $0.00 USD).
+# 4. Azure Blob Storage en Standard_LRS (consumo < $1.00 USD al mes).
 # ==============================================================================
 
 set -euo pipefail
@@ -14,6 +16,7 @@ ENVIRONMENT="${1:-qa}" # Opciones: qa | prod | all
 LOCATION="eastus"
 ADMIN_USER="styleradaradmin"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-StyleRadarPass2026!}"
+APP_SERVICE_SKU="${APP_SERVICE_SKU:-F1}" # F1 = 100% Gratis ($0 USD), o B1 Basic
 
 deploy_environment() {
   local ENV_NAME="$1"
@@ -25,21 +28,22 @@ deploy_environment() {
 
   echo ""
   echo "=========================================================="
-  echo "  Desplegando Ambiente Exclusivo: ${ENV_NAME^^}"
+  echo "  Desplegando Ambiente Exclusivo: ${ENV_NAME^^} (Tier F1 / Free)"
   echo "=========================================================="
   echo "Resource Group:    $RG"
-  echo "PostgreSQL Server: $PG_SERVER"
-  echo "Base de Datos:     styleradar_tiendas (Totalmente aislada)"
-  echo "Web App Service:   $APP_NAME"
-  echo "Blob Storage:      $STORAGE_NAME"
+  echo "App Service Tier:  $APP_SERVICE_SKU (Free Tier: \$0.00 USD)"
+  echo "PostgreSQL Server: $PG_SERVER (Free Tier Standard_B1ms, 32GB: \$0.00 USD)"
+  echo "Base de Datos:     styleradar_tiendas (Exclusiva para $ENV_NAME, no compartida)"
+  echo "Web App Service:   $APP_NAME (Puerto Oficial :8140)"
+  echo "Blob Storage:      $STORAGE_NAME (Standard_LRS: < \$1.00 USD/mes)"
   echo "=========================================================="
 
   # 1. Resource Group
-  echo "[1/6] Creando Resource Group '$RG'..."
+  echo "[1/6] Creando Resource Group '$RG' en '$LOCATION'..."
   az group create --name "$RG" --location "$LOCATION" --output none
 
-  # 2. Servidor PostgreSQL Flexible Server Independiente (Free Tier Standard_B1ms, 32GB)
-  echo "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Dedicado..."
+  # 2. Servidor PostgreSQL Flexible Server Dedicado e Independiente (Free Tier Standard_B1ms, 32GB)
+  echo "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Gratuito..."
   az postgres flexible-server create \
     --resource-group "$RG" \
     --name "$PG_SERVER" \
@@ -54,7 +58,7 @@ deploy_environment() {
     --yes \
     --output none
 
-  # 3. Base de Datos propia del ambiente
+  # 3. Base de Datos propia del ambiente (QA y PROD no comparten)
   echo "[3/6] Creando Base de Datos 'styleradar_tiendas' en $PG_SERVER..."
   az postgres flexible-server db create \
     --resource-group "$RG" \
@@ -71,8 +75,8 @@ deploy_environment() {
     --end-ip-address 0.0.0.0 \
     --output none
 
-  # 4. Azure Blob Storage Dedicado para este ambiente
-  echo "[4/6] Aprovisionando Storage Account '$STORAGE_NAME'..."
+  # 4. Azure Blob Storage Dedicado para este ambiente (< $1.00 USD/mes)
+  echo "[4/6] Aprovisionando Azure Blob Storage '$STORAGE_NAME'..."
   az storage account create \
     --resource-group "$RG" \
     --name "$STORAGE_NAME" \
@@ -91,13 +95,13 @@ deploy_environment() {
     --public-access blob \
     --output none
 
-  # 5. App Service Plan y Web App Dedicada (Puerto Oficial 8140)
-  echo "[5/6] Creando App Service Plan y Web App..."
+  # 5. App Service Plan en Tier F1 (Free - $0.00 USD) y Web App Dedicada (Puerto 8140)
+  echo "[5/6] Creando App Service Plan (Tier $APP_SERVICE_SKU Gratuito) y Web App..."
   az appservice plan create \
     --name "$PLAN_NAME" \
     --resource-group "$RG" \
     --is-linux \
-    --sku B1 \
+    --sku "$APP_SERVICE_SKU" \
     --location "$LOCATION" \
     --output none
 
@@ -109,7 +113,7 @@ deploy_environment() {
     --output none
 
   # 6. Configurar Variables de Entorno del Ambiente
-  echo "[6/6] Configurando App Settings en $APP_NAME..."
+  echo "[6/6] Configurando App Settings en $APP_NAME (Puerto 8140)..."
   DB_URL="jdbc:postgresql://${PG_SERVER}.postgres.database.azure.com:5432/styleradar_tiendas?sslmode=require"
   BLOB_ENDPOINT="https://${STORAGE_NAME}.blob.core.windows.net"
 
@@ -130,11 +134,14 @@ deploy_environment() {
   echo "=========================================================="
   echo "  ¡AMBIENTE ${ENV_NAME^^} DESPLEGADO EXITOSAMENTE!"
   echo "=========================================================="
+  echo "App Service Tier:    $APP_SERVICE_SKU (Free: \$0.00 USD)"
+  echo "PostgreSQL Tier:     Standard_B1ms (Free Tier: \$0.00 USD)"
+  echo "Blob Storage:        $STORAGE_NAME (Standard_LRS: < \$1.00 USD/mes)"
   echo "Swagger UI en Vivo:  https://${APP_NAME}.azurewebsites.net/swagger-ui/index.html"
   echo "OpenAPI JSON Spec:   https://${APP_NAME}.azurewebsites.net/v3/api-docs"
   echo "Health Check:        https://${APP_NAME}.azurewebsites.net/actuator/health"
   echo "PostgreSQL Server:   ${PG_SERVER}.postgres.database.azure.com:5432"
-  echo "Base de Datos:       styleradar_tiendas (Exclusiva para $ENV_NAME)"
+  echo "Base de Datos:       styleradar_tiendas (Totalmente aislada para $ENV_NAME)"
   echo "Blob Endpoint:       $BLOB_ENDPOINT"
   echo "=========================================================="
 }
