@@ -33,14 +33,14 @@ public class SwaggerConfig {
         }
 
         // Entornos Cloud en Azure (QA y PROD)
-        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Microservicio Tiendas (:8083)"));
+        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Microservicio Tiendas (:8140)"));
         servers.add(new Server().url("https://styleradar-backend-qa.azurewebsites.net").description("Azure QA - API Gateway (:8080)"));
-        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Microservicio Tiendas (:8083)"));
+        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Microservicio Tiendas (:8140)"));
         servers.add(new Server().url("https://styleradar-backend-prod.azurewebsites.net").description("Azure PROD - API Gateway (:8080)"));
 
         // Entornos Locales
-        servers.add(new Server().url("http://localhost:8083").description("Servidor Local ms-tiendas"));
-        servers.add(new Server().url("http://localhost:8080").description("API Gateway Local"));
+        servers.add(new Server().url("http://localhost:8140").description("Servidor Local ms-tiendas (:8140)"));
+        servers.add(new Server().url("http://localhost:8080").description("API Gateway Local (:8080)"));
 
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()

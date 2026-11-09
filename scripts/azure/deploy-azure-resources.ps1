@@ -1,6 +1,6 @@
-# ==============================================================================
+﻿# ==============================================================================
 # STYLE RADAR - DESPLIEGUE AZURE CLOUD (AZURE FOR STUDENTS)
-# Microservicio: CADCHE-Stores-Service (ms-tiendas :8083)
+# Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
 # Este script aprovisiona toda la infraestructura en Azure optimizada para 
 # aprovechar al máximo los 100 USD de crédito gratuito de Azure for Students.
@@ -132,8 +132,8 @@ az webapp config appsettings set `
     --name $AppServiceName `
     --resource-group $ResourceGroup `
     --settings `
-        WEBSITES_PORT=8083 `
-        PORT=8083 `
+        WEBSITES_PORT=8140 `
+        PORT=8140 `
         SPRING_PROFILES_ACTIVE=qa `
         DB_URL="$dbUrl" `
         DB_USERNAME="$AdminUser" `

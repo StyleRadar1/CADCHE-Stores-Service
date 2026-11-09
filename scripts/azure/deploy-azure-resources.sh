@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # STYLE RADAR - DESPLIEGUE AZURE CLOUD (AZURE FOR STUDENTS)
-# Microservicio: CADCHE-Stores-Service (ms-tiendas :8083)
+# Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
 # Ejecutable directamente en Azure Cloud Shell (https://shell.azure.com)
 # ==============================================================================
@@ -104,8 +104,8 @@ az webapp config appsettings set \
   --name "$APP_SERVICE_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --settings \
-    WEBSITES_PORT=8083 \
-    PORT=8083 \
+    WEBSITES_PORT=8140 \
+    PORT=8140 \
     SPRING_PROFILES_ACTIVE=qa \
     DB_URL="$DB_URL" \
     DB_USERNAME="$ADMIN_USER" \

@@ -89,8 +89,8 @@ jobs:
               --resource-group "$RG" \
               --output none \
               --settings \
-                WEBSITES_PORT=8083 \
-                PORT=8083 \
+                WEBSITES_PORT=8140 \
+                PORT=8140 \
                 SPRING_PROFILES_ACTIVE=prod \
                 DB_URL="${{ secrets.DB_URL_PROD }}" \
                 DB_USERNAME="${{ secrets.DB_USERNAME_PROD }}" \

@@ -14,7 +14,7 @@
 
   <p align="center">
     <img src="https://img.shields.io/badge/BOUNDED_CONTEXT-Gesti%C3%B3n_de_Tiendas_y_Fundaciones-12063A?style=for-the-badge" alt="Context" />
-    <img src="https://img.shields.io/badge/PUERTO_OFICIAL-8083-5600EF?style=for-the-badge" alt="Port" />
+    <img src="https://img.shields.io/badge/PUERTO_OFICIAL-8140-5600EF?style=for-the-badge" alt="Port" />
     <img src="https://img.shields.io/badge/ARQUITECTURA-HEXAGONAL-16A34A?style=for-the-badge" alt="Hexagonal" />
   </p>
 
@@ -76,7 +76,7 @@
 
 * **Identificador de Servicio:** `ms-tiendas` (`CADCHE-Stores-Service`)
 * **Paquete Arquitectónico:** `Paquete 1: Identidad`
-* **Puerto de Escucha Oficial:** `8083` (definido en la matriz de puertos sin colisión)
+* **Puerto de Escucha Oficial:** `8140` (definido en la matriz de puertos sin colisión)
 * **Base de Datos Asignada:** `PostgreSQL 16` (`styleradar_tiendas`) + almacenamiento de documentos RUT (PDF) y galería fotográfica de fachada/interior, aislada bajo el patrón *Database-per-Service*.
 * **Bounded Context:** `Gestión de Almacenes Aliados, Verificación Documental (RUT), Geolocalización, Fotografías de Sedes y Fundaciones Aliadas`
 
@@ -375,9 +375,9 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 | :--- | :---: | :--- | :--- | :--- | :--- |
 | **Producción (PROD)** | Active | Despliegue productivo de StyleRadar | `https://styleradar-backend-prod.azurewebsites.net` | [Swagger UI PROD](https://styleradar-backend-prod.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-backend-prod.azurewebsites.net/actuator/health) |
 | **Calidad / Pruebas (QA)** | Active | Pruebas integradas de Sprint y QA | `https://styleradar-backend-qa.azurewebsites.net` | [Swagger UI QA](https://styleradar-backend-qa.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-backend-qa.azurewebsites.net/actuator/health) |
-| **Desarrollo Local (DEV)** | Local | Entorno de desarrollo local en máquina | `http://localhost:8083` | [Swagger UI Local](http://localhost:8083/swagger-ui.html) | [`/actuator/health`](http://localhost:8083/actuator/health) |
+| **Desarrollo Local (DEV)** | Local | Entorno de desarrollo local en máquina | `http://localhost:8140` | [Swagger UI Local](http://localhost:8140/swagger-ui.html) | [`/actuator/health`](http://localhost:8140/actuator/health) |
 
-* **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8083/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA).
+* **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8140/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA).
 
 
 <div align="center">
@@ -389,7 +389,7 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
           <strong><font color="#5600EF" size="3">DOCUMENTACIÓN SWAGGER OPENAPI UI ACTIVA</font></strong>
         </p>
         <p>
-          <sub>Pega aquí la captura de pantalla de la interfaz interactiva corriendo en <code>http://localhost:8083/swagger-ui.html</code> mostrando los endpoints del controlador.</sub>
+          <sub>Pega aquí la captura de pantalla de la interfaz interactiva corriendo en <code>http://localhost:8140/swagger-ui.html</code> mostrando los endpoints del controlador.</sub>
         </p>
         <p>
 <!-- Al generar tu captura, descomenta la siguiente línea y guarda la imagen en la ruta indicada: -->
@@ -436,7 +436,7 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 #### Ejemplo Request (`POST /api/v1/almacenes`)
 
 ```bash
-curl -X POST "http://localhost:8083/api/v1/almacenes" \
+curl -X POST "http://localhost:8140/api/v1/almacenes" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -d '{
@@ -470,7 +470,7 @@ curl -X POST "http://localhost:8083/api/v1/almacenes" \
 #### Ejemplo Request (`PUT /api/v1/almacenes/900123456-7/configuracion-catalogo`)
 
 ```bash
-curl -X PUT "http://localhost:8083/api/v1/almacenes/900123456-7/configuracion-catalogo" \
+curl -X PUT "http://localhost:8140/api/v1/almacenes/900123456-7/configuracion-catalogo" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <JWT_ADMIN_ALMACEN>" \
   -d '{
@@ -607,7 +607,7 @@ docker build -t styleradar/ms-tiendas:v1.0 .
 docker run -d \
   --name ms-tiendas \
   --network styleradar-net \
-  -p 8083:8083 \
+  -p 8140:8140 \
   --env-file .env \
   styleradar/ms-tiendas:v1.0
 ```
@@ -627,10 +627,10 @@ services:
     container_name: ms-tiendas
     restart: always
     ports:
-      - "8083:8083"
+      - "8140:8140"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_PORT=8083
+      - SERVER_PORT=8140
       - DB_URL=jdbc:postgresql://postgres:5432/styleradar_tiendas
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
@@ -671,7 +671,7 @@ services:
 ### Comprobación de Salud (Health Check)
 
 ```bash
-curl -s http://localhost:8083/actuator/health | jq .
+curl -s http://localhost:8140/actuator/health | jq .
 # Esperado: {"status":"UP"}
 ```
 
@@ -707,7 +707,7 @@ Todas las configuraciones sensibles y dependientes de entorno se externalizan me
 
 | Variable | Descripción | Valor por Defecto (`dev`) | Requerido en Prod |
 | :--- | :--- | :--- | :---: |
-| `SERVER_PORT` | Puerto de escucha HTTP del microservicio | `8083` | Sí |
+| `SERVER_PORT` | Puerto de escucha HTTP del microservicio | `8140` | Sí |
 | `SPRING_PROFILES_ACTIVE` | Perfil de configuración Spring Boot activo | `dev` | Sí |
 | `DB_URL` | URL JDBC de conexión a PostgreSQL | `jdbc:postgresql://localhost:5432/styleradar_tiendas` | Sí |
 | `DB_USERNAME` | Usuario de conexión a la base de datos | `postgres` | Sí |
@@ -730,7 +730,7 @@ Todas las configuraciones sensibles y dependientes de entorno se externalizan me
 # ==============================================================================
 # STYLERADAR · ms-tiendas · VARIABLES DE ENTORNO LOCALES (.env)
 # ==============================================================================
-SERVER_PORT=8083
+SERVER_PORT=8140
 SPRING_PROFILES_ACTIVE=dev
 
 # Persistencia PostgreSQL
@@ -984,7 +984,7 @@ Este apartado constituye la transcripción y aplicación integral de la **Planti
 ### Ficha Técnica del Documento
 
 * **Proyecto / Asignatura:** StyleRadar · DOSW 2026
-* **Microservicio:** `CADCHE-Stores-Service` (`ms-tiendas`, Puerto `8083`)
+* **Microservicio:** `CADCHE-Stores-Service` (`ms-tiendas`, Puerto `8140`)
 * **Paquete Arquitectónico:** Paquete 1: Identidad
 * **Alcance Arquitectónico:** Evaluación multicriterio de 13 Microservicios, API Gateway y Arquitectura Orientada a Eventos
 * **Equipo Responsable (CADche):** Juan Nicolás Álvarez, Camilo Ortiz, Daniel Valero, Juan Diego Valderrama, Paula Alejandra Díaz
@@ -1218,7 +1218,7 @@ Consolidación técnica oficial del ecosistema StyleRadar:
 | Servicio / Puerto | Paquete de Dominio | Persistencia Primaria | Caché / In-Memory | Eventos RabbitMQ / Herramientas Clave |
 | :--- | :--- | :--- | :--- | :--- |
 | **`sr-api-gateway`** (`:8080`) | Perímetro | Sin estado (Stateless) | Redis (Rate Limiting) | Spring Cloud Gateway, Nimbus JWT RS256 |
-| **`ms-tiendas`** (`:8083`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_tiendas`) + Blob Storage** | **Redis 7 (Metadatos tienda)** | **Azure Blob Storage (Fotos tiendas aliadas, RUT PDF)** |
+| **`ms-tiendas`** (`:8140`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_tiendas`) + Blob Storage** | **Redis 7 (Metadatos tienda)** | **Azure Blob Storage (Fotos tiendas aliadas, RUT PDF)** |
 | **`ms-auth`** (`:8081`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_auth`)** | **Redis 7 (Blacklist JWT, OTP 300s)** | **Emisión JWT RS256, BCrypt, Exchange `styleradar.auth.events`** |
 | **`ms-usuarios`** (`:8082`) | **P1: Identidad** | **PostgreSQL 16 (`styleradar_usuarios`) con JSONB** | **Redis 7 (Perfiles activos)** | **Publica: `usuario.perfil.actualizado`; Spring Security** |
 | **`ms-inventario`** (`:8084`) | P2: Catálogo | PostgreSQL (`stock_tallas`) | Redis Redlock (Reservas) | Publica: `stock.agotado`; Escucha: `orden.pagada` |
