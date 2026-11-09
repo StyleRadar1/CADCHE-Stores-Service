@@ -26,12 +26,15 @@ import edu.dosw.styleradar.tiendas.application.dto.response.DistintivoPrendaAlma
 import edu.dosw.styleradar.tiendas.application.dto.response.FotografiaTiendaResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
+import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarUmbralUltimasUnidadesUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFotografiaTiendaUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.AlmacenApi;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,7 @@ public class AlmacenController implements AlmacenApi {
     private final ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
     private final ConfigurarPeriodoNuevaLlegadaUseCase configurarPeriodoUseCase;
     private final ConsultarPeriodoNuevaLlegadaUseCase consultarPeriodoUseCase;
+    private final RegistrarFotografiaTiendaUseCase registrarFotografiaUseCase;
 
     @Override
     public ResponseEntity<PageResponseDTO<AlmacenResponseDTO>> consultar(
@@ -170,23 +174,36 @@ public class AlmacenController implements AlmacenApi {
     @Override
     public ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
             @PathVariable String nit,
-            @RequestPart("archivo") MultipartFile archivo) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(new FotografiaTiendaResponseDTO(
-                1L,
-                nit,
-                "https://styleradar.blob.core.windows.net/tiendas/" + nit + "/foto-1.webp",
-                1,
-                true,
-                Instant.now()));
+            @RequestPart("archivo") MultipartFile archivo,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new ArchivoNoEsImagenException("Se requiere adjuntar un archivo de imagen válido");
+        }
+        try {
+            FotografiaTiendaResponseDTO response = registrarFotografiaUseCase.registrarFotografia(
+                    nit,
+                    archivo.getOriginalFilename(),
+                    archivo.getContentType(),
+                    archivo.getSize(),
+                    archivo.getInputStream(),
+                    usuarioId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (java.io.IOException ex) {
+            throw new ReglaDeNegocioException("Error al leer el contenido del archivo de imagen: " + ex.getMessage());
+        }
     }
 
     @Override
     public ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(@PathVariable String nit) {
-        return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(registrarFotografiaUseCase.listarFotografias(nit));
     }
 
     @Override
-    public ResponseEntity<Void> eliminarFotografia(@PathVariable String nit, @PathVariable Long fotoId) {
+    public ResponseEntity<Void> eliminarFotografia(
+            @PathVariable String nit,
+            @PathVariable Long fotoId,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
+        registrarFotografiaUseCase.eliminarFotografia(nit, fotoId, usuarioId);
         return ResponseEntity.noContent().build();
     }
 }

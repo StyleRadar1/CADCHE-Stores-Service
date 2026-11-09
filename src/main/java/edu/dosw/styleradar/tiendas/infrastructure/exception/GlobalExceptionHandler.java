@@ -21,9 +21,11 @@ import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
+import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,9 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ReglaDeNegocioException.class)
+    @ExceptionHandler({ReglaDeNegocioException.class, ArchivoNoEsImagenException.class})
     public ResponseEntity<ErrorResponseDTO> handleReglaDeNegocio(
-            ReglaDeNegocioException exception, HttpServletRequest request) {
+            RuntimeException exception, HttpServletRequest request) {
         log.warn("Regla de negocio no satisfecha en {}: {}", request.getRequestURI(), exception.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
                 request.getRequestURI(), Map.of());
@@ -73,7 +75,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
-    @ExceptionHandler({RutRequeridoParaAprobacionException.class, AlmacenYaPendienteException.class})
+    @ExceptionHandler({RutRequeridoParaAprobacionException.class, AlmacenYaPendienteException.class, LimiteFotografiasSuperadoException.class})
     public ResponseEntity<ErrorResponseDTO> handleEntidadNoProcesable(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Operación no procesable (422) en {}: {}", request.getRequestURI(), exception.getMessage());

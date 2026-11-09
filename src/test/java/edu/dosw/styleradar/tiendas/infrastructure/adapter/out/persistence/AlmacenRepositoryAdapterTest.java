@@ -24,14 +24,17 @@ import org.springframework.data.domain.Pageable;
 
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
+import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AdministradorAlmacenEntity;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AlmacenEntity;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.FotografiaTiendaEntity;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.mapper.AlmacenPersistenceMapper;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataAdministradorAlmacenRepository;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataAlmacenRepository;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataFotografiaTiendaRepository;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Pruebas Unitarias de AlmacenRepositoryAdapter - Persistencia Hexagonal (SR-RF-62)")
+@DisplayName("Pruebas Unitarias de AlmacenRepositoryAdapter - Persistencia Hexagonal (SR-RF-62 / SR-RF-74)")
 class AlmacenRepositoryAdapterTest {
 
     @Mock
@@ -39,6 +42,9 @@ class AlmacenRepositoryAdapterTest {
 
     @Mock
     private SpringDataAdministradorAlmacenRepository administradorRepository;
+
+    @Mock
+    private SpringDataFotografiaTiendaRepository fotografiaRepository;
 
     private AlmacenPersistenceMapper mapper;
     private AlmacenRepositoryAdapter adapter;
@@ -49,7 +55,7 @@ class AlmacenRepositoryAdapterTest {
     @BeforeEach
     void setUp() {
         mapper = new AlmacenPersistenceMapper();
-        adapter = new AlmacenRepositoryAdapter(almacenRepository, administradorRepository, mapper);
+        adapter = new AlmacenRepositoryAdapter(almacenRepository, administradorRepository, fotografiaRepository, mapper);
     }
 
     @Test
@@ -180,5 +186,78 @@ class AlmacenRepositoryAdapterTest {
         adapter.asociarAdministrador(NIT, USUARIO_ID);
 
         verify(administradorRepository, never()).save(any(AdministradorAlmacenEntity.class));
+    }
+
+    @Test
+    @DisplayName("Debe consultar fotografías por NIT de almacén ordenadas")
+    void debeConsultarFotografiasPorAlmacenNit() {
+        FotografiaTiendaEntity entity = FotografiaTiendaEntity.builder()
+                .id(1L)
+                .almacenNit(NIT)
+                .urlFoto("https://blob/foto1.jpg")
+                .esPortada(true)
+                .orden(1)
+                .fechaSubida(Instant.now())
+                .build();
+
+        when(fotografiaRepository.findByAlmacenNitOrderByOrdenAsc(NIT)).thenReturn(List.of(entity));
+
+        List<FotografiaTienda> resultado = adapter.findFotosByAlmacenNit(NIT);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getId()).isEqualTo(1L);
+        assertThat(resultado.get(0).getUrl()).isEqualTo("https://blob/foto1.jpg");
+        assertThat(resultado.get(0).isPortada()).isTrue();
+        verify(fotografiaRepository).findByAlmacenNitOrderByOrdenAsc(NIT);
+    }
+
+    @Test
+    @DisplayName("Debe persistir y mapear entidad de fotografía de tienda")
+    void debeGuardarFotografia() {
+        FotografiaTienda dominio = FotografiaTienda.builder()
+                .almacenNit(NIT)
+                .url("https://blob/foto2.jpg")
+                .portada(false)
+                .orden(2)
+                .fechaRegistro(Instant.now())
+                .build();
+
+        FotografiaTiendaEntity entityGuardada = FotografiaTiendaEntity.builder()
+                .id(2L)
+                .almacenNit(NIT)
+                .urlFoto("https://blob/foto2.jpg")
+                .esPortada(false)
+                .orden(2)
+                .fechaSubida(Instant.now())
+                .build();
+
+        when(fotografiaRepository.save(any(FotografiaTiendaEntity.class))).thenReturn(entityGuardada);
+
+        FotografiaTienda resultado = adapter.saveFoto(dominio);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getId()).isEqualTo(2L);
+        assertThat(resultado.getUrl()).isEqualTo("https://blob/foto2.jpg");
+        assertThat(resultado.isPortada()).isFalse();
+        verify(fotografiaRepository).save(any(FotografiaTiendaEntity.class));
+    }
+
+    @Test
+    @DisplayName("Debe contar fotografías por NIT de almacén")
+    void debeContarFotografiasPorAlmacenNit() {
+        when(fotografiaRepository.countByAlmacenNit(NIT)).thenReturn(4);
+
+        int conteo = adapter.countFotosByAlmacenNit(NIT);
+
+        assertThat(conteo).isEqualTo(4);
+        verify(fotografiaRepository).countByAlmacenNit(NIT);
+    }
+
+    @Test
+    @DisplayName("Debe eliminar fotografía por id y nit de almacén")
+    void debeEliminarFotografia() {
+        adapter.deleteFoto(10L, NIT);
+
+        verify(fotografiaRepository).deleteByIdAndAlmacenNit(10L, NIT);
     }
 }

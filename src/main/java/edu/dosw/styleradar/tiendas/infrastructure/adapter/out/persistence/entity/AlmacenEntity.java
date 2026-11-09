@@ -82,6 +82,9 @@ public class AlmacenEntity {
     @Column(name = "motivo_verificacion", length = 1000)
     private String motivoVerificacion;
 
+    @Column(name = "foto_portada_url", length = 500)
+    private String fotoPortadaUrl;
+
     @ElementCollection
     @CollectionTable(
             name = "almacen_categorias",

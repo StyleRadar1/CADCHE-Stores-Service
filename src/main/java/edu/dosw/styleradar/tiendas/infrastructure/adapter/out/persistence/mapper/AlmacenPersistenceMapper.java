@@ -5,7 +5,9 @@ import java.util.HashSet;
 import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AlmacenEntity;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.FotografiaTiendaEntity;
 
 @Component
 public class AlmacenPersistenceMapper {
@@ -31,6 +33,7 @@ public class AlmacenPersistenceMapper {
                 .fechaDecisionVerificacion(entity.getFechaDecisionVerificacion())
                 .administradorDecisionId(entity.getAdministradorDecisionId())
                 .motivoVerificacion(entity.getMotivoVerificacion())
+                .fotoPortadaUrl(entity.getFotoPortadaUrl())
                 .categorias(entity.getCategorias() != null ? new HashSet<>(entity.getCategorias()) : new HashSet<>())
                 .build();
     }
@@ -56,7 +59,36 @@ public class AlmacenPersistenceMapper {
                 .fechaDecisionVerificacion(domain.getFechaDecisionVerificacion())
                 .administradorDecisionId(domain.getAdministradorDecisionId())
                 .motivoVerificacion(domain.getMotivoVerificacion())
+                .fotoPortadaUrl(domain.getFotoPortadaUrl())
                 .categorias(domain.getCategorias() != null ? new HashSet<>(domain.getCategorias()) : new HashSet<>())
+                .build();
+    }
+
+    public FotografiaTienda toDomain(FotografiaTiendaEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return FotografiaTienda.builder()
+                .id(entity.getId())
+                .almacenNit(entity.getAlmacenNit())
+                .url(entity.getUrlFoto())
+                .orden(entity.getOrden())
+                .portada(entity.isEsPortada())
+                .fechaRegistro(entity.getFechaSubida())
+                .build();
+    }
+
+    public FotografiaTiendaEntity toEntity(FotografiaTienda domain) {
+        if (domain == null) {
+            return null;
+        }
+        return FotografiaTiendaEntity.builder()
+                .id(domain.getId())
+                .almacenNit(domain.getAlmacenNit())
+                .urlFoto(domain.getUrl())
+                .orden(domain.getOrden())
+                .esPortada(domain.isPortada())
+                .fechaSubida(domain.getFechaRegistro())
                 .build();
     }
 }

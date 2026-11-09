@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
 import edu.dosw.styleradar.tiendas.domain.exception.PeriodoInvalidoException;
+import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.UmbralInvalidoException;
 
 @DisplayName("Pruebas de Dominio - Entidad Almacen, Umbral Efectivo (SR-RF-59) y Periodo Nueva Llegada (SR-RF-60)")
@@ -105,6 +107,83 @@ class AlmacenTest {
         assertThat(almacen.getUmbralUltimasUnidades()).isEqualTo(4);
         assertThat(almacen.getDiasNuevaLlegada()).isEqualTo(21);
         assertThat(almacen.getFechaActualizacionCatalogo()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("SR-RF-74 Dominio C1: Dado hasta 6 fotos válidas, quedan en el almacén y la primera se usa como portada")
+    void debeCargarHasta6FotosYAsignarPrimeraComoPortada() {
+        Almacen almacen = Almacen.builder()
+                .nit("900123456-1")
+                .nombreComercial("Tienda Boho Chic")
+                .build();
+
+        FotografiaTienda foto1 = almacen.agregarFotografia("https://blob/foto1.jpg", null);
+        assertThat(foto1.isPortada()).isTrue();
+        assertThat(foto1.getOrden()).isEqualTo(1);
+        assertThat(almacen.getFotoPortadaUrl()).isEqualTo("https://blob/foto1.jpg");
+
+        for (int i = 2; i <= 6; i++) {
+            FotografiaTienda fotoExtra = almacen.agregarFotografia("https://blob/foto" + i + ".jpg", null);
+            assertThat(fotoExtra.isPortada()).isFalse();
+            assertThat(fotoExtra.getOrden()).isEqualTo(i);
+        }
+
+        assertThat(almacen.getFotos()).hasSize(6);
+        assertThat(almacen.getFotoPortadaUrl()).isEqualTo("https://blob/foto1.jpg");
+    }
+
+    @Test
+    @DisplayName("SR-RF-74 Dominio C2: Dado que ya tengo 6 fotos, cuando agrego otra, lanza LimiteFotografiasSuperadoException")
+    void debeLanzarLimiteFotografiasSuperadoExceptionAlSuperar6Fotos() {
+        Almacen almacen = Almacen.builder()
+                .nit("900123456-1")
+                .nombreComercial("Tienda Boho Chic")
+                .build();
+
+        for (int i = 1; i <= 6; i++) {
+            almacen.agregarFotografia("https://blob/foto" + i + ".jpg", null);
+        }
+
+        assertThatThrownBy(() -> almacen.agregarFotografia("https://blob/foto7.jpg", null))
+                .isInstanceOf(LimiteFotografiasSuperadoException.class)
+                .hasMessageContaining("máximo permitido de 6 fotografías");
+    }
+
+    @Test
+    @DisplayName("SR-RF-74 Dominio: Reasignación de portada al eliminar la fotografía de portada")
+    void debeReasignarPortadaAlEliminarFotoPortada() {
+        Almacen almacen = Almacen.builder()
+                .nit("900123456-1")
+                .nombreComercial("Tienda Boho Chic")
+                .build();
+
+        FotografiaTienda f1 = almacen.agregarFotografia("https://blob/foto1.jpg", null);
+        f1.setId(10L);
+        FotografiaTienda f2 = almacen.agregarFotografia("https://blob/foto2.jpg", null);
+        f2.setId(20L);
+
+        almacen.eliminarFotografia(10L);
+
+        assertThat(almacen.getFotos()).hasSize(1);
+        assertThat(almacen.getFotos().get(0).getId()).isEqualTo(20L);
+        assertThat(almacen.getFotos().get(0).isPortada()).isTrue();
+        assertThat(almacen.getFotos().get(0).getOrden()).isEqualTo(1);
+        assertThat(almacen.getFotoPortadaUrl()).isEqualTo("https://blob/foto2.jpg");
+    }
+
+    @Test
+    @DisplayName("SR-RF-74 Dominio: Debe rechazar URL de fotografía vacía o nula")
+    void debeRechazarUrlInvalida() {
+        Almacen almacen = Almacen.builder()
+                .nit("900123456-1")
+                .nombreComercial("Tienda Boho Chic")
+                .build();
+
+        assertThatThrownBy(() -> almacen.agregarFotografia(null, null))
+                .isInstanceOf(ReglaDeNegocioException.class);
+
+        assertThatThrownBy(() -> almacen.agregarFotografia("   ", null))
+                .isInstanceOf(ReglaDeNegocioException.class);
     }
 }
 

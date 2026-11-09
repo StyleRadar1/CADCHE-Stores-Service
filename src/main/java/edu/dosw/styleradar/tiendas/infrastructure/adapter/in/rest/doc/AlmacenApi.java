@@ -416,7 +416,9 @@ public interface AlmacenApi {
     @PostMapping(value = "/{nit}/fotografias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Archivo de imagen de la tienda física (JPEG, PNG o WebP)") @RequestPart("archivo") MultipartFile archivo);
+            @Parameter(description = "Archivo de imagen de la tienda física (JPEG, PNG o WebP)") @RequestPart("archivo") MultipartFile archivo,
+            @Parameter(in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER, description = "ID del usuario administrador autenticado", example = "5")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Consultar fotografías de la tienda física (SR-RF-74)",
@@ -466,5 +468,7 @@ public interface AlmacenApi {
     @DeleteMapping("/{nit}/fotografias/{fotoId}")
     ResponseEntity<Void> eliminarFotografia(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador de la fotografía", example = "1") @PathVariable Long fotoId);
+            @Parameter(description = "Identificador de la fotografía", example = "1") @PathVariable Long fotoId,
+            @Parameter(in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER, description = "ID del usuario administrador autenticado", example = "5")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 }
