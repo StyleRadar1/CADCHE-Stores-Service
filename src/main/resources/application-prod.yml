@@ -8,7 +8,7 @@ spring:
       on-profile: prod
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://styleradar-pg-free.postgres.database.azure.com:5432/styleradar_tiendas_prod?sslmode=require}
+    url: ${DB_URL:jdbc:postgresql://styleradar-pg-prod.postgres.database.azure.com:5432/styleradar_tiendas?sslmode=require}
     username: ${DB_USERNAME:styleradaradmin}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
@@ -32,7 +32,7 @@ spring:
 
 azure:
   storage:
-    blob-endpoint: ${AZURE_STORAGE_BLOB_ENDPOINT:https://styleradarblob.blob.core.windows.net}
+    blob-endpoint: ${AZURE_STORAGE_BLOB_ENDPOINT:https://styleradarblobprod.blob.core.windows.net}
 
 swagger:
   server-url: ${SWAGGER_SERVER_URL:https://styleradar-tiendas-prod.azurewebsites.net}

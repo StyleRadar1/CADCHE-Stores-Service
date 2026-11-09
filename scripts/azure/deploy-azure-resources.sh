@@ -1,168 +1,152 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# STYLE RADAR - DESPLIEGUE AZURE CLOUD (NIVEL 100% GRATIS / AZURE FOR STUDENTS)
+# STYLE RADAR - DESPLIEGUE AZURE CLOUD (AISLAMIENTO TOTAL: QA Y PROD INDEPENDIENTES)
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # ==============================================================================
-# Ejecutable directamente en Azure Cloud Shell (https://shell.azure.com)
+# REGLA ARQUITECTÓNICA ESTRICTA:
+# Base de datos desplegada en cada ambiente. QA y PROD NUNCA comparten base de datos,
+# servidor de base de datos, ni cuenta de almacenamiento Blob.
 # ==============================================================================
 
 set -euo pipefail
 
+ENVIRONMENT="${1:-qa}" # Opciones: qa | prod | all
 LOCATION="eastus"
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-styleradar-free}"
-POSTGRES_SERVER="${POSTGRES_SERVER:-styleradar-pg-free-$RANDOM}"
-ADMIN_USER="${ADMIN_USER:-styleradaradmin}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-StyleRadarPass$(date +%s)!}"
-APP_SERVICE_PLAN="${APP_SERVICE_PLAN:-plan-styleradar-free}"
-APP_SERVICE_SKU="${APP_SERVICE_SKU:-F1}"  # F1 = 100% Gratis (60 min CPU/día), o B1 Basic (~$12/mes con crédito)
-STORAGE_ACCOUNT="${STORAGE_ACCOUNT:-styleradarblobfree$RANDOM}"
-QA_APP_NAME="styleradar-tiendas-qa"
-PROD_APP_NAME="styleradar-tiendas-prod"
+ADMIN_USER="styleradaradmin"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-StyleRadarPass2026!}"
 
-echo "=========================================================="
-echo "  StyleRadar · Despliegue Azure Gratuito (Capa Free Tier) "
-echo "=========================================================="
+deploy_environment() {
+  local ENV_NAME="$1"
+  local RG="rg-styleradar-${ENV_NAME}"
+  local PG_SERVER="styleradar-pg-${ENV_NAME}"
+  local APP_NAME="styleradar-tiendas-${ENV_NAME}"
+  local PLAN_NAME="plan-styleradar-${ENV_NAME}"
+  local STORAGE_NAME="styleradarblob${ENV_NAME}"
 
-# 1. Crear Resource Group
-echo "[1/6] Creando Resource Group '$RESOURCE_GROUP' en '$LOCATION'..."
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
+  echo ""
+  echo "=========================================================="
+  echo "  Desplegando Ambiente Exclusivo: ${ENV_NAME^^}"
+  echo "=========================================================="
+  echo "Resource Group:    $RG"
+  echo "PostgreSQL Server: $PG_SERVER"
+  echo "Base de Datos:     styleradar_tiendas (Totalmente aislada)"
+  echo "Web App Service:   $APP_NAME"
+  echo "Blob Storage:      $STORAGE_NAME"
+  echo "=========================================================="
 
-# 2. Aprovisionar Azure Database for PostgreSQL Flexible Server (Free Tier)
-# NOTA: Standard_B1ms con 32GB califica para las 750 horas/mes gratis de Azure.
-echo "[2/6] Aprovisionando PostgreSQL Flexible Server Gratuito (Standard_B1ms, 32GB)..."
-az postgres flexible-server create \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$POSTGRES_SERVER" \
-  --location "$LOCATION" \
-  --admin-user "$ADMIN_USER" \
-  --admin-password "$ADMIN_PASSWORD" \
-  --sku-name Standard_B1ms \
-  --tier Burstable \
-  --storage-size 32 \
-  --version 16 \
-  --public-access 0.0.0.0 \
-  --yes \
-  --output none
+  # 1. Resource Group
+  echo "[1/6] Creando Resource Group '$RG'..."
+  az group create --name "$RG" --location "$LOCATION" --output none
 
-# Crear base de datos para QA
-echo "Creando base de datos QA 'styleradar_tiendas_qa'..."
-az postgres flexible-server db create \
-  --resource-group "$RESOURCE_GROUP" \
-  --server-name "$POSTGRES_SERVER" \
-  --database-name styleradar_tiendas_qa \
-  --output none
+  # 2. Servidor PostgreSQL Flexible Server Independiente (Free Tier Standard_B1ms, 32GB)
+  echo "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Dedicado..."
+  az postgres flexible-server create \
+    --resource-group "$RG" \
+    --name "$PG_SERVER" \
+    --location "$LOCATION" \
+    --admin-user "$ADMIN_USER" \
+    --admin-password "$ADMIN_PASSWORD" \
+    --sku-name Standard_B1ms \
+    --tier Burstable \
+    --storage-size 32 \
+    --version 16 \
+    --public-access 0.0.0.0 \
+    --yes \
+    --output none
 
-# Crear base de datos para PROD en la misma instancia para no consumir horas extra
-echo "Creando base de datos PROD 'styleradar_tiendas_prod'..."
-az postgres flexible-server db create \
-  --resource-group "$RESOURCE_GROUP" \
-  --server-name "$POSTGRES_SERVER" \
-  --database-name styleradar_tiendas_prod \
-  --output none
+  # 3. Base de Datos propia del ambiente
+  echo "[3/6] Creando Base de Datos 'styleradar_tiendas' en $PG_SERVER..."
+  az postgres flexible-server db create \
+    --resource-group "$RG" \
+    --server-name "$PG_SERVER" \
+    --database-name styleradar_tiendas \
+    --output none
 
-# Firewall para permitir servicios de Azure
-az postgres flexible-server firewall-rule create \
-  --resource-group "$RESOURCE_GROUP" \
-  --server-name "$POSTGRES_SERVER" \
-  --rule-name AllowAllAzureServices \
-  --start-ip-address 0.0.0.0 \
-  --end-ip-address 0.0.0.0 \
-  --output none
+  # Firewall para servicios de Azure
+  az postgres flexible-server firewall-rule create \
+    --resource-group "$RG" \
+    --server-name "$PG_SERVER" \
+    --rule-name AllowAllAzureServices \
+    --start-ip-address 0.0.0.0 \
+    --end-ip-address 0.0.0.0 \
+    --output none
 
-# 3. Aprovisionar Azure Blob Storage
-echo "[3/6] Aprovisionando Storage Account '$STORAGE_ACCOUNT'..."
-az storage account create \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$STORAGE_ACCOUNT" \
-  --location "$LOCATION" \
-  --sku Standard_LRS \
-  --kind StorageV2 \
-  --allow-blob-public-access true \
-  --output none
+  # 4. Azure Blob Storage Dedicado para este ambiente
+  echo "[4/6] Aprovisionando Storage Account '$STORAGE_NAME'..."
+  az storage account create \
+    --resource-group "$RG" \
+    --name "$STORAGE_NAME" \
+    --location "$LOCATION" \
+    --sku Standard_LRS \
+    --kind StorageV2 \
+    --allow-blob-public-access true \
+    --output none
 
-STORAGE_KEY=$(az storage account keys list --resource-group "$RESOURCE_GROUP" --account-name "$STORAGE_ACCOUNT" --query "[0].value" -o tsv)
+  STORAGE_KEY=$(az storage account keys list --resource-group "$RG" --account-name "$STORAGE_NAME" --query "[0].value" -o tsv)
 
-az storage container create \
-  --account-name "$STORAGE_ACCOUNT" \
-  --account-key "$STORAGE_KEY" \
-  --name tiendas \
-  --public-access blob \
-  --output none
+  az storage container create \
+    --account-name "$STORAGE_NAME" \
+    --account-key "$STORAGE_KEY" \
+    --name tiendas \
+    --public-access blob \
+    --output none
 
-# 4. Aprovisionar App Service Plan (F1 Free o B1)
-echo "[4/6] Aprovisionando App Service Plan ($APP_SERVICE_SKU)..."
-az appservice plan create \
-  --name "$APP_SERVICE_PLAN" \
-  --resource-group "$RESOURCE_GROUP" \
-  --is-linux \
-  --sku "$APP_SERVICE_SKU" \
-  --location "$LOCATION" \
-  --output none
+  # 5. App Service Plan y Web App Dedicada (Puerto Oficial 8140)
+  echo "[5/6] Creando App Service Plan y Web App..."
+  az appservice plan create \
+    --name "$PLAN_NAME" \
+    --resource-group "$RG" \
+    --is-linux \
+    --sku B1 \
+    --location "$LOCATION" \
+    --output none
 
-# Crear Web App QA
-echo "Creando Web App QA '$QA_APP_NAME'..."
-az webapp create \
-  --resource-group "$RESOURCE_GROUP" \
-  --plan "$APP_SERVICE_PLAN" \
-  --name "$QA_APP_NAME" \
-  --deployment-container-image-name "eclipse-temurin:17-jre" \
-  --output none
+  az webapp create \
+    --resource-group "$RG" \
+    --plan "$PLAN_NAME" \
+    --name "$APP_NAME" \
+    --deployment-container-image-name "eclipse-temurin:17-jre" \
+    --output none
 
-# Crear Web App PROD
-echo "Creando Web App PROD '$PROD_APP_NAME'..."
-az webapp create \
-  --resource-group "$RESOURCE_GROUP" \
-  --plan "$APP_SERVICE_PLAN" \
-  --name "$PROD_APP_NAME" \
-  --deployment-container-image-name "eclipse-temurin:17-jre" \
-  --output none
+  # 6. Configurar Variables de Entorno del Ambiente
+  echo "[6/6] Configurando App Settings en $APP_NAME..."
+  DB_URL="jdbc:postgresql://${PG_SERVER}.postgres.database.azure.com:5432/styleradar_tiendas?sslmode=require"
+  BLOB_ENDPOINT="https://${STORAGE_NAME}.blob.core.windows.net"
 
-# 5. Configurar App Settings
-echo "[5/6] Configurando App Settings en Web Apps..."
-BLOB_ENDPOINT="https://${STORAGE_ACCOUNT}.blob.core.windows.net"
-DB_URL_QA="jdbc:postgresql://${POSTGRES_SERVER}.postgres.database.azure.com:5432/styleradar_tiendas_qa?sslmode=require"
-DB_URL_PROD="jdbc:postgresql://${POSTGRES_SERVER}.postgres.database.azure.com:5432/styleradar_tiendas_prod?sslmode=require"
+  az webapp config appsettings set \
+    --name "$APP_NAME" \
+    --resource-group "$RG" \
+    --settings \
+      WEBSITES_PORT=8140 \
+      PORT=8140 \
+      SPRING_PROFILES_ACTIVE="$ENV_NAME" \
+      DB_URL="$DB_URL" \
+      DB_USERNAME="$ADMIN_USER" \
+      DB_PASSWORD="$ADMIN_PASSWORD" \
+      AZURE_STORAGE_BLOB_ENDPOINT="$BLOB_ENDPOINT" \
+      SWAGGER_SERVER_URL="https://${APP_NAME}.azurewebsites.net" \
+    --output none
 
-# Configurar QA
-az webapp config appsettings set \
-  --name "$QA_APP_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --settings \
-    WEBSITES_PORT=8140 \
-    PORT=8140 \
-    SPRING_PROFILES_ACTIVE=qa \
-    DB_URL="$DB_URL_QA" \
-    DB_USERNAME="$ADMIN_USER" \
-    DB_PASSWORD="$ADMIN_PASSWORD" \
-    AZURE_STORAGE_BLOB_ENDPOINT="$BLOB_ENDPOINT" \
-    SWAGGER_SERVER_URL="https://${QA_APP_NAME}.azurewebsites.net" \
-  --output none
+  echo "=========================================================="
+  echo "  ¡AMBIENTE ${ENV_NAME^^} DESPLEGADO EXITOSAMENTE!"
+  echo "=========================================================="
+  echo "Swagger UI en Vivo:  https://${APP_NAME}.azurewebsites.net/swagger-ui/index.html"
+  echo "OpenAPI JSON Spec:   https://${APP_NAME}.azurewebsites.net/v3/api-docs"
+  echo "Health Check:        https://${APP_NAME}.azurewebsites.net/actuator/health"
+  echo "PostgreSQL Server:   ${PG_SERVER}.postgres.database.azure.com:5432"
+  echo "Base de Datos:       styleradar_tiendas (Exclusiva para $ENV_NAME)"
+  echo "Blob Endpoint:       $BLOB_ENDPOINT"
+  echo "=========================================================="
+}
 
-# Configurar PROD
-az webapp config appsettings set \
-  --name "$PROD_APP_NAME" \
-  --resource-group "$RESOURCE_GROUP" \
-  --settings \
-    WEBSITES_PORT=8140 \
-    PORT=8140 \
-    SPRING_PROFILES_ACTIVE=prod \
-    DB_URL="$DB_URL_PROD" \
-    DB_USERNAME="$ADMIN_USER" \
-    DB_PASSWORD="$ADMIN_PASSWORD" \
-    AZURE_STORAGE_BLOB_ENDPOINT="$BLOB_ENDPOINT" \
-    SWAGGER_SERVER_URL="https://${PROD_APP_NAME}.azurewebsites.net" \
-  --output none
-
-echo "=========================================================="
-echo "  ¡DESPLIEGUE EN AZURE (TIER GRATUITO) COMPLETADO!"
-echo "=========================================================="
-echo "Costo Mensual:             \$0.00 USD (Aprovecha las 750h/mes gratis de PostgreSQL B1ms)"
-echo "Swagger UI QA (En vivo):   https://${QA_APP_NAME}.azurewebsites.net/swagger-ui/index.html"
-echo "Swagger UI PROD (En vivo): https://${PROD_APP_NAME}.azurewebsites.net/swagger-ui/index.html"
-echo "PostgreSQL Server:         ${POSTGRES_SERVER}.postgres.database.azure.com:5432"
-echo "Base de Datos QA:          styleradar_tiendas_qa"
-echo "Base de Datos PROD:        styleradar_tiendas_prod"
-echo "Usuario Administrador:     ${ADMIN_USER}"
-echo "Contraseña BD:             ${ADMIN_PASSWORD}"
-echo "Azure Blob Endpoint:       ${BLOB_ENDPOINT}"
-echo "=========================================================="
+if [ "$ENVIRONMENT" = "qa" ]; then
+  deploy_environment "qa"
+elif [ "$ENVIRONMENT" = "prod" ]; then
+  deploy_environment "prod"
+elif [ "$ENVIRONMENT" = "all" ]; then
+  deploy_environment "qa"
+  deploy_environment "prod"
+else
+  echo "Uso: $0 [qa|prod|all]"
+  exit 1
+fi
