@@ -43,48 +43,54 @@ deploy_environment() {
   az group create --name "$RG" --location "$LOCATION" --output none
 
   # 2. Servidor PostgreSQL Flexible Server Dedicado e Independiente (Free Tier Standard_B1ms, 32GB)
-  echo "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Gratuito..."
-  az postgres flexible-server create \
-    --resource-group "$RG" \
-    --name "$PG_SERVER" \
-    --location "$LOCATION" \
-    --admin-user "$ADMIN_USER" \
-    --admin-password "$ADMIN_PASSWORD" \
-    --sku-name Standard_B1ms \
-    --tier Burstable \
-    --storage-size 32 \
-    --version 16 \
-    --public-access 0.0.0.0 \
-    --yes \
-    --output none
+  if az postgres flexible-server show --resource-group "$RG" --name "$PG_SERVER" &>/dev/null; then
+    echo "[2/6] Servidor PostgreSQL '$PG_SERVER' ya existe y está listo."
+  else
+    echo "[2/6] Aprovisionando Servidor PostgreSQL Flexible Server Gratuito..."
+    az postgres flexible-server create \
+      --resource-group "$RG" \
+      --name "$PG_SERVER" \
+      --location "$LOCATION" \
+      --admin-user "$ADMIN_USER" \
+      --admin-password "$ADMIN_PASSWORD" \
+      --sku-name Standard_B1ms \
+      --tier Burstable \
+      --storage-size 32 \
+      --version 16 \
+      --public-access 0.0.0.0 \
+      --yes \
+      --output none
+  fi
 
   # 3. Base de Datos propia del ambiente (QA y PROD no comparten)
   echo "[3/6] Creando Base de Datos 'styleradar_tiendas' en $PG_SERVER..."
   az postgres flexible-server db create \
     --resource-group "$RG" \
     --server-name "$PG_SERVER" \
-    --database-name styleradar_tiendas \
-    --output none
+    --name styleradar_tiendas \
+    --output none 2>/dev/null || true
 
-  # Firewall para servicios de Azure
+  # Firewall para servicios de Azure (ignorar si ya existe regla por default)
   az postgres flexible-server firewall-rule create \
     --resource-group "$RG" \
-    --server-name "$PG_SERVER" \
+    --name "$PG_SERVER" \
     --rule-name AllowAllAzureServices \
     --start-ip-address 0.0.0.0 \
     --end-ip-address 0.0.0.0 \
-    --output none
+    --output none 2>/dev/null || true
 
   # 4. Azure Blob Storage Dedicado para este ambiente (< $1.00 USD/mes)
   echo "[4/6] Aprovisionando Azure Blob Storage '$STORAGE_NAME'..."
-  az storage account create \
-    --resource-group "$RG" \
-    --name "$STORAGE_NAME" \
-    --location "$LOCATION" \
-    --sku Standard_LRS \
-    --kind StorageV2 \
-    --allow-blob-public-access true \
-    --output none
+  if ! az storage account show --resource-group "$RG" --name "$STORAGE_NAME" &>/dev/null; then
+    az storage account create \
+      --resource-group "$RG" \
+      --name "$STORAGE_NAME" \
+      --location "$LOCATION" \
+      --sku Standard_LRS \
+      --kind StorageV2 \
+      --allow-blob-public-access true \
+      --output none
+  fi
 
   STORAGE_KEY=$(az storage account keys list --resource-group "$RG" --account-name "$STORAGE_NAME" --query "[0].value" -o tsv)
 
@@ -93,24 +99,28 @@ deploy_environment() {
     --account-key "$STORAGE_KEY" \
     --name tiendas \
     --public-access blob \
-    --output none
+    --output none 2>/dev/null || true
 
   # 5. App Service Plan en Tier F1 (Free - $0.00 USD) y Web App Dedicada (Puerto 8140)
   echo "[5/6] Creando App Service Plan (Tier $APP_SERVICE_SKU Gratuito) y Web App..."
-  az appservice plan create \
-    --name "$PLAN_NAME" \
-    --resource-group "$RG" \
-    --is-linux \
-    --sku "$APP_SERVICE_SKU" \
-    --location "$LOCATION" \
-    --output none
+  if ! az appservice plan show --name "$PLAN_NAME" --resource-group "$RG" &>/dev/null; then
+    az appservice plan create \
+      --name "$PLAN_NAME" \
+      --resource-group "$RG" \
+      --is-linux \
+      --sku "$APP_SERVICE_SKU" \
+      --location "$LOCATION" \
+      --output none
+  fi
 
-  az webapp create \
-    --resource-group "$RG" \
-    --plan "$PLAN_NAME" \
-    --name "$APP_NAME" \
-    --deployment-container-image-name "eclipse-temurin:17-jre" \
-    --output none
+  if ! az webapp show --name "$APP_NAME" --resource-group "$RG" &>/dev/null; then
+    az webapp create \
+      --resource-group "$RG" \
+      --plan "$PLAN_NAME" \
+      --name "$APP_NAME" \
+      --deployment-container-image-name "eclipse-temurin:17-jre" \
+      --output none
+  fi
 
   # 6. Configurar Variables de Entorno del Ambiente
   echo "[6/6] Configurando App Settings en $APP_NAME (Puerto 8140)..."

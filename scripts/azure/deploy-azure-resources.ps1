@@ -67,17 +67,17 @@ function Deploy-StyleRadarEnvironment {
     az postgres flexible-server db create `
         --resource-group $rg `
         --server-name $pgServer `
-        --database-name styleradar_tiendas `
+        --name styleradar_tiendas `
         --output none
 
     # Firewall
     az postgres flexible-server firewall-rule create `
         --resource-group $rg `
-        --server-name $pgServer `
+        --name $pgServer `
         --rule-name AllowAllAzureServices `
         --start-ip-address 0.0.0.0 `
         --end-ip-address 0.0.0.0 `
-        --output none
+        --output none 2>$null
 
     # 4. Azure Blob Storage Dedicado (< $1.00 USD/mes)
     Write-Host "[4/6] Aprovisionando Storage Account '$storageName'..." -ForegroundColor Yellow
