@@ -1,44 +1,53 @@
-services:
+# ==============================================================================
+# STYLE RADAR - DOCKER COMPOSE (Semana 10 · DOSW · ECI - Guía Turtwig S10)
+# Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
+# ==============================================================================
 
+version: '3.9'
+
+services:
   ms-tiendas:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: ms-tiendas
     ports:
       - "8140:8140"
     environment:
-      DB_URL: jdbc:postgresql://tiendas-db:5432/${POSTGRES_DB}
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8140
+      DB_HOST: tiendas-db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-styleradar_tiendas}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SWAGGER_SERVER_URL: http://localhost:8140
     depends_on:
       tiendas-db:
         condition: service_healthy
     networks:
-      - tiendas-network
+      - tiendas-net
 
   tiendas-db:
-    image: postgres:15
+    image: postgres:16-alpine
     container_name: tiendas-db
-    ports:
-      - "5433:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-styleradar_tiendas}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
     volumes:
       - tiendas-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-styleradar_tiendas}"]
+      interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - tiendas-network
+      - tiendas-net
 
 volumes:
   tiendas-data:
 
 networks:
-  tiendas-network:
+  tiendas-net:
     driver: bridge
