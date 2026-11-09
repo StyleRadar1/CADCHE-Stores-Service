@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.port.in.DesactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.FundacionApi;
@@ -25,6 +26,7 @@ public class FundacionController implements FundacionApi {
 
     private final RegistrarFundacionUseCase registrarFundacionUseCase;
     private final EditarFundacionUseCase editarFundacionUseCase;
+    private final DesactivarFundacionUseCase desactivarFundacionUseCase;
 
     @Override
     public ResponseEntity<FundacionResponseDTO> registrar(
@@ -56,13 +58,14 @@ public class FundacionController implements FundacionApi {
     }
 
     @Override
-    public ResponseEntity<FundacionResponseDTO> desactivar(@PathVariable Long id) {
-        // Enpoint placeholder para SR-RF-65
-        return ResponseEntity.ok(FundacionResponseDTO.builder()
-                .id(id)
-                .nombre("Fundación Desactivada")
-                .activa(false)
-                .build());
+    public ResponseEntity<FundacionResponseDTO> desactivar(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(value = "motivo", required = false) String motivo,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        String rol = resolveRole(rolesHeader, roleHeader);
+        FundacionResponseDTO desactivada = desactivarFundacionUseCase.desactivar(id, motivo, rol);
+        return ResponseEntity.ok(desactivada);
     }
 
     @Override

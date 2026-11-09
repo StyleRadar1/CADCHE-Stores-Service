@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 
 @DisplayName("Pruebas de Dominio - Fundación Aliada (SR-RF-63)")
@@ -106,10 +107,18 @@ class FundacionDominioTest {
     }
 
     @Test
-    @DisplayName("Desactivación: Debe marcar la fundación como inactiva")
+    @DisplayName("SR-RF-65 Dominio: Debe marcar la fundación como inactiva (desactivación lógica)")
     void debeDesactivarFundacion() {
+        assertTrue(fundacionValida.isActiva());
         fundacionValida.desactivar();
         assertFalse(fundacionValida.isActiva());
+    }
+
+    @Test
+    @DisplayName("SR-RF-65 Dominio C3: Debe lanzar FundacionYaDesactivadaException al desactivar una fundación ya inactiva")
+    void debeLanzarExcepcionAlDesactivarFundacionYaInactiva() {
+        fundacionValida.setActiva(false);
+        assertThrows(FundacionYaDesactivadaException.class, () -> fundacionValida.desactivar());
     }
 
     @Test

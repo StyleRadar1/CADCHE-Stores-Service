@@ -18,4 +18,9 @@
         <Package name="~.*\.domain\.model.*" />
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
     </Match>
+    <!-- Excluir advertencias de inyección de componentes Spring en adaptadores de infraestructura -->
+    <Match>
+        <Package name="~.*\.infrastructure\.adapter\.out\.messaging.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
 </FindBugsFilter>

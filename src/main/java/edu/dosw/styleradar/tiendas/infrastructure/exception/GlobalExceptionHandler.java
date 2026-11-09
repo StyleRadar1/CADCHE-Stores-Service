@@ -22,6 +22,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
@@ -64,7 +65,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
-    @ExceptionHandler({AlmacenYaDecididoException.class, FundacionYaRegistradaException.class})
+    @ExceptionHandler({AlmacenYaDecididoException.class, FundacionYaRegistradaException.class, FundacionYaDesactivadaException.class})
     public ResponseEntity<ErrorResponseDTO> handleConflicto(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Conflicto al procesar recurso (409) en {}: {}", request.getRequestURI(), exception.getMessage());

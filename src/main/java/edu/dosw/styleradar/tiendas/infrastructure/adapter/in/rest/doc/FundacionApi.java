@@ -102,18 +102,24 @@ public interface FundacionApi {
 
     @Operation(
             summary = "Desactivar fundación aliada (SR-RF-65)",
-            description = "ROLE_ADMIN_STYLERADAR. Desactiva lógicamente una fundación para impedir nuevas solicitudes de donación sin eliminar su historial.")
+            description = "ROLE_ADMIN_STYLERADAR. Desactiva lógicamente una fundación para impedir nuevas solicitudes de donación sin eliminar su historial. Publica FundacionDesactivadaEvent para reasignación y notificación a usuarios con donaciones activas.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Fundación desactivada exitosamente"),
             @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o expirado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "403", description = "Rol sin permiso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Fundación inexistente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "422", description = "La fundación ya estaba desactivada", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "La fundación ya se encuentra desactivada", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PatchMapping("/api/v1/admin/fundaciones/{id}/desactivar")
     ResponseEntity<FundacionResponseDTO> desactivar(
-            @Parameter(description = "Identificador de la fundación a desactivar", example = "3") @PathVariable Long id);
+            @Parameter(description = "Identificador de la fundación a desactivar", example = "3") @PathVariable Long id,
+            @Parameter(description = "Motivo de la desactivación", example = "Cierre temporal de operaciones por reestructuración")
+            @org.springframework.web.bind.annotation.RequestParam(value = "motivo", required = false) String motivo,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Consultar fundaciones aliadas cercanas (SR-RF-43)",

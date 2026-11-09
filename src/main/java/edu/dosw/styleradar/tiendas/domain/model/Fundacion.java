@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -119,6 +120,9 @@ public class Fundacion {
     }
 
     public void desactivar() {
+        if (!this.activa) {
+            throw new FundacionYaDesactivadaException("La fundación aliada ya se encuentra desactivada");
+        }
         this.activa = false;
     }
 }

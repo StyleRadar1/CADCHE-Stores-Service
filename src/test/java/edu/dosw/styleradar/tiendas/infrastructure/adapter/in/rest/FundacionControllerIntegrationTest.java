@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,15 +31,17 @@ import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.model.TipoPrenda;
+import edu.dosw.styleradar.tiendas.domain.port.in.DesactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
 
 @WebMvcTest(FundacionController.class)
 @Import(GlobalExceptionHandler.class)
-@DisplayName("Pruebas de Integración de API REST - FundacionController (SR-RF-63 / SR-RF-64)")
+@DisplayName("Pruebas de Integración de API REST - FundacionController (SR-RF-63 / SR-RF-64 / SR-RF-65)")
 class FundacionControllerIntegrationTest {
 
     @Autowired
@@ -52,6 +55,9 @@ class FundacionControllerIntegrationTest {
 
     @MockBean
     private EditarFundacionUseCase editarFundacionUseCase;
+
+    @MockBean
+    private DesactivarFundacionUseCase desactivarFundacionUseCase;
 
     private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
 
@@ -333,5 +339,63 @@ class FundacionControllerIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe otra fundación aliada registrada con el nombre: Fundación Duplicada"));
+    }
+
+    @Test
+    @DisplayName("SR-RF-65 API C1 y C2: Dado una fundación activa, cuando la desactivo, retorna 200 con activa=false")
+    void debeDesactivarFundacionRetornando200() throws Exception {
+        FundacionResponseDTO response = FundacionResponseDTO.builder()
+                .id(3L)
+                .nombre("Fundación Receptora")
+                .activa(false)
+                .build();
+
+        when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq(ADMIN_ROLE)))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(3))
+                .andExpect(jsonPath("$.activa").value(false))
+                .andExpect(jsonPath("$.nombre").value("Fundación Receptora"));
+    }
+
+    @Test
+    @DisplayName("SR-RF-65 API C3: Dado una fundación ya inactiva, cuando la desactivo, recibo 409 Conflict")
+    void debeRetornar409CuandoFundacionYaEstaDesactivada() throws Exception {
+        when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq(ADMIN_ROLE)))
+                .thenThrow(new FundacionYaDesactivadaException("La fundación aliada ya se encuentra desactivada"));
+
+        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra desactivada"));
+    }
+
+    @Test
+    @DisplayName("SR-RF-65 API C4: Dado una fundación inexistente, cuando la desactivo, recibo 404 Not Found")
+    void debeRetornar404CuandoFundacionADesactivarNoExiste() throws Exception {
+        when(desactivarFundacionUseCase.desactivar(eq(999L), any(), eq(ADMIN_ROLE)))
+                .thenThrow(new FundacionNoEncontradaException("No existe una fundación aliada con ID: 999"));
+
+        mockMvc.perform(patch("/api/v1/admin/fundaciones/999/desactivar")
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("No existe una fundación aliada con ID: 999"));
+    }
+
+    @Test
+    @DisplayName("SR-RF-65 API C5: Dado que no soy administrador, cuando llamo a desactivar, recibo 403 Forbidden")
+    void debeRetornar403CuandoNoEsAdministradorAlDesactivar() throws Exception {
+        when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq("ROLE_COMPRADOR")))
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados"));
+
+        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
+                        .header("X-User-Roles", "ROLE_COMPRADOR"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 }
