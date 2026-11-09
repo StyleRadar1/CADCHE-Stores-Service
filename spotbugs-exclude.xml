@@ -9,4 +9,13 @@
         <Class name="~.*DTO.*" />
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
     </Match>
+    <!-- Excluir advertencias de exposicion de colecciones mutables en entidades JPA y modelos de dominio -->
+    <Match>
+        <Package name="~.*\.infrastructure\.adapter\.out\.persistence\.entity.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Package name="~.*\.domain\.model.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
 </FindBugsFilter>

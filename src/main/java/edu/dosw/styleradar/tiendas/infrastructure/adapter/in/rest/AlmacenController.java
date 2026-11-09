@@ -9,11 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.RegistrarAlmacenRequestDTO;
@@ -25,12 +27,19 @@ import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.AlmacenApi;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/almacenes")
+@RequiredArgsConstructor
 public class AlmacenController implements AlmacenApi {
+
+    private final ConfigurarUmbralUltimasUnidadesUseCase configurarUmbralUseCase;
+    private final ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
 
     @Override
     public ResponseEntity<PageResponseDTO<AlmacenResponseDTO>> consultar(
@@ -79,14 +88,33 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(@PathVariable String nit) {
+        ConfiguracionCatalogoAlmacenResponseDTO response = consultarUmbralUseCase.consultarConfiguracion(nit);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> configurarCatalogo(
             @PathVariable String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ConfiguracionCatalogoAlmacenRequestDTO request) {
-        return ResponseEntity.ok(new ConfiguracionCatalogoAlmacenResponseDTO(
-                nit,
-                request.getUmbralUltimasUnidades(),
-                request.getDiasNuevaLlegada(),
-                Instant.now()));
+        ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarCatalogo(nit, request, usuarioId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarUmbralUltimasUnidades(
+            @PathVariable String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Valid @RequestBody ActualizarUmbralRequestDTO request) {
+        ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarUmbral(nit, request.getUmbralUltimasUnidades(), usuarioId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(@PathVariable String nit) {
+        ConfiguracionCatalogoAlmacenResponseDTO response = consultarUmbralUseCase.consultarConfiguracion(nit);
+        return ResponseEntity.ok(response);
     }
 
     @Override

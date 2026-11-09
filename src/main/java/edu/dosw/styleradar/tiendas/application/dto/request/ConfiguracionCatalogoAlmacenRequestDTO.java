@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class ConfiguracionCatalogoAlmacenRequestDTO {
 
     @NotNull(message = "El umbral de últimas unidades es obligatorio")
-    @Min(value = 1, message = "El umbral de últimas unidades debe ser al menos 1")
+    @Min(value = 0, message = "El umbral de últimas unidades no puede ser negativo")
     @Max(value = 50, message = "El umbral de últimas unidades no puede superar 50")
     @Schema(description = "Cantidad máxima de unidades disponibles en inventario para marcar una prenda como ULTIMAS_UNIDADES (SR-RF-59)", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer umbralUltimasUnidades;
@@ -28,4 +28,3 @@ public class ConfiguracionCatalogoAlmacenRequestDTO {
     @Schema(description = "Número de días posteriores a la publicación durante los cuales una prenda conserva el distintivo NUEVA_PRENDA (SR-RF-60)", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer diasNuevaLlegada;
 }
-

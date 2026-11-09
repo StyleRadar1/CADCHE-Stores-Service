@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -117,6 +118,33 @@ public interface AlmacenApi {
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
     @Operation(
+            summary = "Consultar configuración de catálogo y umbrales (SR-RF-59 / SR-RF-60)",
+            description = "Consulta la configuración vigente del almacén. Si el almacén no cuenta con un umbral propio configurado, aplica y retorna automáticamente el valor por defecto de 3 unidades (SR-RF-59).",
+            security = {})
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Configuración del almacén consultada exitosamente",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class),
+                            examples = @ExampleObject(
+                                    name = "ConfiguracionConsultada",
+                                    value = "{\"nit\":\"900123456-1\",\"umbralUltimasUnidades\":3,\"diasNuevaLlegada\":7,\"fechaActualizacion\":\"2026-11-03T01:40:00Z\"}"))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Almacén inexistente",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Error interno del servidor",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @GetMapping("/{nit}/configuracion-catalogo")
+    ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(
+            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
+
+    @Operation(
             summary = "Configurar umbrales de últimas unidades y días de nueva llegada (SR-RF-59 / SR-RF-60)",
             description = "ROLE_ADMIN_ALMACEN propietario del NIT. Configura el umbral personalizado de stock bajo para marcar prendas como 'Últimas unidades' "
                     + "(por defecto <= 3 unidades, SR-RF-59) y la ventana temporal en días para marcar publicaciones recientes como 'Nueva llegada' (por defecto 7 días, SR-RF-60).",
@@ -141,7 +169,7 @@ public interface AlmacenApi {
                                     value = "{\"nit\":\"900123456-1\",\"umbralUltimasUnidades\":3,\"diasNuevaLlegada\":7,\"fechaActualizacion\":\"2026-11-03T01:40:00Z\"}"))),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Umbral o ventana de días fuera del rango permitido",
+                    description = "Umbral o ventana de días fuera del rango permitido (umbral negativo)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(
                     responseCode = "401",
@@ -163,7 +191,54 @@ public interface AlmacenApi {
     @PutMapping("/{nit}/configuracion-catalogo")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> configurarCatalogo(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
+            @Parameter(description = "ID del usuario autenticado (opcional vía gateway para BOLA/IDOR)", example = "10") @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ConfiguracionCatalogoAlmacenRequestDTO request);
+
+    @Operation(
+            summary = "Configurar exclusivamente el umbral de últimas unidades (SR-RF-59)",
+            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Configura el umbral de unidades para identificar una prenda como 'Últimas unidades' (por defecto <= 3).",
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Umbral actualizado exitosamente para el almacén",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Umbral negativo o fuera de rango permitido",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "El usuario no administra el almacén especificado",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Almacén no encontrado",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @PutMapping("/{nit}/umbral-ultimas-unidades")
+    ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarUmbralUltimasUnidades(
+            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
+            @Parameter(description = "ID del usuario autenticado", example = "10") @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Valid @RequestBody edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO request);
+
+    @Operation(
+            summary = "Consultar el umbral de últimas unidades (SR-RF-59)",
+            description = "Público o interno para ms-inventario/ms-catalogo. Consulta el umbral configurado. Si no existe configuración previa, retorna el valor por defecto de 3.",
+            security = {})
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Umbral consultado exitosamente",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Almacén no encontrado",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @GetMapping("/{nit}/umbral-ultimas-unidades")
+    ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(
+            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
     @Operation(
             summary = "Marcar prenda como últimas unidades según el umbral del almacén (SR-RF-59)",

@@ -17,12 +17,47 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ReglaDeNegocioException.class)
+    public ResponseEntity<ErrorResponseDTO> handleReglaDeNegocio(
+            ReglaDeNegocioException exception, HttpServletRequest request) {
+        log.warn("Regla de negocio no satisfecha en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(
+            IllegalArgumentException exception, HttpServletRequest request) {
+        log.warn("Argumento inválido en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(AccesoDenegadoAlmacenException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccesoDenegado(
+            AccesoDenegadoAlmacenException exception, HttpServletRequest request) {
+        log.warn("Acceso denegado (403 BOLA/IDOR) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(AlmacenNoEncontradoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAlmacenNoEncontrado(
+            AlmacenNoEncontradoException exception, HttpServletRequest request) {
+        log.warn("Recurso no encontrado (404) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidation(
@@ -85,4 +120,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(errorResponse);
     }
 }
-
