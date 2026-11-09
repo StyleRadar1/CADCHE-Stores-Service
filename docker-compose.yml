@@ -1,14 +1,20 @@
 # ==============================================================================
-# STYLE RADAR - DOCKER COMPOSE (Semana 10 · DOSW · ECI - Guía Turtwig S10)
+# STYLE RADAR - PRODUCTION-GRADE LOCAL MICROSERVICE STACK
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
+# Estándares de Arquitectura Hexagonal: DB (PostgreSQL), Storage (Azurite), Broker (RabbitMQ)
 # ==============================================================================
 
 version: '3.9'
 
 services:
+
+  # ─── 1. Microservicio Tiendas (Spring Boot Hexagonal Core) ───────────────────
   ms-tiendas:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: ms-tiendas
+    restart: unless-stopped
     ports:
       - "8140:8140"
     environment:
@@ -19,16 +25,25 @@ services:
       DB_NAME: ${POSTGRES_DB:-styleradar_tiendas}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      AZURE_STORAGE_BLOB_ENDPOINT: http://tiendas-blob:10000/devstoreaccount1
+      RABBITMQ_HOST: tiendas-rabbitmq
+      RABBITMQ_PORT: 5672
       SWAGGER_SERVER_URL: http://localhost:8140
     depends_on:
       tiendas-db:
         condition: service_healthy
+      tiendas-blob:
+        condition: service_started
+      tiendas-rabbitmq:
+        condition: service_healthy
     networks:
-      - tiendas-net
+      - styleradar-net
 
+  # ─── 2. Adaptador de Persistencia: PostgreSQL 16 ─────────────────────────────
   tiendas-db:
     image: postgres:16-alpine
     container_name: tiendas-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-styleradar_tiendas}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -36,18 +51,57 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - tiendas-data:/var/lib/postgresql/data
+      - tiendas-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-styleradar_tiendas}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - tiendas-net
+      - styleradar-net
+
+  # ─── 3. Adaptador de Almacenamiento: Azurite (Emulador Azure Blob) ────────────
+  tiendas-blob:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: tiendas-blob
+    restart: unless-stopped
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
+    ports:
+      - "10000:10000"
+    volumes:
+      - tiendas-blob-data:/data
+    networks:
+      - styleradar-net
+
+  # ─── 4. Adaptador de Eventos: RabbitMQ (Broker Guatoque Jiraguas :5672) ───────
+  tiendas-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: tiendas-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"     # Puerto oficial AMQP Broker
+      - "15672:15672"   # RabbitMQ Management Web Console
+    volumes:
+      - tiendas-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - styleradar-net
 
 volumes:
-  tiendas-data:
+  tiendas-db-data:
+    driver: local
+  tiendas-blob-data:
+    driver: local
+  tiendas-rabbitmq-data:
+    driver: local
 
 networks:
-  tiendas-net:
+  styleradar-net:
     driver: bridge
