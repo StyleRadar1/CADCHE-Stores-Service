@@ -21,6 +21,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
@@ -55,9 +56,9 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
-    @ExceptionHandler(AlmacenNoEncontradoException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAlmacenNoEncontrado(
-            AlmacenNoEncontradoException exception, HttpServletRequest request) {
+    @ExceptionHandler({AlmacenNoEncontradoException.class, FundacionNoEncontradaException.class})
+    public ResponseEntity<ErrorResponseDTO> handleRecursoNoEncontrado(
+            RuntimeException exception, HttpServletRequest request) {
         log.warn("Recurso no encontrado (404) en {}: {}", request.getRequestURI(), exception.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(),
                 request.getRequestURI(), Map.of());

@@ -12,7 +12,11 @@ public interface SpringDataFundacionRepository extends JpaRepository<FundacionEn
 
     boolean existsByNombreIgnoreCase(String nombre);
 
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
+
     boolean existsByRepresentanteId(Long representanteId);
+
+    boolean existsByRepresentanteIdAndIdNot(Long representanteId, Long id);
 
     Optional<FundacionEntity> findByNombreIgnoreCase(String nombre);
 }

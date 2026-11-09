@@ -139,4 +139,65 @@ class FundacionRepositoryAdapterTest {
         assertThat(resultado).isPresent();
         assertThat(resultado.get().getId()).isEqualTo(1L);
     }
+
+    @Test
+    @DisplayName("SR-RF-64 Integración: Debe verificar existencia de nombre excluyendo ID actual")
+    void debeVerificarExistenciaNombreExcluyendoId() {
+        when(repository.existsByNombreIgnoreCaseAndIdNot("Fundación Manos", 2L)).thenReturn(true);
+        when(repository.existsByNombreIgnoreCaseAndIdNot("Fundación Manos", 1L)).thenReturn(false);
+
+        assertThat(adapter.existsByNombreIgnoreCaseAndIdNot("Fundación Manos", 2L)).isTrue();
+        assertThat(adapter.existsByNombreIgnoreCaseAndIdNot("Fundación Manos", 1L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("SR-RF-64 Integración: Debe verificar existencia de representante excluyendo ID actual")
+    void debeVerificarExistenciaRepresentanteExcluyendoId() {
+        when(repository.existsByRepresentanteIdAndIdNot(15L, 2L)).thenReturn(true);
+        when(repository.existsByRepresentanteIdAndIdNot(15L, 1L)).thenReturn(false);
+
+        assertThat(adapter.existsByRepresentanteIdAndIdNot(15L, 2L)).isTrue();
+        assertThat(adapter.existsByRepresentanteIdAndIdNot(15L, 1L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("SR-RF-64 Integración: Debe persistir actualización con nuevos datos institucionales")
+    void debeGuardarActualizacionFundacion() {
+        Fundacion dominioActualizado = Fundacion.builder()
+                .id(1L)
+                .nombre("Fundación Semillas Renacientes")
+                .direccion("Calle 20")
+                .telefono("+57 300 111 2233")
+                .email("contacto@semillas.org")
+                .latitud(4.6)
+                .longitud(-74.1)
+                .representanteId(20L)
+                .horarioAtencion("Lunes a Viernes 09:00 - 17:00")
+                .politicasDonacion("Prendas limpias en buen estado")
+                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .build();
+
+        FundacionEntity entidadGuardada = FundacionEntity.builder()
+                .id(1L)
+                .nombre("Fundación Semillas Renacientes")
+                .direccion("Calle 20")
+                .telefono("+57 300 111 2233")
+                .email("contacto@semillas.org")
+                .latitud(4.6)
+                .longitud(-74.1)
+                .representanteId(20L)
+                .horarioAtencion("Lunes a Viernes 09:00 - 17:00")
+                .politicasDonacion("Prendas limpias en buen estado")
+                .build();
+
+        when(repository.save(any(FundacionEntity.class))).thenReturn(entidadGuardada);
+
+        Fundacion resultado = adapter.save(dominioActualizado);
+
+        assertThat(resultado.getNombre()).isEqualTo("Fundación Semillas Renacientes");
+        assertThat(resultado.getTelefono()).isEqualTo("+57 300 111 2233");
+        assertThat(resultado.getHorarioAtencion()).isEqualTo("Lunes a Viernes 09:00 - 17:00");
+        assertThat(resultado.getPoliticasDonacion()).isEqualTo("Prendas limpias en buen estado");
+        verify(repository).save(any(FundacionEntity.class));
+    }
 }

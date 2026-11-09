@@ -94,7 +94,11 @@ public interface FundacionApi {
     @PutMapping("/api/v1/admin/fundaciones/{id}")
     ResponseEntity<FundacionResponseDTO> editar(
             @Parameter(description = "Identificador de la fundación", example = "3") @PathVariable Long id,
-            @Valid @RequestBody FundacionRequestDTO request);
+            @Valid @RequestBody FundacionRequestDTO request,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Desactivar fundación aliada (SR-RF-65)",

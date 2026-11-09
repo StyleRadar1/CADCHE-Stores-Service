@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.FundacionApi;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class FundacionController implements FundacionApi {
 
     private final RegistrarFundacionUseCase registrarFundacionUseCase;
+    private final EditarFundacionUseCase editarFundacionUseCase;
 
     @Override
     public ResponseEntity<FundacionResponseDTO> registrar(
@@ -45,25 +47,12 @@ public class FundacionController implements FundacionApi {
     @Override
     public ResponseEntity<FundacionResponseDTO> editar(
             @PathVariable Long id,
-            @Valid @RequestBody FundacionRequestDTO request) {
-        // Enpoint placeholder para SR-RF-64
-        return ResponseEntity.ok(FundacionResponseDTO.builder()
-                .id(id)
-                .nombre(request.getNombre())
-                .descripcion(request.getDescripcion())
-                .direccion(request.getDireccion())
-                .telefono(request.getTelefono())
-                .email(request.getEmail())
-                .latitud(request.getLatitud())
-                .longitud(request.getLongitud())
-                .categoriasAceptadas(request.getCategoriasAceptadas())
-                .representanteId(request.getRepresentanteId())
-                .urlCertificadoPersoneriaJuridica(request.getUrlCertificadoPersoneriaJuridica())
-                .causasApoyadas(request.getCausasApoyadas())
-                .horarioAtencion(request.getHorarioAtencion())
-                .politicasDonacion(request.getPoliticasDonacion())
-                .activa(true)
-                .build());
+            @Valid @RequestBody FundacionRequestDTO request,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        String rol = resolveRole(rolesHeader, roleHeader);
+        FundacionResponseDTO editada = editarFundacionUseCase.editar(id, request, rol);
+        return ResponseEntity.ok(editada);
     }
 
     @Override
