@@ -192,7 +192,7 @@ function chk(t){return '<p data-cycle="☐ '+t+'|☑ '+t+'" title="Toca para mar
 function mono(t){return '<div class="card" style="background:#262626;color:#E8DCCB;border:0;font:400 13px/1.5 var(--fm);white-space:pre-wrap">'+t+'</div>'}
 function cover(label,l1,l2,chips,sm){
  return '<div class="radar p2" style="right:34px;top:150px"><svg viewBox="0 0 290 290" aria-hidden="true"><g fill="none" stroke="rgba(232,220,203,.45)" stroke-width="2"><circle cx="145" cy="145" r="141"/><circle cx="145" cy="145" r="94"/><circle cx="145" cy="145" r="47"/><line x1="145" y1="4" x2="145" y2="286"/><line x1="4" y1="145" x2="286" y2="145"/></g></svg><div class="sw"></div><i class="bp" style="left:200px;top:70px"></i><i class="bp" style="left:80px;top:190px;animation-delay:1.3s"></i><i class="bp" style="left:215px;top:200px;animation-delay:2.4s"></i><i class="bp" style="left:120px;top:60px;animation-delay:3.1s"></i></div>'+
- '<img src="'+LW+'" alt="StyleRadar" style="width:190px;height:auto"><p class="k" style="margin-top:20px">'+label+'</p><p style="font-size:24px;font-weight:600;color:#E8DCCB">Nombre del proyecto</p>'+
+ '<img src="'+LW+'" alt="StyleRadar" style="width:190px;height:auto"><p class="k" style="margin-top:20px">'+label+'</p><p style="font-size:24px;font-weight:600;color:#E8DCCB">Style Radar</p>'+
  '<div style="display:flex;gap:10px;flex-wrap:wrap;max-width:300px">'+chips.map(function(c){return '<span class="pill">'+c+'</span>'}).join('')+'</div>'+
  '<h1 class="t'+(sm?' sm2':'')+'" style="--sz:'+(sm?62:84)+'px;line-height:.92;margin-top:auto;margin-bottom:180px">'+l1+'<br>'+l2+'</h1>'+crew(165)}
 function backcover(w,s){return '<span class="rings p3" style="width:480px;height:480px;left:-160px;top:60px"></span><span class="rings p2" style="width:260px;height:260px;left:-50px;top:170px"></span><img src="'+LW+'" alt="StyleRadar" style="width:190px;height:auto"><h2 class="t" style="--sz:110px;line-height:.92;margin-top:24px">'+w+'</h2><p class="k">'+s+'</p><p style="font-size:24px;font-weight:600;color:#E8DCCB;max-width:300px">Descubre tu estilo. En tu ciudad.</p>'+crew(165)}
@@ -349,7 +349,7 @@ var D=[
 ];
 var R=mkdoc(D),P=R.P,T=R.T;
 
-var KEY='sr-rv-backm-stores-v1',store={};
+var KEY='sr-rv-backm-stores-v2',store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 var book=document.getElementById('book'),fit=document.getElementById('fit'),ind=document.getElementById('ind');
