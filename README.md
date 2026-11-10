@@ -1710,7 +1710,68 @@ La evaluación se estructura bajo la tríada de seguridad para arquitecturas de 
 
 ---
 
-#### 15.4.1 Matriz Comparativa Ejecutiva del Ecosistema CADCHE
+#### 15.4.1 Análisis Transversal del Sistema: Pilares de Seguridad
+
+##### A. Autenticación (Authentication)
+* **1. Cómo se identifica el usuario**:
+  * **Cómo está hoy**: El usuario se identifica inicialmente en `ms-auth` mediante credenciales básicas (`email` y `password` en `/api/v1/auth/login`) o mediante código de un solo uso de 6 dígitos (`/verificar-otp`). Sin embargo, en el controlador `AuthController` la respuesta está construida mediante stubs estáticos que devuelven un token fijo con `userId: 12`. En `ms-usuarios`, las peticiones a la API no solicitan identificación (no hay filtros de seguridad). En `ms-tiendas`, el usuario se identifica mediante el claim `sub` (ID de usuario) y `roles` transportados en la cabecera estándar `Authorization: Bearer <token>`.
+  * **Riesgos encontrados**: Suplantación masiva de identidad debido a tokens quemados en `ms-auth`; ausencia total de identificación en `ms-usuarios` (cualquier atacante opera de forma anónima); identificación débil basada en enteros secuenciales (`Long id`) sujeta a enumeración.
+  * **Qué se va a corregir**: Unificar la identidad bajo el estándar UUIDv7 inmutable emitido por `ms-auth` y propagado como claim `sub` en el JWT; exigir identificación obligatoria con token Bearer en todos los microservicios de recursos (`ms-usuarios` y `ms-tiendas`).
+* **2. Dónde se valida (Gateway o Servicio)**:
+  * **Cómo está hoy**: No se cuenta con un API Gateway perimetral con inspección criptográfica activa. La validación se ejecuta **a nivel de servicio** (arquitectura descentralizada): `ms-tiendas` valida el token de forma autónoma mediante su propio filtro `JwtAuthFilter`. Por el contrario, `ms-usuarios` no valida el token en ninguna capa y `ms-auth` opera con `.permitAll()`.
+  * **Riesgos encontrados**: Modelo de "queso suizo" donde la seguridad depende de la disciplina individual de cada servicio; sobrecarga computacional de validación criptográfica descentralizada; ausencia de un WAF/Gateway perimetral que mitigue ataques DDoS, flood o malformaciones antes de tocar los contenedores internos.
+  * **Qué se va a corregir**: Implementar arquitectura de defensa en profundidad: un **API Gateway perimetral (Azure API Management o Spring Cloud Gateway)** que verifique la estructura, expiración y firma del JWT antes de enrutar el tráfico, combinado con validación Zero-Trust dentro de cada microservicio mediante una librería compartida (`styleradar-security-starter`).
+* **3. Cómo se manejan tokens y contraseñas**:
+  * **Cómo está hoy**:
+    * *Tokens*: Se generan tokens JWT firmados con clave simétrica HMAC-SHA256 (`HS256`). La clave `JWT_SECRET` se inyecta por variable de entorno, pero en `ms-auth` existe un secreto predeterminado en Base64 en `application.properties`. La vigencia del token es de 24 horas (`PT24H`). No existe lista de revocación (blacklist) en logout.
+    * *Contraseñas*: En `ms-auth` las contraseñas recibidas no son comparadas contra hashes almacenados ni persistidas en PostgreSQL debido a que la base de datos se encuentra excluida en la autoconfiguración.
+  * **Riesgos encontrados**: Secreto simétrico compartido entre microservicios (el compromiso de uno expone la firma de todos); tokens con vida útil excesiva (24h) sin capacidad de revocación inmediata si una cuenta es comprometida; almacenamiento o manejo en memoria sin hashing robusto en el servicio de autenticación.
+  * **Qué se va a corregir**: Migrar de clave simétrica a **criptografía asimétrica RSA-256 / Ed25519 (JWKS)**: `ms-auth` custodia la clave privada y firma; los microservicios solo conocen la clave pública consumida desde `/.well-known/jwks.json`. Reducir la vigencia del Access Token a 15–30 minutos e implementar Refresh Tokens rotativos (RTR) almacenados en Redis. Hashing obligatorio con `BCryptPasswordEncoder` (costo 12) y blacklist distribuida en Redis (`jti`) para invalidación en logout.
+
+---
+
+##### B. Autorización (Authorization)
+* **1. Roles definidos y qué puede hacer cada uno**:
+  * **`COMPRADOR` (Usuario Final / Cliente)**:
+    * *Permitido*: Registro en plataforma, autenticación, consulta de vitrinas y catálogo de prendas, gestión de perfil propio, tallas habituales y preferencias de estilo (`ms-usuarios`), y guardado de búsquedas.
+    * *Denegado*: Acceso a endpoints administrativos de tiendas, carga de documentos tributarios RUT, moderación de comercios y alteración de cuentas de terceros.
+  * **`ADMIN_ALMACEN` (Tienda / Comercio Aliado)**:
+    * *Permitido*: Gestión integral de sedes comerciales asociadas a su NIT (`/api/v1/almacenes/{nit}/...`), carga de hasta 6 fotos de vitrina, subida de RUT en PDF, configuración de umbrales de stock de últimas unidades y asociación de administradores secundarios a su tienda.
+    * *Denegado*: Auto-aprobar su verificación (conflicto de interés), modificar datos de otros almacenes con diferente NIT (bloqueo BOLA), modificar perfiles de compradores o alterar estados de cuenta en `ms-usuarios`.
+  * **`ADMIN_STYLERADAR` (Super Administrador de Plataforma)**:
+    * *Permitido*: Moderación y toma de decisiones sobre comercios (`POST /api/v1/almacenes/{nit}/verificacion`), desactivación de fundaciones benéficas aliadas, suspensión/reactivación de cuentas de usuarios (`PATCH /api/v1/usuarios/{id}/estado`) y acceso a métricas globales de infraestructura y auditoría.
+    * *Denegado*: Operaciones que alteren la consistencia transaccional de pagos o acceso a contraseñas en claro.
+* **2. Dónde se aplica cada regla**:
+  * **Cómo está hoy**:
+    * En `ms-tiendas`: Aplicación en tres capas defensivas: (1) Filtro web `JwtAuthFilter` extrae el rol con prefijo `ROLE_`; (2) Capa de controladores aplica RBAC declarativo con `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")` o `hasRole('ADMIN_ALMACEN')`; (3) Capa de dominio ejecuta `AutorizacionAlmacenValidator` para mitigar BOLA/IDOR contrastando `userId` contra la tabla relacional `administradores_almacen`.
+    * En `ms-usuarios`: **No se aplica en ninguna capa**. Cualquier llamada anónima o autenticada puede invocar `/api/v1/usuarios/{id}/estado` o modificar perfiles de otros clientes.
+    * En `ms-auth`: Únicamente se aplica una regla permisiva general (`permitAll`).
+  * **Riesgos encontrados**: Escalamiento horizontal y vertical crítico en `ms-usuarios` (BOLA/IDOR extremo); cualquier actor puede alterar estados de cuenta o suplantar compradores; inexistencia de particionamiento por sucursales físicas (tienda norte vs tienda sur).
+  * **Qué se va a corregir**: Replicar en `ms-usuarios` el modelo de tres capas de `ms-tiendas`: filtro JWT + `@PreAuthorize` en controladores + validador BOLA en dominio. Proteger rutas administrativas en el API Gateway y extender el modelo de autorización a ABAC (Attribute-Based Access Control) para soportar administradores de sede específica (`nit + sedeId`).
+
+---
+
+##### C. Integridad (Integrity)
+* **1. Validación de entradas**:
+  * **Cómo está hoy**: En `ms-tiendas` y `ms-usuarios` se aplica Jakarta Bean Validation en DTOs (`@NotNull`, `@Pattern`, `@DecimalMin`, `@DecimalMax`). En `ms-tiendas` se validan expresiones regulares de NIT (`^[0-9]{9,10}-[0-9]$`), rangos de latitud/longitud y Magic Bytes de fotos y PDFs en dominio (`Almacen.validarMagicBytes`). En `ms-auth` existen validaciones parciales sin persistencia activa.
+  * **Riesgos encontrados**: Vulnerabilidad a inyección de payloads maliciosos o scripts XSS en campos de texto libre (descripciones, motivos); riesgo de deserialización polimórfica en Jackson si se habilitan opciones por defecto.
+  * **Qué se va a corregir**: Endurecer el serializador Jackson (desactivando tipado polimórfico arbitrario); incorporar filtro sanitizador XSS (OWASP Java HTML Sanitizer) para campos de texto libre; estandarizar interceptor de Magic Bytes para toda carga multipart.
+* **2. Comunicación cifrada**:
+  * **Cómo está hoy**: En la nube (Azure App Service), el tráfico entrante está protegido con **TLS 1.3 / HTTPS** forzado y cabecera HSTS. La conexión a PostgreSQL en Azure exige `sslmode=require`. Azure Blob Storage utiliza cifrado transparente en reposo con claves AES-256 (SSE). Sin embargo, en entornos locales de desarrollo (`docker-compose.yml`), la comunicación HTTP y PostgreSQL viaja en texto plano sin TLS.
+  * **Riesgos encontrados**: Intercepción Man-in-the-Middle (MitM) en redes locales o de integración; almacenamiento de datos personales (PII) en texto claro dentro de las columnas de PostgreSQL (incumplimiento de la Ley 1581 de Habeas Data).
+  * **Qué se va a corregir**: Configurar mTLS (Mutual TLS) para comunicación este-oeste inter-servicios; implementar cifrado a nivel de campo con `AttributeConverter` (AES-256-GCM) para teléfonos, documentos y correos en la base de datos relacional.
+* **3. Integridad de datos y mensajes entre servicios**:
+  * **Cómo está hoy**: PostgreSQL 16 garantiza consistencia ACID transaccional (`@Transactional`), unicidad (`UNIQUE(nit)`), checks relacionales y migraciones versionadas con Flyway (V1–V4). RabbitMQ utiliza Topic Exchanges durables (`styleradar.exchange`), colas persistentes y Dead Letter Exchange (`styleradar.dlx`).
+  * **Riesgos encontrados**: Problema de Doble Escritura (*Dual-Write Problem*): Si el microservicio confirma la transacción en base de datos pero la red hacia RabbitMQ falla, los eventos de dominio se pierden, rompiendo la consistencia eventual; riesgo de procesamiento duplicado en consumidores por falta de deduplicación.
+  * **Qué se va a corregir**: Implementar el patrón **Transactional Outbox**: los eventos se persisten en una tabla `outbox_eventos` dentro de la misma transacción relacional de PostgreSQL y un relay asíncrono los publica a RabbitMQ garantizando entrega *At-least-once*; implementar verificación de clave de idempotencia (`messageId`) en los consumidores.
+* **4. Que nadie pueda alterar lo que no le corresponde (Anti-BOLA / IDOR)**:
+  * **Cómo está hoy**: En `ms-tiendas`, `AutorizacionAlmacenValidator` (`SR-RNF-01`) valida que el `userId` autenticado coincida con el administrador registrado en base de datos para ese NIT; ante discrepancias, bloquea la mutación con `403 Forbidden`. En `ms-usuarios`, esta protección **no existe**, permitiendo modificar perfiles ajenos con solo alterar el parámetro `{id}` en la URL.
+  * **Riesgos encontrados**: Manipulación cruzada masiva de preferencias, tallas y cuentas en `ms-usuarios`; sobrecarga en base de datos en `ms-tiendas` por consultas relacionales repetitivas en cada llamada BOLA.
+  * **Qué se va a corregir**: Implementar un validador BOLA en `ms-usuarios` que restrinja mutaciones sobre `/api/v1/usuarios/{id}/**` al propio titular (`sub == id`) o al rol `ADMIN_STYLERADAR`; almacenar en caché distribuida en Redis (`auth:tienda:{userId}:{nit}`) las decisiones de propiedad en `ms-tiendas` para validar autorizaciones en sub-milisegundos.
+
+---
+
+#### 15.4.2 Matriz Comparativa Ejecutiva del Ecosistema CADCHE
 
 | Microservicio | Pilar de Seguridad | Estado Actual (Cómo está hoy) | Riesgos Identificados | Plan de Remediación (Qué se va a corregir) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1726,7 +1787,7 @@ La evaluación se estructura bajo la tríada de seguridad para arquitecturas de 
 
 ---
 
-#### 15.4.2 Análisis Detallado por Servicio y Pilar de Seguridad
+#### 15.4.3 Análisis Detallado por Servicio y Pilar de Seguridad
 
 ---
 
@@ -1839,7 +1900,7 @@ La evaluación se estructura bajo la tríada de seguridad para arquitecturas de 
 
 ---
 
-#### 15.4.3 Plan de Remediación y Priorización de Seguridad
+#### 15.4.4 Plan de Remediación y Priorización de Seguridad
 
 ```mermaid
 flowchart TD
