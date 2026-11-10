@@ -319,19 +319,32 @@ var D=[
   '<div style="font:400 10.5px/1.35 var(--fm);color:#E8DCCB;margin-bottom:2px">GET /api/v1/almacenes/900123456-7/distancia?lat=4.65&amp;lng=-74.06</div>'+
   '<div style="font:600 10.5px/1.35 var(--fm);color:#6EE7B7">&rarr; 200 OK { &quot;nit&quot;: &quot;900123456-7&quot;, &quot;distanciaKm&quot;: 1.42, &quot;enRango&quot;: true }</div>'+
   '</div>'},
-{c:'arena',t:'Flujo interno',tag:'06',tab:'Flujos',h:K('06 · Flujo')+H('Ejecución interna','casos de uso de negocio')+'<div class="col" style="gap:6px">'+[
+{c:'arena',t:'Flujo interno',tag:'06',tab:'Flujos',h:K('06 · Flujo')+H('Ejecución interna','Casos de uso')+'<div class="col" style="gap:2px">'+[
   ['1 · Driving Adapter & RBAC BOLA/IDOR','AlmacenController recibe la petición, valida anotaciones @Valid y comprueba el claim del JWT contra el NIT antes de delegar al caso de uso (prevención BOLA SR-RNF-01).'],
   ['2 · Caso de Uso & Dominio Puro','GestionarTiendaUseCaseImpl invoca el agregado Tienda; se valida el NIT con algoritmo DIAN y se calcula la distancia con DistanciaHaversineCalculator sin dependencias de Spring.'],
   ['3 · Driven Adapter & Persistencia ACID','TiendaRepositoryAdapter persiste los datos en PostgreSQL 16; StorageAdapter sube el documento RUT en PDF a Azure Blob Storage obteniendo la URL HTTPS segura.'],
   ['4 · Desacoplamiento Asíncrono AMQP','Si el dictamen es aprobatorio o se desactiva una fundación (SR-RF-65), RabbitMQFundacionEventPublisherAdapter publica el evento en styleradar.fundaciones.exchange y retorna HTTP 200/201.']
-].map(function(r,i){return (i?'<p style="text-align:center;font-size:18px;line-height:.8;color:#48119A">↓</p>':'')+'<div class="card"><p class="lab">'+r[0]+'</p><p class="sm" style="opacity:1">'+r[1]+'</p></div>'}).join('')+'</div>'},
-{c:'graf',t:'Datos y persistencia',tag:'07',tab:'Datos',h:K('07 · Datos')+H('Modelo de datos','PostgreSQL 16 relacional ACID')+tb(['Tabla SQL','Clave / Relación','Campos Clave','Reglas de Integridad'],[
-  ['tiendas','PK id (UUID)','nit (UNIQUE), razon_social, estado, url_rut_pdf','ACID · NIT validado'],
-  ['ubicaciones_geograficas','FK tienda_id (1:1)','latitud, longitud, direccion, zona_comercial','ON DELETE CASCADE'],
-  ['horarios_atencion','FK tienda_id (1:N)','dia_semana, hora_apertura, hora_cierre','CHECK apertura < cierre'],
-  ['historial_moderaciones','FK tienda_id (1:N)','decision, motivo_rechazo, admin_id, fecha','Auditoría inmutable'],
-  ['fundaciones','PK id (BIGINT)','nit, nombre, activa, latitud, longitud','Desactivación lógica']
-]).replace('color:#262626','color:#FBF7F0')+cdk('Optimización Geoespacial e Índices','CREATE INDEX idx_ubicacion_coords ON ubicaciones_geograficas (latitud, longitud); optimiza el filtrado bounding-box antes de computar Haversine. PostgreSQL fue seleccionado sobre motores NoSQL por la necesidad de integridad transaccional estricta en registros mercantiles.')},
+].map(function(r,i){return (i?'<p style="text-align:center;font-size:12px;line-height:1;margin:1px 0;color:#48119A">↓</p>':'')+'<div class="card" style="padding:9px 13px;gap:2px"><p class="lab" style="font-size:10.5px;font-weight:700;margin:0;color:#48119A">'+r[0]+'</p><p class="sm" style="font-size:11px;line-height:1.35;margin:0;color:#262626;opacity:1">'+r[1]+'</p></div>'}).join('')+'</div>'},
+{c:'graf',t:'Datos y persistencia',tag:'07',tab:'Datos',h:K('07 · Datos')+H('Modelo de datos','PostgreSQL 16 ACID')+
+  '<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:10.5px;color:#FBF7F0">'+
+  '<colgroup><col style="width:155px"><col style="width:95px"><col style="width:134px"><col style="width:120px"></colgroup>'+
+  '<thead><tr style="border-bottom:2px solid #E8DCCB">'+
+  '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#E8DCCB;text-align:left">Tabla SQL</th>'+
+  '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#E8DCCB;text-align:left">Clave / Relación</th>'+
+  '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#E8DCCB;text-align:left">Campos Clave</th>'+
+  '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#E8DCCB;text-align:left">Integridad</th>'+
+  '</tr></thead>'+
+  '<tbody>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">tiendas</code></td><td style="padding:4px 3px">PK id (UUID)</td><td style="padding:4px 3px">nit (UNIQUE), razon_social</td><td style="padding:4px 3px">ACID · NIT validado</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">ubicaciones_geograficas</code></td><td style="padding:4px 3px">FK tienda_id (1:1)</td><td style="padding:4px 3px">latitud, longitud, direccion</td><td style="padding:4px 3px">ON DELETE CASCADE</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">horarios_atencion</code></td><td style="padding:4px 3px">FK tienda_id (1:N)</td><td style="padding:4px 3px">dia_semana, apertura, cierre</td><td style="padding:4px 3px">CHECK apertura &lt; cierre</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">historial_moderaciones</code></td><td style="padding:4px 3px">FK tienda_id (1:N)</td><td style="padding:4px 3px">decision, motivo, admin_id</td><td style="padding:4px 3px">Auditoría inmutable</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">fundaciones</code></td><td style="padding:4px 3px">PK id (BIGINT)</td><td style="padding:4px 3px">nit, nombre, activa, lat/lng</td><td style="padding:4px 3px">Desactivación lógica</td></tr>'+
+  '</tbody></table>'+
+  '<div class="card dk" style="padding:9px 12px;margin-top:auto">'+
+  '<p class="lab" style="font-size:10.5px;color:#B79CF0;margin-bottom:3px">Optimización Geoespacial e Índices</p>'+
+  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#FBF7F0;margin:0"><code style="color:#86EFAC">CREATE INDEX idx_coords ON ubicaciones_geograficas(latitud, longitud);</code> optimiza el filtrado bounding-box antes de computar Haversine en memoria. PostgreSQL garantiza consistencia ACID estricta en unicidad de NIT y registros mercantiles.</p>'+
+  '</div>'},
 {c:'cream',t:'Aislamiento de bases de datos',tag:'08',tab:'Aislamiento',h:K('08 · Ambientes')+H('Aislamiento estricto','QA vs PROD vs Local')+tb(['Ambiente','Host PostgreSQL','Base de Datos','Usuario BD','Almacenamiento Blob','Puerto App'],[
   ['QA','styleradar-pg-qa.postgres.database.azure.com:5432','styleradar_tiendas','styleradaradmin','styleradarblobqa.blob.core.windows.net','8140'],
   ['PROD','styleradar-pg-prod.postgres.database.azure.com:5432','styleradar_tiendas','styleradaradmin','styleradarblobprod.blob.core.windows.net','8140'],
@@ -405,7 +418,7 @@ var D=[
 ];
 var R=mkdoc(D),P=R.P,T=R.T;
 
-var KEY='sr-rv-backm-stores-v5',store={};
+var KEY='sr-rv-backm-stores-v6',store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 var book=document.getElementById('book'),fit=document.getElementById('fit'),ind=document.getElementById('ind');
