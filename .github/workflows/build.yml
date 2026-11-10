@@ -20,10 +20,10 @@ jobs:
         with:
           fetch-depth: 0 # Deshabilitar shallow clones para analisis completo de Git en Sonar
 
-      - name: Configurar Java 17 Temurin
+      - name: Configurar Java 21 Temurin (requerido por SonarQube Cloud Scanner)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Cache de paquetes SonarQube
@@ -45,3 +45,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service
+
