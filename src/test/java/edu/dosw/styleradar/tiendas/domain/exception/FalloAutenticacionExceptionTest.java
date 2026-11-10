@@ -27,3 +27,4 @@ class FalloAutenticacionExceptionTest {
         assertThat(excepcion.getCause()).isNull();
     }
 }
+
