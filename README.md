@@ -337,38 +337,68 @@ El microservicio `ms-tiendas` se apoya exclusivamente en un modelo relacional ro
 
 <div align="center">
   <img src="docs/uml/DiagramaComponentesEspecifico.png" width="95%" alt="Diagrama de Componentes Específico ms-tiendas" /><br />
-  <sub>Figura 7.3: Diagrama de componentes específico en arquitectura hexagonal para ms-tiendas (Draw.io editable en <a href="docs/uml/DiagramaComponentesEspecifico.drawio"><code>docs/uml/DiagramaComponentesEspecifico.drawio</code></a>).</sub>
+  <sub>Figura 7.3: Diagrama de componentes específico en arquitectura hexagonal pura para ms-tiendas bajo el estándar corporativo <code>EstiloDiagramas.xml</code> (Draw.io editable en <a href="docs/uml/DiagramaComponentesEspecifico.drawio"><code>docs/uml/DiagramaComponentesEspecifico.drawio</code></a>).</sub>
 </div>
 
 ##### Justificación del Enfoque Hexagonal (Puertos y Adaptadores)
-`ms-tiendas` sigue de forma irrestricta la separación por capas hexagonal:
-- **Aislamiento de Lógica Geoespacial**: Las fórmulas de distancia y validaciones de solapamiento de horarios residen en `domain/model/` y `domain/validator/`. Ninguna fórmula matemática ni lógica de negocio depende de PostGIS ni de repositorios SQL.
-- **Independencia de Frameworks en Aplicación**: Los casos de uso (`*UseCaseImpl`) y servicios de aplicación (`*ServiceImpl`) se cablean mediante inyección manual en `BeanConfig.java`, garantizando portabilidad absoluta y tests unitarios ultra-rápidos.
-- **Event-Driven Integration**: Las decisiones de moderación aprobadas disparan eventos asíncronos hacia RabbitMQ para notificar a los microservicios de catálogos y compras sin acoplamiento temporal ni llamadas REST síncronas bloqueantes.
+`ms-tiendas` implementa de forma estricta los principios de **Arquitectura Hexagonal (Puertos y Adaptadores)** y **Domain-Driven Design (DDD)** sobre lo que realmente se codificó en el repositorio:
+- **Inversión de Control Manual (0% Spring en Dominio y Casos de Uso)**: Los 9 casos de uso (`*UseCaseImpl`) implementan interfaces de puerto de entrada (`domain/port/in/`) y se cablean explícitamente mediante métodos `@Bean` en `BeanConfig.java`. No existe ninguna anotación `@Service` ni acoplamiento a frameworks en el núcleo de la aplicación.
+- **Aislamiento de Persistencia Relacional y Almacenamiento**: Las operaciones sobre PostgreSQL 16 (`AlmacenRepositoryPort`, `FundacionRepositoryPort`) y Azure Blob Storage (`AlmacenamientoBlobPort`) están desacopladas a través de puertos de salida (`domain/port/out/`).
+- **Seguridad BOLA/IDOR Integrada en la Capa REST**: El control de acceso valida que el identificador `usuarioId` firmado en el JWT coincida con el vínculo registrado para dicho NIT en `administradores_almacenes`, rechazando con `403 Forbidden` cualquier intento de mutación no autorizada (SR-RNF-01).
+- **Event-Driven Architecture Asíncrona**: La desactivación de fundaciones y transiciones de verificación publican eventos estructurados hacia RabbitMQ (`styleradar.fundaciones.exchange`), desacoplando temporalmente el flujo de `ms-segunda-vida-donaciones` y `ms-catalogo`.
 
-##### Explicación Detallada de los Flujos de Componentes
-1. **Flujo 1: Registro y Gestión de Perfil de Tienda y Horarios (SR-RF-16, SR-RF-17)**:
-   - **Entrada (Driving)**: `TiendaController` (`adapter/in/rest/`) implementa `TiendaApi` y gestiona las solicitudes de registro de comercio y horarios.
-   - **Puerto In y Aplicación**: Conexión a `GestionarTiendaUseCase` ejecutado por `GestionarTiendaUseCaseImpl`, apoyado en `TiendaDtoInMapper`, `HorarioDtoInMapper` y `TiendaDtoOutMapper`.
-   - **Servicio y Dominio**: `TiendaServiceImpl` y `HorarioAtencionServiceImpl` operan sobre el agregado `Tienda`, el Value Object `HorarioAtencion` y el validador puro `TiendaValidator` (0% Spring).
-   - **Salida**: `TiendaPersistenceMapper` y `TiendaRepositoryAdapter` persisten el agregado mediante `SpringDataTiendaRepo` en PostgreSQL 15.
-2. **Flujo 2: Georreferenciación de Tiendas y Búsqueda por Radio / Cercanía (SR-RF-16, SR-RF-26)**:
-   - **Entrada**: `GeolocalizacionTiendaController` expone `PUT /tiendas/{id}/ubicacion` y `GET /tiendas/cercanas?lat=&lng=&radioKm=`.
-   - **Puerto In y Aplicación**: Invoca `BuscarTiendasCercanasUseCase` implementado en `BuscarTiendasCercanasUseCaseImpl`, coordinado con `GeolocalizacionDtoInMapper` y `TiendaCercanaDtoOutMapper`.
-   - **Servicio y Dominio**: `GeolocalizacionServiceImpl` utiliza el modelo `UbicacionGeografica`, el Value Object `CoordenadaGeografica` y el calculador de semiverseno `DistanciaHaversineCalculator`.
-   - **Salida**: `UbicacionPersistenceMapper` y `UbicacionGeograficaRepositoryAdapter` aprovechan el índice de coordenadas de PostgreSQL para acotar candidatos y retornar tiendas dentro del radio configurado.
-3. **Flujo 3: Moderación, Estados Operativos de Tienda y Eventos AMQP (SR-RF-64, SR-RF-65)**:
-   - **Entrada**: `ModeracionTiendaController` (`adapter/in/rest/`) expone los endpoints de revisión para administradores (`PATCH /admin/tiendas/{id}/aprobar`, `/rechazar`).
-   - **Puerto In y Aplicación**: Conexión a `ModerarTiendaUseCase` y ejecución en `ModerarTiendaUseCaseImpl`, asistido por `ModeracionTiendaDtoInMapper` y `ModeracionTiendaDtoOutMapper`.
-   - **Servicio y Dominio**: `ModeracionTiendaServiceImpl` valida las transiciones mediante `ModeracionTiendaValidator` e instancia el evento de integración `TiendaAprobadaEvent`.
-   - **Salida**: `HistorialModeracionPersistenceMapper` persiste el veredicto en PostgreSQL a través de `HistorialModeracionRepositoryAdapter`, y `RabbitMqEventPublisherAdapter` publica el mensaje al Topic Exchange `tiendas.events` (`store.approved`).
-4. **Banda Transversal de Infraestructura**:
-   - `BeanConfig.java`: Cableado manual `@Bean` para use cases y servicios de aplicación.
-   - `SecurityConfig.java` & `JwtAuthFilter`: Control RBAC estricto (`@PreAuthorize("hasRole('ADMINISTRADOR')")` o rol `TIENDA` con verificación de ownership de la tienda consultada).
-   - `GlobalExceptionHandler.java`: Normalización de errores de negocio (`TiendaNotFoundException`, `InvalidModerationTransitionException`) bajo estándar RFC 7807 Problem Details.
-   - `RabbitMqConfig.java`: Configuración del Topic Exchange `tiendas.events`, colas durables y cola DLQ.
-   - `OpenApiConfig.java`: Swagger 3 con esquemas de autenticación y documentación de endpoints.
-   - `Flyway SQL Migrations` (`V1__init_schema.sql`): Versionamiento automatizado del esquema relacional `styleradar_tiendas`.
+##### Explicación Detallada de los Flujos de Componentes Codificados
+
+###### 1. Flujo 1: Gestión de Almacenes Aliados, Catálogo, Vitrina y Georreferenciación Haversine (SR-RF-59, SR-RF-60, SR-RF-64, SR-RF-74)
+- **Adaptador de Entrada (Driving)**: `AlmacenController` (`adapter/in/rest/`) expone los endpoints `/api/v1/almacenes` para registro, consulta por NIT, búsqueda geoespacial por radio Haversine, carga multipart de fotos y configuración de catálogo.
+- **Puertos In & Casos de Uso (Aplicación)**:
+  - Puertos: `RegistrarFotografiaTiendaUseCase`, `ConfigurarUmbralUltimasUnidadesUseCase`, `ConsultarUmbralUltimasUnidadesUseCase`, `ConfigurarPeriodoNuevaLlegadaUseCase`, `ConsultarPeriodoNuevaLlegadaUseCase`.
+  - Implementaciones: `RegistrarFotografiaTiendaUseCaseImpl`, `ConfigurarUmbralUltimasUnidadesUseCaseImpl`, `ConfigurarPeriodoNuevaLlegadaUseCaseImpl`.
+  - DTOs: `RegistrarAlmacenRequestDTO`, `ConfiguracionCatalogoAlmacenRequestDTO`, `AlmacenResponseDTO`, `FotografiaTiendaResponseDTO`.
+- **Núcleo de Dominio**:
+  - Agregado raíz `Almacen` (máx. 6 fotos de vitrina) y entidad `FotografiaTienda`.
+  - Value Objects inmutables: `UmbralUltimasUnidades` (`[0..50]`, default: 3) y `PeriodoNuevaLlegada` (`[1..60]`, default: 7).
+  - Cálculo Haversine esférico puro ($R = 6.371\text{ km}$) para filtrado espacial en Bogotá.
+- **Puertos Out & Adaptadores de Salida (Driven)**:
+  - Puertos: `AlmacenRepositoryPort` y `AlmacenamientoBlobPort`.
+  - Adaptadores: `AlmacenRepositoryAdapter` (PostgreSQL 16 con `SpringDataAlmacenRepository`, `SpringDataFotografiaTiendaRepository` y `AlmacenPersistenceMapper`) y `AzureBlobStorageAdapter` (almacenamiento binario HTTPS en Azure Blob Storage).
+
+###### 2. Flujo 2: Gestión Integral de Fundaciones Aliadas para Moda Circular (SR-RF-43, SR-RF-63, SR-RF-65)
+- **Adaptador de Entrada (Driving)**: `FundacionController` (`adapter/in/rest/`) expone `/api/v1/fundaciones` para registro institucional, actualización de sedes, listado paginado y desactivación lógica.
+- **Puertos In & Casos de Uso (Aplicación)**:
+  - Puertos: `RegistrarFundacionUseCase`, `EditarFundacionUseCase`, `DesactivarFundacionUseCase`.
+  - Implementaciones: `RegistrarFundacionUseCaseImpl`, `EditarFundacionUseCaseImpl`, `DesactivarFundacionUseCaseImpl`.
+  - DTOs: `FundacionRequestDTO`, `FundacionResponseDTO`, `PageResponseDTO`.
+- **Núcleo de Dominio**:
+  - Agregado raíz `Fundacion` con validaciones de latitud/longitud, personería jurídica obligatoria y categorías de prenda aceptadas (`TipoPrenda`).
+  - Evento de integración: `FundacionDesactivadaEvent`.
+- **Puertos Out & Adaptadores de Salida (Driven)**:
+  - Puertos: `FundacionRepositoryPort`, `FundacionEventPublisherPort` y `AlmacenamientoBlobPort`.
+  - Adaptadores: `FundacionRepositoryAdapter` (`SpringDataFundacionRepository`, `FundacionPersistenceMapper`) y `RabbitMQFundacionEventPublisherAdapter` (Topic Exchange `styleradar.fundaciones.exchange` con routing key `fundacion.desactivada`).
+
+###### 3. Flujo 3: Moderación Administrativa, Verificación DIAN y Seguridad BOLA/IDOR (SR-RF-62, SR-RNF-01)
+- **Adaptadores de Entrada (Driving)**:
+  - `VerificacionAlmacenController`: `POST /api/v1/almacenes/{nit}/verificacion` (decisión de aprobación o rechazo por Tech Lead / Admin StyleRadar).
+  - `AsociacionAdministradorAlmacenController`: `POST /api/v1/almacenes/{nit}/administradores` (vinculación de administradores delegados).
+- **Puertos In & Casos de Uso (Aplicación)**:
+  - Puerto: `VerificarAlmacenUseCase`.
+  - Implementación: `VerificarAlmacenUseCaseImpl`.
+  - DTOs: `DecisionVerificacionRequestDTO`, `VerificacionAlmacenResponseDTO`, `AdministradorAlmacenResponseDTO`.
+- **Núcleo de Dominio**:
+  - Enums: `EstadoVerificacionAlmacen` (`PENDIENTE`, `APROBADO`, `RECHAZADO`) y `DecisionVerificacionAlmacen`.
+  - Validadores: `AutorizacionAlmacenValidator` (mitigación BOLA/IDOR) y `AutorizacionAdminStyleRadarValidator`.
+  - Invariantes: Exigencia de RUT en PDF para aprobación (`RutRequeridoParaAprobacionException`) y motivo obligatorio para rechazo.
+- **Puertos Out & Adaptadores de Salida (Driven)**:
+  - Puerto: `AlmacenRepositoryPort`.
+  - Adaptador: `AlmacenRepositoryAdapter` con `SpringDataAdministradorAlmacenRepository` y `AlmacenPersistenceMapper` garantizando persistencia relacional ACID y auditoría inmutable.
+
+###### 4. Banda Transversal de Infraestructura
+- **`BeanConfig.java` (`infrastructure/config/`)**: Cableado manual IoC `@Bean` para los 9 casos de uso sin anotaciones de Spring en capas internas.
+- **`SecurityConfig.java` & `JwtAuthFilter`**: Filtro de seguridad JWT con validación de roles (`ADMIN_STYLERADAR`, `ADMIN_ALMACEN`) y mitigación BOLA (SR-RNF-01).
+- **`GlobalExceptionHandler.java`**: Manejador centralizado que serializa excepciones de negocio en respuestas estandarizadas RFC 7807 (`application/problem+json`).
+- **`RabbitMqConfig.java`**: Declaración de `styleradar.fundaciones.exchange`, colas durables y Dead Letter Exchange (`styleradar.dlx`).
+- **`OpenApiConfig.java`**: Especificación OpenAPI 3.0 para los 18 endpoints del microservicio en el puerto oficial `:8140`.
+- **`Flyway SQL Migrations` (`resources/db/migration/V1..V4`)**: Migraciones DDL/DML automatizadas para PostgreSQL 16 (`styleradar_tiendas`).
 
 ### Estructura Oficial de Paquetes en `src/main/java/`
 
