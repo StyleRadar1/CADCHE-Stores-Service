@@ -464,26 +464,33 @@ var D=[
 '<p class="sm" style="font-size:11px;line-height:1.4;color:#FBF7F0;opacity:.9;margin-top:6px">El pipeline ci-qa.yml compila, ejecuta SpotBugs y JaCoCo, construye la imagen Docker y despliega automáticamente en Azure App Service tras superar los tests de humo.</p>'},
 {c:'cream',t:'Enlaces y evidencias',tag:'14',tab:'Enlaces',h:K('14 · Enlaces')+
   H('Evidencias','y Accesos Directos')+
-  '<div class="g2" style="gap:6px">'+[
-    ['Repositorio GitHub','StyleRadar1/CADCHE-Stores-Service'],
-    ['Swagger UI QA (200 OK)','styleradar-tiendas-qa.azurewebsites.net'],
-    ['Swagger UI PROD','styleradar-tiendas-prod.azurewebsites.net'],
-    ['OpenAPI JSON Spec','18 endpoints OpenAPI 3.0'],
-    ['Imagen Docker Hub','hub.docker.com/r/juanamunoz'],
-    ['PostgreSQL QA (SSL)','styleradar-pg-qa.postgres.database.azure.com'],
-    ['PostgreSQL PROD (SSL)','styleradar-pg-prod.postgres.database.azure.com'],
-    ['Tablero Scrum CADCHE','Jira Cloud · Sprint Activo']
-  ].map(function(l){return '<div class="card" style="padding:8px 12px;gap:2px"><p class="lab" style="font-size:10px;margin:0;color:#48119A">'+l[0]+'</p><p style="font:600 11px var(--fm);margin:0;color:#262626;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+l[1]+'</p></div>'}).join('')+'</div>'+
-  '<div class="card" style="padding:8px 12px;gap:2px;margin-top:6px;background:#18112C;border:1px solid #48119A;color:#FBF7F0">'+
-  '<p class="lab" style="font-size:10px;color:#C4B5FD;margin:0">Verificación Automática de Despliegue</p>'+
-  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#E8DCCB;margin:0">Ambos entornos (QA y PROD) cuentan con health check activo en <code>/actuator/health</code> y pipeline GitHub Actions <code>ci-qa.yml</code> verificado con 0 vulnerabilidades.</p>'+
+  '<div class="g2" style="gap:8px">'+[
+    ['Repositorio GitHub','StyleRadar1/CADCHE-Stores-Service','https://github.com/StyleRadar1/CADCHE-Stores-Service'],
+    ['Swagger UI QA (200 OK)','styleradar-tiendas-qa.azurewebsites.net','https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html'],
+    ['Swagger UI PROD','styleradar-tiendas-prod.azurewebsites.net','https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html'],
+    ['OpenAPI JSON Spec','18 endpoints OpenAPI 3.0 (/v3/api-docs)','https://styleradar-tiendas-qa.azurewebsites.net/v3/api-docs'],
+    ['Docker Hub Oficial','r/juanamunoz/styleradar-tiendas','https://hub.docker.com/r/juanamunoz/styleradar-tiendas'],
+    ['PostgreSQL QA (SSL)','styleradar-pg-qa.postgres.database...:5432','styleradar-pg-qa.postgres.database.azure.com:5432'],
+    ['PostgreSQL PROD (SSL)','styleradar-pg-prod.postgres.database...:5432','styleradar-pg-prod.postgres.database.azure.com:5432'],
+    ['Tablero Scrum Jira','Jira Cloud CADCHE · Sprint Activo','https://atlassian.net/jira/software/projects/CADCHE']
+  ].map(function(l){
+    var isLink = l[2].indexOf('http') === 0;
+    return '<'+(isLink?'a href="'+l[2]+'" target="_blank" rel="noopener noreferrer"':'div')+
+      ' class="card pop" style="padding:8px 12px;gap:2px;text-decoration:none;display:flex;flex-direction:column;justify-content:center;border-left:3px solid #48119A'+(isLink?';cursor:pointer':'')+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center"><p class="lab" style="font-size:10px;margin:0;color:#48119A">'+l[0]+'</p>'+(isLink?'<span style="font-size:10px;color:#16A34A;font-weight:700">↗</span>':'')+'</div>'+
+      '<p style="font:600 11px var(--fm);margin:0;color:#262626;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+l[1]+'</p>'+
+    '</'+(isLink?'a':'div')+'>'
+  }).join('')+'</div>'+
+  '<div class="card" style="padding:10px 14px;gap:3px;margin-top:10px;background:#18112C;border:1px solid #48119A;border-radius:10px;color:#FBF7F0">'+
+  '<div style="display:flex;justify-content:space-between;align-items:center"><p class="lab" style="font-size:10.5px;color:#C4B5FD;margin:0">Verificación Automática de Despliegue</p><span style="font:700 9.5px var(--fm);padding:2px 6px;border-radius:4px;background:#064E3B;color:#6EE7B7;border:1px solid #059669">CI/CD PASS</span></div>'+
+  '<p class="sm" style="font-size:11px;line-height:1.4;color:#E8DCCB;margin:0">Ambos entornos (QA y PROD) cuentan con health check activo en <code>/actuator/health</code> y pipeline GitHub Actions <code>ci-qa.yml</code> verificado con 0 vulnerabilidades.</p>'+
   '</div>'},
 {c:'vio',back:1,h:backcover('StyleRadar','CADCHE · ms-tiendas · Versión 1.0.0 · Bogotá 2026')}
 ];
 var R=mkdoc(D),P=R.P,T=R.T;
 
-var KEY='sr-rv-backm-stores-v9',store={};
-try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+var KEY='sr-rv-backm-stores-v10',store={};
+try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){};try{for(var _k in localStorage){if(_k.indexOf('sr-rv-backm-')===0&&_k!==KEY)localStorage.removeItem(_k)}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 var book=document.getElementById('book'),fit=document.getElementById('fit'),ind=document.getElementById('ind');
 var one=false,cur=0,busy=false,edit=false;
