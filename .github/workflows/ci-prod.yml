@@ -25,20 +25,20 @@ jobs:
 
     steps:
       - name: Checkout del codigo fuente
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configurar Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
 
       - name: Iniciar sesion en Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extraer metadatos con SemVer
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -46,7 +46,7 @@ jobs:
             type=raw,value=latest
 
       - name: Compilar y publicar imagen OCI de Produccion
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6.11.0
         with:
           context: .
           platforms: linux/amd64
@@ -66,12 +66,12 @@ jobs:
 
     steps:
       - name: Autenticacion en Microsoft Azure
-        uses: azure/login@v2
+        uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Configurar App Settings y Puerto 8140 en Azure App Service PROD
-        uses: azure/cli@v2
+        uses: azure/cli@3c87847598b988e406a2c25e657114d760fd035c # v2.1.0
         with:
           inlineScript: |
             RG=$(az webapp list --query "[?name=='${{ env.AZURE_WEBAPP_NAME }}'].resourceGroup | [0]" -o tsv)
@@ -95,7 +95,7 @@ jobs:
 
       - name: Desplegar Contenedor Docker en Azure Web App (PROD)
         id: deploy
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@145a0687697df1d8a28909569f6e5d86213041f9 # v3.0.0
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build-prod.outputs.version || 'latest' }}
