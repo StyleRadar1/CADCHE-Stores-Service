@@ -1048,20 +1048,20 @@ flowchart LR
 * **Deuda Técnica:** < 5%
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+  <table width="100%" style="margin: 18px 0; border: 2px solid #16A34A; border-radius: 8px; background-color: #FBFBFE;">
     <tr>
       <td align="center" style="padding: 22px;">
         <p>
-          <img src="https://img.shields.io/badge/ESPACIO_DE_CAPTURA-EVIDENCIA_04-5600EF?style=for-the-badge" alt="Evidencia 04" /><br />
-          <strong><font color="#5600EF" size="3">EJECUCIÓN DEL PIPELINE CI/CD EN VERDE (BUILD & QUALITY GATE PASSED)</font></strong>
+          <img src="https://img.shields.io/badge/EVIDENCIA-QUALITY_GATE_PASSED-16A34A?style=for-the-badge" alt="Quality Gate Passed" />&nbsp;
+          <img src="https://img.shields.io/badge/SONARQUBE-CALIFICACI%C3%93N_A-16A34A?style=for-the-badge&logo=sonarqube&logoColor=white" alt="Calificación A" /><br />
+          <strong><font color="#16A34A" size="3">DASHBOARD DE SONARQUBE CLOUD EN VERDE (QUALITY GATE PASSED)</font></strong>
         </p>
         <p>
-          <sub>Pega aquí la captura del pipeline de integración continua (Azure DevOps / GitHub Actions) finalizado con éxito en todas sus fases.</sub>
+          <sub>Análisis estático automatizado en GitHub Actions. Quality Gate en estado PASSED con 0 incidencias abiertas, 0 vulnerabilidades, 0 hotspots de seguridad y cobertura JaCoCo superior al 83%.</sub>
         </p>
         <p>
-<!-- Al generar tu captura, descomenta la siguiente línea y guarda la imagen en la ruta indicada: -->
-<!-- <img src="docs/evidencias/pipeline-ci-cd.png" width="90%" alt="Pipeline CI/CD" /><br /> -->
-          <code>[ Pegar captura del Pipeline CI/CD en verde aquí · docs/evidencias/pipeline-ci-cd.png ]</code>
+          <img src="docs/evidencias/sonarqube-dashboard.png" width="95%" alt="Dashboard SonarQube Cloud Passed" /><br />
+          <img src="docs/evidencias/pipeline-qa.png" width="95%" alt="Pipeline CI/CD QA GitHub Actions" />
         </p>
       </td>
     </tr>
