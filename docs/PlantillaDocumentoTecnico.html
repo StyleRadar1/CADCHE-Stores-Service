@@ -341,7 +341,7 @@ var D=[
   '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">historial_moderaciones</code></td><td style="padding:4px 3px">FK tienda_id (1:N)</td><td style="padding:4px 3px">decision, motivo, admin_id</td><td style="padding:4px 3px">Auditoría inmutable</td></tr>'+
   '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">fundaciones</code></td><td style="padding:4px 3px">PK id (BIGINT)</td><td style="padding:4px 3px">nit, nombre, activa, lat/lng</td><td style="padding:4px 3px">Desactivación lógica</td></tr>'+
   '</tbody></table>'+
-  '<div class="card dk" style="padding:9px 12px;margin-top:auto">'+
+  '<div class="card dk" style="padding:8px 12px;margin-top:8px">'+
   '<p class="lab" style="font-size:10.5px;color:#B79CF0;margin-bottom:3px">Optimización Geoespacial e Índices</p>'+
   '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#FBF7F0;margin:0"><code style="color:#86EFAC">CREATE INDEX idx_coords ON ubicaciones_geograficas(latitud, longitud);</code> optimiza el filtrado bounding-box antes de computar Haversine en memoria. PostgreSQL garantiza consistencia ACID estricta en unicidad de NIT y registros mercantiles.</p>'+
   '</div>'},
@@ -418,7 +418,7 @@ var D=[
 ];
 var R=mkdoc(D),P=R.P,T=R.T;
 
-var KEY='sr-rv-backm-stores-v6',store={};
+var KEY='sr-rv-backm-stores-v7',store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 var book=document.getElementById('book'),fit=document.getElementById('fit'),ind=document.getElementById('ind');
