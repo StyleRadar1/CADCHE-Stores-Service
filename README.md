@@ -851,6 +851,24 @@ Todas las configuraciones sensibles y dependientes de entorno se externalizan me
 | **Puerto de Escucha App** | `8140` | `8140` | `8140` |
 | **Host / URL Base** | `https://styleradar-tiendas-qa.azurewebsites.net` | `https://styleradar-tiendas-prod.azurewebsites.net` | `http://localhost:8140` |
 
+#### Evidencia de Despliegue y Aislamiento de Base de Datos en Azure (QA vs PROD)
+
+<div align="center">
+  <p>
+    <strong><font color="#5600EF" size="3">1. BASE DE DATOS DESPLEGADA EN AMBIENTE DE CALIDAD (QA)</font></strong><br />
+    <em>Servidor dedicado: <code>styleradar-pg-qa.postgres.database.azure.com</code> · Resource Group: <code>rg-styleradar-qa</code></em>
+  </p>
+  <img src="docs/evidencias/bd-qa-azure.png" width="95%" alt="Base de Datos Desplegada en Azure QA" />
+  <br /><br />
+  <p>
+    <strong><font color="#16A34A" size="3">2. BASE DE DATOS DESPLEGADA EN AMBIENTE DE PRODUCCIÓN (PROD)</font></strong><br />
+    <em>Servidor dedicado: <code>styleradar-pg-prod.postgres.database.azure.com</code> · Resource Group: <code>rg-styleradar-prod</code></em>
+  </p>
+  <img src="docs/evidencias/bd-prod-azure.png" width="95%" alt="Base de Datos Desplegada en Azure PROD" />
+</div>
+
+> **Principio de Aislamiento Total:** QA y PROD **nunca** comparten base de datos, servidor ni almacenamiento. El servidor PostgreSQL `styleradar-pg-qa` atiende exclusivamente al App Service de QA (`styleradar-tiendas-qa`), mientras que `styleradar-pg-prod` atiende a Producción (`styleradar-tiendas-prod`). Ambos entornos se gestionan de manera autónoma con sus propios esquemas `styleradar_tiendas`, migraciones Flyway independientes (`V1..V4`) y cifrado TLS 1.3 / SSL obligatorio en tránsito (`sslmode=require`).
+
 ### Variables de Configuración del Microservicio
 
 | Variable | Descripción | Valor por Defecto (`dev`) | Requerido en Azure (QA/PROD) |
