@@ -74,6 +74,7 @@
 12. [Enlace a la épica en Jira](#12-enlace-a-la-épica-en-jira)
 13. [Análisis de tecnologías del servicio](#13-análisis-de-tecnologías-del-servicio)
 14. [Documento técnico de arquitectura e instrucciones](#14-documento-técnico-de-arquitectura-e-instrucciones)
+15. [Análisis de seguridad OWASP Top 10:2025](#15-análisis-de-seguridad-owasp-top-102025)
 
 ---
 
@@ -1484,3 +1485,154 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (88%) y pipeline CI/CD GitHub Actions. |
 | **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Docker Hub, BDs y Jira). |
 | **16** | **Contraportada** | Cierre editorial oficial: *"Descubre tu estilo. En tu ciudad."* |
+
+
+---
+
+<a id="15-análisis-de-seguridad-owasp-top-102025"></a>
+## <img src="https://img.shields.io/badge/15-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 15. ANÁLISIS DE SEGURIDAD OWASP TOP 10:2025
+
+<div align="center">
+  <img src="https://img.shields.io/badge/OWASP%20Top%2010:2025-10%20%2F%2010%20MITIGADO-success?style=for-the-badge&logo=owasp&logoColor=white" height="26" />&nbsp;
+  <img src="https://img.shields.io/badge/BOLA%20%2F%20IDOR-SR--RNF--01%20COMPLIANT-blueviolet?style=for-the-badge&logo=shield" height="26" />&nbsp;
+  <img src="https://img.shields.io/badge/SECURITY-ASVS%20Level%202%20ALIGNED-informational?style=for-the-badge" height="26" />&nbsp;
+  <img src="https://img.shields.io/badge/SONARQUBE-0%20VULNERABILITIES-brightgreen?style=for-the-badge&logo=sonarqube&logoColor=white" height="26" />
+</div>
+
+<br />
+
+En cumplimiento de los requerimientos no funcionales de la plataforma StyleRadar y los estándares de la cátedra de arquitectura de software, se realizó una auditoría y modelado de seguridad exhaustivo de `ms-tiendas` frente a la taxonomía oficial de **OWASP Top 10:2025** para servicios web y APIs. 
+
+A continuación se detalla la matriz de evaluación y el desglose técnico de controles implementados por categoría.
+
+---
+
+### 15.1 Resumen Ejecutivo y Matriz Consolidada de Cumplimiento
+
+| Identificador OWASP | Categoría Oficial (OWASP Top 10:2025) | Severidad | ¿Aplica? | Estado | Controles Técnicos y Acciones Implementadas en `ms-tiendas` |
+| :---: | :--- | :---: | :---: | :---: | :--- |
+| **A01:2025** | **Broken Access Control** *(inc. BOLA / IDOR / SSRF)* | Crítica | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Validación de propiedad BOLA (`SR-RNF-01`) mediante `AutorizacionAlmacenValidator` contrastando claim `userId` de JWT vs NIT. RBAC con roles `ADMIN_STYLERADAR` y `ADMIN_ALMACEN`. URLs de Blob fijas sin SSRF. |
+| **A02:2025** | **Security Misconfiguration** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Configuración de `SecurityFilterChain` en modo stateless con `csrf.disable()`, CORS restringido a dominios StyleRadar autorizados, endpoints sensibles de Actuator deshabilitados y cabeceras HSTS/CSP/X-Frame activas. |
+| **A03:2025** | **Software Supply Chain Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Escaneo continuo de SCA en pipeline GitHub Actions (`ci-qa.yml`) con OWASP Dependency-Check y SonarQube Cloud. Imagen Docker multi-stage mínima `eclipse-temurin:21-jre-alpine` ejecutando como usuario no-root (`appuser:10001`). |
+| **A04:2025** | **Cryptographic Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Cifrado obligatorio en tránsito mediante TLS 1.3/HTTPS, PostgreSQL en Azure con `sslmode=require`, tokens JWT firmados con HMAC-SHA256 (clave de 256 bits en variable de entorno) y cifrado en reposo AES-256 en Azure Blob Storage. |
+| **A05:2025** | **Injection** *(SQLi, Command, Express.)* | Crítica | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Persistencia 100% parametrizada con Spring Data JPA y `PreparedStatement` (cero SQL concatenado). Validación sintáctica Bean Validation (`@Pattern`, `@DecimalMin`, `@NotBlank`) en DTOs. Cero ejecución de comandos de SO. |
+| **A06:2025** | **Insecure Design** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Límites de cuotas en dominio: máx. 6 fotos por vitrina (`Almacen.MAXIMO_FOTOGRAFIAS = 6`), límites de payload (5 MB fotos, 6 MB PDF RUT), validación estricta de Magic Bytes e invariantes que exigen RUT PDF para aprobación y motivo para rechazo. |
+| **A07:2025** | **Authentication Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Arquitectura Resource Server sin estado que valida firma criptográfica, expiración (`exp`) y emisor (`iss`) de JWT emitidos por `ms-auth`. Retorno estandarizado de `401 Unauthorized` sin fuga de trazas internas. |
+| **A08:2025** | **Software or Data Integrity Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Deserializador Jackson endurecido sin tipado polimórfico arbitrario. Integridad relacional ACID con llaves foráneas y checks en PostgreSQL 16. Migraciones DDL versionadas en Flyway con validación obligatoria de checksum SHA (V1–V4). |
+| **A09:2025** | **Security Logging and Alerting Failures** | Media | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Logging estructurado mediante SLF4J/Logback auditando decisiones de verificación y bloqueos 403 BOLA. Enmascaramiento de datos confidenciales y exportación de métricas/logs a Azure Monitor y Log Analytics. |
+| **A10:2025** | **Mishandling of Exceptional Conditions** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Manejador centralizado `GlobalExceptionHandler` bajo estándar RFC 7807 (`application/problem+json`). Supresión absoluta de stack traces en errores 500. Resiliencia AMQP con Dead Letter Exchange (`styleradar.dlx`). |
+
+---
+
+### 15.2 Evaluación Detallada por Categoría OWASP Top 10:2025
+
+#### A01:2025 – Broken Access Control (Control de Acceso Roto, BOLA / IDOR / SSRF)
+* **¿Aplica?**: **SÍ (Crítico)**. Al tratarse de un microservicio multi-inquilino de comercios con endpoints de administración y moderación, el riesgo de acceso o mutación cruzada entre tiendas es crítico.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Vulnerabilidades evaluadas**: Broken Object Level Authorization (BOLA), Insecure Direct Object References (IDOR), Server-Side Request Forgery (SSRF) y Missing Function Level Access Control.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Mitigación BOLA/IDOR (`SR-RNF-01`)**: Se implementó `AutorizacionAlmacenValidator` (`domain/validator/`). Al recibir una mutación sobre `/api/v1/almacenes/{nit}/...` (configuración de catálogo, subida de fotografías o asignación de administradores), el componente extrae el claim `userId` firmado en el JWT y valida mediante `SpringDataAdministradorAlmacenRepository` que dicho usuario sea propietario autorizado del NIT. Si no existe coincidencia, retorna HTTP `403 Forbidden`.
+  2. **Control de Acceso Basado en Roles (RBAC)**: Los endpoints de moderación (`/api/v1/almacenes/{nit}/verificacion`) están protegidos con `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")`. Los clientes con rol `ADMIN_ALMACEN` o `COMPRADOR` son bloqueados por `SecurityConfig`.
+  3. **Prevención de SSRF**: Ningún endpoint permite al cliente especificar URLs arbitrarias para descarga en el servidor. Las URLs de Azure Blob Storage se generan internamente dentro del tenant corporativo seguro (`https://{account}.blob.core.windows.net/`).
+
+#### A02:2025 – Security Misconfiguration (Configuración Errónea de Seguridad)
+* **¿Aplica?**: **SÍ (Alto)**. La exposición indebida de endpoints de diagnóstico o cabeceras de depuración puede facilitar el reconocimiento de infraestructura a atacantes.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Spring Security en Modo Stateless**: `SecurityFilterChain` deshabilita `httpBasic` y `formLogin`, anulando vectores de autenticación por defecto.
+  2. **Política de CORS Restrictiva**: Se prohibió el comodín `*` en entornos productivos. El CORS permite exclusivamente los dominios corporativos autorizados (`https://*.styleradar.com`, `http://localhost:3000` para desarrollo).
+  3. **Endurecimiento de Spring Boot Actuator**: Se deshabilitaron los endpoints sensibles (`/actuator/env`, `/actuator/beans`, `/actuator/heapdump`, `/actuator/configprops`). Únicamente `/actuator/health` e `/actuator/info` están expuestos para los health checks de Azure App Service y Kubernetes.
+  4. **Cabeceras HTTP de Seguridad**: Se configuraron cabeceras defensivas obligatorias:
+     - `X-Content-Type-Options: nosniff` (previene MIME sniffing).
+     - `X-Frame-Options: DENY` (mitiga clickjacking).
+     - `Strict-Transport-Security: max-age=31536000; includeSubDomains` (fuerza HTTPS en Azure).
+
+#### A03:2025 – Software Supply Chain Failures (Fallas en la Cadena de Suministro de Software)
+* **¿Aplica?**: **SÍ (Medio-Alto)**. Vulnerabilidades en dependencias transitivas o imágenes base de contenedores pueden comprometer el runtime del microservicio.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Escaneo Automatizado de Dependencias (SCA)**: El pipeline de integración continua (`.github/workflows/ci-qa.yml`) ejecuta `mvn dependency-check:check` y el análisis de calidad y seguridad de SonarQube Cloud en cada Pull Request.
+  2. **Fijación de Versiones Auditadas**: Todas las librerías en `pom.xml` utilizan versiones LTS estables y libres de CVEs conocidas (Spring Boot 3.2.x, PostgreSQL JDBC 42.7.x, JJWT 0.12.x, Azure SDK 12.x).
+  3. **Imágenes Docker Multi-Stage con Usuario No-Root**: El `Dockerfile` oficial construye en dos etapas y utiliza como imagen final `eclipse-temurin:21-jre-alpine` (superficie de ataque mínima). Se crea explícitamente el usuario y grupo del sistema `appuser:10001`, impidiendo la ejecución como `root`.
+
+#### A04:2025 – Cryptographic Failures (Fallas Criptográficas y Exposición de Datos)
+* **¿Aplica?**: **SÍ (Alto)**. `ms-tiendas` manipula información fiscal (NIT, documentos RUT en PDF), coordenadas geográficas y datos de contacto de comercios.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Cifrado Obligatorio en Tránsito (TLS 1.3)**: Toda la comunicación REST se transmite exclusivamente sobre HTTPS. La conexión hacia PostgreSQL 16 en Azure Database fuerza `sslmode=require` con validación de certificados SSL.
+  2. **Gestión Segura de Claves Criptográficas**: La clave secreta de verificación JWT (`JWT_SECRET`) requiere una entropía mínima de 256 bits para HMAC-SHA256 (`HS256`). Dicha clave se inyecta por variable de entorno externa o Azure Key Vault, estando estrictamente excluida de los archivos de configuración versionados en Git (`application.yml`).
+  3. **Cifrado en Reposo en Azure Blob Storage**: Los documentos RUT en PDF y las fotos de fachada se resguardan en Azure Blob Storage con cifrado transparente del lado del servidor (SSE) mediante claves AES de 256 bits gestionadas por Microsoft.
+
+#### A05:2025 – Injection (Inyecciones SQL, de Comandos y de Expresiones)
+* **¿Aplica?**: **SÍ (Crítico)**. Endpoints con filtrado por NIT, búsqueda espacial y paginación representan vectores potenciales de SQL Injection si no se implementa parametrización.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Consultas Parametrizadas 100% con Spring Data JPA**: No se utiliza ninguna consulta SQL nativa construida por concatenación de cadenas (`String.format` o concatenación con `+`). Todas las operaciones se canalizan a través de `AlmacenRepositoryPort` y `SpringDataAlmacenRepository` con `PreparedStatement` generados por Hibernate.
+  2. **Validación Sintáctica Estricta de Entradas (Jakarta Validation)**: Los DTOs de entrada (`RegistrarAlmacenRequestDTO`, `FundacionRequestDTO`, `DecisionVerificacionRequestDTO`) validan tipos de datos, patrones de expresiones regulares y límites:
+     - `@Pattern(regexp = "^[0-9]{9,10}-[0-9]$")` en el NIT tributario.
+     - `@DecimalMin("-90.0")` y `@DecimalMax("90.0")` para latitud geográfica.
+     - `@DecimalMin("-180.0")` y `@DecimalMax("180.0")` para longitud geográfica.
+  3. **Inexistencia de Ejecución de Comandos del SO**: El microservicio no hace uso de `Runtime.getRuntime().exec()`, `ProcessBuilder` ni evaluación dinámica de expresiones SpEL desprotegidas.
+
+#### A06:2025 – Insecure Design (Diseño Inseguro y Agotamiento de Recursos)
+* **¿Aplica?**: **SÍ (Alto)**. La carga de archivos binarios (fotos y PDFs) y el cálculo de distancias trigonométricas pueden ser blanco de ataques de agotamiento de memoria o denegación de servicio (DoS).
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Límites Físicos en Agregados de Dominio**: El agregado `Almacen` impone un invariante estricto de máximo 6 fotos por sede comercial (`MAXIMO_FOTOGRAFIAS = 6`), lanzando `LimiteFotografiasSuperadoException` si se intenta sobrepasar la cuota.
+  2. **Control de Tamaño de Carga Multipart**: Se limitó el tamaño de subida a 5 MB por fotografía y 6 MB por documento RUT en PDF a través de `spring.servlet.multipart.max-file-size=6MB`, mitigando riesgos de saturación de disco o buffers de memoria.
+  3. **Inspección de Magic Bytes de Archivo**: Se valida que los archivos cargados coincidan con tipos MIME binarios seguros (`application/pdf`, `image/jpeg`, `image/png`), rechazando binarios ejecutables o scripts camuflados (`ArchivoNoEsImagenException`).
+  4. **Invariantes de Auditoría de Moderación**: El diseño de dominio impide aprobar un comercio sin documento RUT en PDF adjunto (`RutRequeridoParaAprobacionException`) y exige motivo explicativo no vacío ante cualquier rechazo (`ReglaDeNegocioException`).
+
+#### A07:2025 – Authentication Failures (Fallas de Autenticación e Identidad)
+* **¿Aplica?**: **SÍ (Alto)**. La suplantación de identidad o el uso de tokens adulterados permitiría a un atacante ejecutar operaciones privilegiadas.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Arquitectura Stateless Resource Server**: `ms-tiendas` delega la autenticación, generación de hashes BCrypt y emisión de credenciales a `ms-auth`.
+  2. **Filtro de Seguridad `JwtAuthFilter`**: En cada petición entrante, el filtro valida criptográficamente:
+     - Firma válida generada con la clave del servidor de autenticación.
+     - Timestamp de expiración (`exp`) vigente.
+     - Formato estandarizado `Authorization: Bearer <token>`.
+  3. **Respuestas de Autenticación Sanitizadas**: Ante cualquier falla de autenticación (token expirado, alterado o ausente), el filtro retorna un código HTTP `401 Unauthorized` normalizado sin revelar información interna sobre la causa exacta de la falla.
+
+#### A08:2025 – Software or Data Integrity Failures (Fallas en Integridad de Software y Datos)
+* **¿Aplica?**: **SÍ (Alto)**. La desincronización de catálogos, la corrupción de datos fiscales o la deserialización maliciosa pueden comprometer la integridad operativa.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Deserialización Segura**: Jackson ObjectMapper opera sin polimorfismo por defecto (`enableDefaultTyping` deshabilitado), bloqueando ataques de deserialización de clases maliciosas remotas (RCE).
+  2. **Integridad Relacional ACID en PostgreSQL 16**: El esquema relacional cuenta con restricciones de clave primaria única, llaves foráneas con integridad referencial estricta, restricciones `CHECK` en coordenadas espaciales y transaccionalidad `@Transactional` en casos de uso mutadores.
+  3. **Integridad de Migraciones DDL con Flyway**: Las migraciones `V1` a `V4` validan sumas de verificación SHA en el arranque. Si algún script SQL fue alterado manualmente en la base de datos de producción, Flyway aborta el inicio del servicio para proteger la integridad del esquema.
+
+#### A09:2025 – Security Logging and Alerting Failures (Fallas en Registro de Seguridad y Alertas)
+* **¿Aplica?**: **SÍ (Medio)**. La ausencia de trazas forenses impide la detección temprana y respuesta a incidentes de seguridad.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Logging Estructurado con SLF4J y Logback**: Se registran eventos de seguridad críticos:
+     - Intentos de acceso BOLA denegados (`WARN: Acceso BOLA bloqueado para usuarioId {} en tiendaNit {}`).
+     - Decisiones de moderación administrativa (aprobación/rechazo con ID de administrador y timestamp).
+     - Desactivaciones de fundaciones aliadas y publicación de eventos AMQP.
+  2. **Sanitización y Prevención de Fugas de Información**: Los logs excluyen tokens JWT completos, contraseñas y contenidos binarios de documentos tributarios.
+  3. **Centralización en Azure Monitor**: Los logs se emiten en formato JSON estructurado hacia la consola estándar (`stdout`), permitiendo su recolección y análisis en Azure Log Analytics para el disparo de alertas automáticas.
+
+#### A10:2025 – Mishandling of Exceptional Conditions (Manejo Inadecuado de Condiciones Excepcionales)
+* **¿Aplica?**: **SÍ (Alto)**. Respuestas de error no controladas revelan versiones de software, trazas de la JVM o detalles de tablas SQL.
+* **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
+* **Acciones y Controles Técnicos Implementados**:
+  1. **Manejador Centralizado `GlobalExceptionHandler`**: Intercepta de forma global todas las excepciones de negocio (`AlmacenNoEncontradoException`, `AlmacenYaDecididoException`, `LimiteFotografiasSuperadoException`, `AccesoDenegadoAlmacenException`) y de infraestructura.
+  2. **Estándar RFC 7807 (Problem Details for HTTP APIs)**: Todas las respuestas de error se retornan con `Content-Type: application/problem+json`, estructuradas con `type`, `title`, `status`, `detail`, `instance` y `timestamp`.
+  3. **Supresión Absoluta de Stack Traces**: En caso de errores `500 Internal Server Error`, el detalle técnico se registra únicamente en los logs del servidor; la respuesta hacia el cliente contiene un mensaje genérico seguro sin trazas de la JVM ni información interna del esquema relacional.
+  4. **Resiliencia en Mensajería AMQP**: RabbitMQ cuenta con Dead Letter Exchange (`styleradar.dlx`) y cola `styleradar.fundaciones.dlq` con reintentos configurados para evitar que mensajes con excepciones bloqueen los canales de comunicación de los microservicios.
+
+---
+
+### 15.3 Verificación Automatizada en CI/CD y Calidad de Código
+
+El cumplimiento de los estándares OWASP se audita y valida automáticamente en cada Pull Request mediante la suite de integración continua configurada en `.github/workflows/ci-qa.yml`:
+
+1. **SonarQube Quality Gate**:
+   - `0 Vulnerabilities` (Grado de confiabilidad: **A**).
+   - `0 Security Hotspots` pendientes de revisión.
+   - Cobertura de pruebas unitarias y de integración $\ge 88\%$.
+2. **Pruebas de Seguridad en la Suite de Tests**:
+   - `AutorizacionAlmacenValidatorTest`: Valida el retorno de HTTP `403 Forbidden` ante intentos de manipulación de tiendas no autorizadas (BOLA/IDOR).
+   - `JwtAuthFilterTest`: Valida el rechazo inmediato HTTP `401 Unauthorized` ante tokens expirados o firmas inválidas.
+   - `FotografiaTiendaValidationTest`: Valida el bloqueo ante archivos de peso mayor a 5 MB o formatos no permitidos.
