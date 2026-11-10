@@ -95,10 +95,61 @@ Este microservicio encapsula exclusivamente la lógica de negocio correspondient
 
 | Qué HACE este Microservicio (Alcance) | Qué NO HACE este Microservicio (Límites) |
 | :--- | :--- |
-| • Registra almacenes aliados con NIT colombiano, coordenadas geográficas, categorías y documento RUT en PDF (`SR-RF-62`), y expone su búsqueda en el mapa y cálculo de distancia Haversine (`SR-RF-17`, `SR-RF-18`, `SR-RF-21`). | • NO autentica credenciales ni firma tokens JWT (delegado a `ms-auth` en `:8081`). |
-| • Gestiona el flujo de verificación documental de almacenes (`PENDIENTE`, `APROBADO`, `RECHAZADO`), el vínculo de `ADMIN_ALMACEN` previniendo ataques BOLA/IDOR (`SR-RNF-01`, Deuda Técnica #1) y la configuración de umbrales de catálogo (`ULTIMAS_UNIDADES` y `NUEVA_PRENDA`, `SR-RF-59`, `SR-RF-60`, Deuda Técnica #8). | • NO gestiona el inventario de unidades por talla ni el catálogo comercial de prendas (delegado a `ms-catalogo` en `:8084` y `ms-inventario` en `:8085`). |
-| • Administra la galería fotográfica de sedes (máximo 5 fotos JPEG/PNG/WEBP hasta 5 MB, `SR-RF-74`, Deuda Técnica #7) y el ciclo de vida completo de fundaciones aliadas (`SR-RF-63`, `SR-RF-64`, `SR-RF-65`, `SR-RF-43`). | • NO procesa transacciones monetarias ni suscripciones de planes (delegado a `ms-pagos` en `:8090`). |
+| • Registra almacenes aliados con NIT colombiano, coordenadas geográficas, categorías y documento RUT en PDF (`SR-RF-62`), y expone su búsqueda en el mapa y cálculo de distancia Haversine (`SR-RF-17`, `SR-RF-18`, `SR-RF-21`). | • NO autentica credenciales ni firma tokens JWT (delegado a `ms-auth` en `:8100`). |
+| • Gestiona el flujo de verificación documental de almacenes (`PENDIENTE`, `APROBADO`, `RECHAZADO`), el vínculo de `ADMIN_ALMACEN` previniendo ataques BOLA/IDOR (`SR-RNF-01`, Deuda Técnica #1) y la configuración de umbrales de catálogo (`ULTIMAS_UNIDADES` y `NUEVA_PRENDA`, `SR-RF-59`, `SR-RF-60`, Deuda Técnica #8). | • NO gestiona el inventario de unidades por talla ni el catálogo comercial de prendas (delegado a `ms-item-catalogo` en `:8220` y `ms-inventario` en `:8200`). |
+| • Administra la galería fotográfica de sedes (máximo 6 fotos JPEG/PNG/WEBP hasta 5 MB, `SR-RF-74`, Deuda Técnica #7) y el ciclo de vida completo de fundaciones aliadas (`SR-RF-63`, `SR-RF-64`, `SR-RF-65`, `SR-RF-43`). | • NO procesa transacciones monetarias ni suscripciones de planes (delegado a `ms-pagos-suscripciones` en `:8400`). |
 | • Garantiza persistencia ACID e idempotencia en su base de datos (`styleradar_tiendas`). | • NO accede directamente a bases de datos de otros microservicios. |
+
+### Matriz Oficial de Segmentación de Puertos (Ecosistema StyleRadar)
+
+Siguiendo las recomendaciones de arquitectura para evitar puertos consecutivos (`8081`, `8082`, `8083`...) y prevenir conflictos de red local o colisiones en contenedores Docker, la infraestructura del backend se encuentra estandarizada mediante asignación de un bloque exclusivo por centena por equipo, con saltos de 20 números entre microservicios:
+
+```mermaid
+flowchart TD
+    subgraph P1["Equipo Estación CADche · Paquete 1: Identidad (Bloque 8100)"]
+        AUTH["ms-auth : 8100"]
+        USERS["ms-usuarios : 8120"]
+        TIENDAS["ms-tiendas : 8140 (CADCHE-Stores-Service)"]
+    end
+
+    subgraph P2["Equipo Estación RESTrepo · Paquete 2: Catálogo (Bloque 8200)"]
+        INV["ms-inventario : 8200"]
+        CAT["ms-item-catalogo : 8220"]
+        GEO["ms-geolocalizacion : 8240"]
+        PLAY["ms-playlist : 8260"]
+    end
+
+    subgraph P3["Equipo Estación Guatoque Jiraguas · Paquete 3: Notificaciones (Bloque 8300)"]
+        NOTIF["ms-notificaciones : 8300"]
+        CHAT["ms-chat : 8320"]
+        BROKER["event-broker (RabbitMQ) : 5672"]
+    end
+
+    subgraph P4["Equipo NQS · Paquete 4: Pagos y Estadísticas (Bloque 8400)"]
+        PAGOS["ms-pagos-suscripciones : 8400"]
+        STATS["ms-estadisticas : 8420"]
+    end
+
+    subgraph P5["Equipo Estación Portal 8080 · Paquete 5: Experiencia y Perímetro (Bloque 8500)"]
+        GW["api-gateway : 8080"]
+        VTON["ms-probador-virtual : 8500"]
+        DONA["ms-segunda-vida-donaciones : 8520"]
+    end
+
+    classDef our fill:#DCFCE7,stroke:#16A34A,stroke-width:2px,color:#0C0C12;
+    classDef other fill:#F4F4F5,stroke:#71717A,stroke-width:1.5px,color:#18181B;
+
+    class AUTH,USERS,TIENDAS our;
+    class INV,CAT,GEO,PLAY,NOTIF,CHAT,BROKER,PAGOS,STATS,GW,VTON,DONA other;
+```
+
+| Paquete | Estación / Equipo | Líder de Equipo | Integrantes Backend | Bloque Asignado | Microservicio y Puerto Oficial |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **Paquete 1: Identidad** | **CADche (Nuestro)** | **Juan Diego Valderrama** | **Juan Diego Gaitán, Julián Giral** | **Bloque 8100** | • `ms-auth`: **8100**<br>• `ms-usuarios`: **8120**<br>• `ms-tiendas`: **8140** |
+| **Paquete 2: Catálogo** | RESTrepo | Nicolás Álvarez | Sebastián Camilo Granados, Daniel Mosquera | **Bloque 8200** | • `ms-inventario`: **8200**<br>• `ms-item-catalogo`: **8220**<br>• `ms-geolocalizacion`: **8240**<br>• `ms-playlist`: **8260** |
+| **Paquete 3: Notificaciones** | Guatoque Jiraguas | Paula Alejandra Díaz | Óscar Lasso, Santiago Garcia | **Bloque 8300** | • `ms-notificaciones`: **8300**<br>• `ms-chat`: **8320**<br>• `event-broker (RabbitMQ)`: **5672** (convención) |
+| **Paquete 4: Pagos y Estadísticas** | NQS | Cristian Camilo Ortiz Sánchez | Daniel Villamizar, Juan Manual Garzon | **Bloque 8400** | • `ms-pagos-suscripciones`: **8400**<br>• `ms-estadisticas`: **8420** |
+| **Paquete 5: Experiencia y Gateway** | Portal 8080 | Daniel Valero Quiroga | José Alejandro Martínez Arias, Juan David Munar | **Bloque 8500** | • `api-gateway`: **8080** (convención)<br>• `ms-probador-virtual`: **8500**<br>• `ms-segunda-vida-donaciones`: **8520** |
 
 ### Arquetipos de Moda y Personajes de StyleRadar
 
