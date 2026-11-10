@@ -36,5 +36,29 @@ class AzureBlobStorageAdapterTest {
         assertDoesNotThrow(() ->
                 adapter.eliminarArchivo("https://styleradarblob.blob.core.windows.net/tiendas/900123456-1/foto.webp"));
     }
+
+    @Test
+    @DisplayName("SR-RF-74: Debe usar endpoint por defecto si se provee null o cadena en blanco")
+    void debeUsarEndpointPorDefectoConValoresNulosOVacios() {
+        AzureBlobStorageAdapter adapterNull = new AzureBlobStorageAdapter(null);
+        AzureBlobStorageAdapter adapterBlanco = new AzureBlobStorageAdapter("   ");
+
+        InputStream stream = new ByteArrayInputStream("datos".getBytes());
+        String urlNull = adapterNull.subirArchivo("fotos", "1.webp", stream, "image/webp", 5);
+        String urlBlanco = adapterBlanco.subirArchivo("fotos", "2.webp", stream, "image/webp", 5);
+
+        assertThat(urlNull).startsWith("https://styleradarblob.blob.core.windows.net/fotos");
+        assertThat(urlBlanco).startsWith("https://styleradarblob.blob.core.windows.net/fotos");
+    }
+
+    @Test
+    @DisplayName("SR-RF-74: Debe eliminar slashes finales del endpoint configurado")
+    void debeNormalizarSlashesFinales() {
+        AzureBlobStorageAdapter adapterConSlashes = new AzureBlobStorageAdapter("https://customblob.azure.com///");
+        InputStream stream = new ByteArrayInputStream("datos".getBytes());
+        String url = adapterConSlashes.subirArchivo("fotos", "1.webp", stream, "image/webp", 5);
+
+        assertThat(url).isEqualTo("https://customblob.azure.com/fotos/1.webp");
+    }
 }
 

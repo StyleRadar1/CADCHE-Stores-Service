@@ -147,4 +147,54 @@ class ConfigurarUmbralUltimasUnidadesUseCaseTest {
         assertThat(response.diasNuevaLlegada()).isEqualTo(20);
         verify(repositoryPort).save(any(Almacen.class));
     }
+
+    @Test
+    @DisplayName("Debe lanzar IllegalStateException cuando el repositorio devuelve un almacén nulo al persistir el catálogo")
+    void debeLanzarExcepcionSiAlmacenGuardadoEsNulo() {
+        ConfiguracionCatalogoAlmacenRequestDTO request = new ConfiguracionCatalogoAlmacenRequestDTO(7, 20);
+        doNothing().when(umbralValidator).validar(7);
+        doNothing().when(periodoValidator).validar(20);
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenExistente));
+        doNothing().when(autorizacionValidator).validarAcceso(NIT, USUARIO_ID, repositoryPort);
+        when(repositoryPort.save(any(Almacen.class))).thenReturn(null);
+
+        assertThatThrownBy(() -> useCase.configurarCatalogo(NIT, request, USUARIO_ID))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("El almacén persistido no puede ser nulo");
+    }
+
+    @Test
+    @DisplayName("Debe conservar la fecha de actualización si ya está presente en el almacén persistido")
+    void debeConservarFechaActualizacionPresente() {
+        java.time.Instant fechaFija = java.time.Instant.parse("2026-01-01T10:00:00Z");
+        almacenExistente.configurarCatalogo(5, 10);
+        // Simulamos un almacén con fecha fijada
+        Almacen mockGuardado = org.mockito.Mockito.spy(almacenExistente);
+        when(mockGuardado.getFechaActualizacionCatalogo()).thenReturn(fechaFija);
+
+        doNothing().when(umbralValidator).validar(5);
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenExistente));
+        doNothing().when(autorizacionValidator).validarAcceso(NIT, USUARIO_ID, repositoryPort);
+        when(repositoryPort.save(any(Almacen.class))).thenReturn(mockGuardado);
+
+        ConfiguracionCatalogoAlmacenResponseDTO response = useCase.configurarUmbral(NIT, 5, USUARIO_ID);
+
+        assertThat(response.fechaActualizacion()).isEqualTo(fechaFija);
+    }
+
+    @Test
+    @DisplayName("Debe generar fecha actual si el almacén persistido no posee fecha de actualización de catálogo")
+    void debeGenerarFechaActualSiFechaActualizacionEsNula() {
+        Almacen mockGuardadoSinFecha = org.mockito.Mockito.spy(almacenExistente);
+        when(mockGuardadoSinFecha.getFechaActualizacionCatalogo()).thenReturn(null);
+
+        doNothing().when(umbralValidator).validar(5);
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenExistente));
+        doNothing().when(autorizacionValidator).validarAcceso(NIT, USUARIO_ID, repositoryPort);
+        when(repositoryPort.save(any(Almacen.class))).thenReturn(mockGuardadoSinFecha);
+
+        ConfiguracionCatalogoAlmacenResponseDTO response = useCase.configurarUmbral(NIT, 5, USUARIO_ID);
+
+        assertThat(response.fechaActualizacion()).isNotNull();
+    }
 }

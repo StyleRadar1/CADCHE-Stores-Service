@@ -51,5 +51,16 @@ class SecurityHeadersFilterTest {
         assertThat(response.getHeader(SecurityHeadersFilter.HEADER_REFERRER_POLICY))
                 .isEqualTo("strict-origin-when-cross-origin");
     }
+
+    @Test
+    @DisplayName("Debe continuar la cadena sin fallar cuando la respuesta no es HttpServletResponse")
+    void debeContinuarCadenaSiRespuestaNoEsHttpResponse() throws IOException, ServletException {
+        jakarta.servlet.ServletResponse genericResponse = org.mockito.Mockito.mock(jakarta.servlet.ServletResponse.class);
+        jakarta.servlet.FilterChain mockChain = org.mockito.Mockito.mock(jakarta.servlet.FilterChain.class);
+
+        securityHeadersFilter.doFilter(request, genericResponse, mockChain);
+
+        org.mockito.Mockito.verify(mockChain).doFilter(request, genericResponse);
+    }
 }
 
