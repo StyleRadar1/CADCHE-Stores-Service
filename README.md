@@ -75,6 +75,7 @@
 13. [Análisis de tecnologías del servicio](#13-análisis-de-tecnologías-del-servicio)
 14. [Documento técnico de arquitectura e instrucciones](#14-documento-técnico-de-arquitectura-e-instrucciones)
 15. [Análisis de seguridad OWASP Top 10:2025](#15-análisis-de-seguridad-owasp-top-102025)
+    * [15.4 Aporte al análisis de seguridad: Autenticación, autorización e integridad de los 3 servicios](#154-aporte-al-análisis-de-seguridad-autenticación-autorización-e-integridad-de-los-3-servicios)
 
 ---
 
@@ -1693,3 +1694,166 @@ El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida de
 | **A08:2025** | **Software or Data Integrity Failures** | • `OwaspTop10SecurityTest.test_A08_SoftwareOrDataIntegrity_FlywayMigrationsExist` (V1 a V4)<br>• `OwaspTop10SecurityTest.test_A08_SoftwareOrDataIntegrity_TransactionalIntegrity`<br>• Deserializador Jackson endurecido | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
 | **A09:2025** | **Security Logging and Alerting Failures** | • `OwaspTop10SecurityTest.test_A09_SecurityLogging_AuditResponseFields`<br>• Auditoría estructurada SLF4J de eventos BOLA (`WARN`) y decisiones administrativas | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
 | **A10:2025** | **Mishandling of Exceptional Conditions** | • `OwaspTop10SecurityTest.test_A10_MishandlingOfExceptionalConditions_StackTracesSuppressed`<br>• Supresión de trazas internas JVM en 500 y formato RFC 7807 (`application/problem+json`) | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+
+---
+
+<a id="154-aporte-al-análisis-de-seguridad-autenticación-autorización-e-integridad-de-los-3-servicios"></a>
+### 15.4 Aporte al Análisis de Seguridad: Autenticación, Autorización e Integridad de los 3 Servicios (Ecosistema CADCHE)
+
+Como contribución estratégica de **CADCHE** a la postura de ciberseguridad de la plataforma **StyleRadar**, se realizó una auditoría técnica profunda y modelado de amenazas sobre los tres (3) microservicios base del ecosistema backend:
+
+1. **`ms-auth` (`CADCHE-Authentication-Service` :8081 / :8110)**: Emisor central de identidad, credenciales y tokens.
+2. **`ms-usuarios` (`CADCHE-Users-Service` :8080 / :8120)**: Custodio de perfiles, datos personales, preferencias de estilo y estados de cuenta.
+3. **`ms-tiendas` (`CADCHE-Stores-Service` :8140)**: Gestión de comercios aliados, vitrinas, moderación documental y sucursales físicas.
+
+La evaluación se estructura bajo la tríada de seguridad para arquitecturas de microservicios: **Autenticación (Identidad Criptográfica)**, **Autorización (Control de Acceso y RBAC/BOLA)** e **Integridad (Consistencia de Datos, Transacciones y Trazabilidad)**.
+
+---
+
+#### 15.4.1 Matriz Comparativa Ejecutiva del Ecosistema CADCHE
+
+| Microservicio | Pilar de Seguridad | Estado Actual (Cómo está hoy) | Riesgos Identificados | Plan de Remediación (Qué se va a corregir) |
+| :--- | :--- | :--- | :--- | :--- |
+| **`ms-auth`**<br>(`Authentication`) | **Autenticación** | Endpoints REST mock/stub. Genera tokens estáticos quemados con claims fijos (`userId: 12`). Clave base64 de fallback en config. Base de datos excluida en arranque. | Suplantación masiva de identidad; tokens predecibles; clave secreta estática en repo; sin expiración dinámica. | Migrar a emisión dinámica JWT RSA-256 / Ed25519 con claims RFC 7519, hashing con BCrypt (costo 12), OTP respaldado en Redis con TTL y rate limiting. |
+| | **Autorización** | `SecurityConfig` en modo anónimo total (`permitAll`). No valida roles ni permisos en endpoints internos. | Exposición indebida de endpoints de autenticación; escalamiento de privilegios si el registro acepta roles directos. | Restringir auto-registro a rol `COMPRADOR`; proteger endpoints de revocación con `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")`. |
+| | **Integridad** | Persistencia JPA y Flyway desactivadas (`FLYWAY_ENABLED: false`). Sin almacenamiento relacional persistente. | Pérdida de credenciales ante reinicios; inexistencia de unicidad en BD (`UNIQUE(email)`); sin auditoría. | Activar Flyway con esquema relacional versionado (`V1__auth.sql`), constraints de integridad y rotación de Refresh Tokens. |
+| **`ms-usuarios`**<br>(`Users`) | **Autenticación** | **Sin Spring Security** ni dependencia `spring-boot-starter-security`. Endpoints REST públicos sin validación de cabecera `Authorization`. | **Zero Authentication**: Cualquier cliente o atacante anónimo puede consultar y mutar perfiles de usuario y preferencias sin credenciales. | Incorporar `spring-boot-starter-security` y JJWT 0.12.x; configurar `JwtAuthFilter` como Resource Server stateless; retornar HTTP `401` ante tokens ausentes. |
+| | **Autorización** | Cero validaciones RBAC o de propiedad de recurso. Endpoints de cambio de estado de cuenta (`/estado`) accesibles anónimamente. | **BOLA / IDOR crítico**: Modificación de perfiles ajenos cambiando el `id` en la URL. Escalamiento de privilegios para suspender/reactivar cuentas. | Implementar validador BOLA cruzando claim `sub` vs ID de usuario; proteger `/estado` con `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")`. |
+| | **Integridad** | Persistencia PostgreSQL 16 con Flyway, pero identificadores autoincrementales secuenciales (`Long id`) y sin bloqueo concurrente. | Ataques de enumeración; colisiones ante actualizaciones simultáneas de perfiles; datos PII en texto plano (Habeas Data). | Migrar a UUIDv7 en capa pública; bloqueo optimista con `@Version`; cifrado en reposo para PII con AES-256 (JPA Converter). |
+| **`ms-tiendas`**<br>(`Stores`) | **Autenticación** | Resource Server stateless con `JwtAuthFilter`. Validación criptográfica HMAC-SHA256 (≥ 256 bits), verificación de tiempo de expiración y formato Bearer. | Secreto simétrico compartido entre servicios (riesgo de brecha colateral); ausencia de revocación en tiempo real si el token no expira. | Transición hacia validación asimétrica con clave pública vía JWKS (`/.well-known/jwks.json`); validación de lista negra en Redis. |
+| | **Autorización** | Validación BOLA estricta (`SR-RNF-01`) con `AutorizacionAlmacenValidator` (JWT vs NIT). RBAC con `@PreAuthorize` para `ADMIN_STYLERADAR` y `ADMIN_ALMACEN`. | Sobrecarga de base de datos relacional para verificar propiedad en cada request BOLA; falta de granularidad multi-sucursal. | Caché distribuida de autorización BOLA en Redis con TTL corto e invalidación por eventos; evolución de RBAC a ABAC para sucursales. |
+| | **Integridad** | PostgreSQL 16 ACID, Flyway V1–V4, Magic Bytes en fotos y RUT PDF, cuota máx. 6 fotos, respuestas RFC 7807 y RabbitMQ DLX. | Desincronización eventual entre commit en BD y publicación a RabbitMQ (Dual-Write); falta de antivirus heurístico en Azure Blobs. | Implementar patrón **Transactional Outbox** para eventos de dominio; habilitar Microsoft Defender for Storage para cuarentena de blobs. |
+
+---
+
+#### 15.4.2 Análisis Detallado por Servicio y Pilar de Seguridad
+
+---
+
+##### 1. Servicio de Autenticación (`ms-auth` · `CADCHE-Authentication-Service`)
+
+###### A. Autenticación
+* **Cómo está hoy**:  
+  El microservicio expone endpoints REST (`/api/v1/auth/login`, `/registrar`, `/verificar-otp`, `/reenviar-otp`, `/refresh`, `/logout`). Sin embargo, en la implementación actual del controlador `AuthController`, las respuestas están construidas mediante stubs que retornan un JWT codificado estáticamente (`eyJhbGciOiJIUzI1NiJ9...`) con identificador de usuario `12L` y rol `COMPRADOR`. En `application.properties`, la clave secreta `jwt.secret-base64` posee un valor por defecto codificado y la persistencia JPA está excluida mediante `spring.autoconfigure.exclude: DataSourceAutoConfiguration`.
+* **Riesgos encontrados**:  
+  1. *Firma Criptográfica Predecible / Hardcoded Secret*: El uso de un secreto estático por defecto en el repositorio permite a un atacante forjar tokens válidos con cualquier claim arbitrario si la variable de entorno no es inyectada.  
+  2. *Suplantación Masiva de Identidad*: Todos los usuarios que inician sesión reciben el mismo token y los mismos claims (`userId: 12`), invalidando la autenticidad del emisor.  
+  3. *Ausencia de Revocación Real en Logout*: El endpoint `/logout` responde HTTP `204 No Content` sin invalidar el token en una lista negra ni revocar la sesión activa.  
+  4. *Falta de Rate Limiting en OTP*: El mecanismo de OTP no cuenta con control de concurrencia distribuido, exponiendo el código de 6 dígitos a ataques de fuerza bruta.
+* **Qué se va a corregir**:  
+  1. Integrar `BCryptPasswordEncoder` (fuerza 12) o Argon2id con sal única para almacenamiento de contraseñas.  
+  2. Implementar un generador dinámico de JWTs respaldado por clave asimétrica RSA-256 o rotación de secretos HMAC-SHA512 inyectados por Azure Key Vault.  
+  3. Conectar el ciclo de vida del OTP y la lista negra de tokens revocados (`jti`) a Redis con TTL estricto (300 segundos y máx. 3 intentos).  
+  4. Activar la conexión formal a PostgreSQL 16 eliminando las exclusiones de autoconfiguración.
+
+###### B. Autorización
+* **Cómo está hoy**:  
+  Se encuentra definido el enum `Rol` (`COMPRADOR`, `ADMIN_ALMACEN`, `ADMIN_STYLERADAR`). No obstante, la clase `SecurityConfig` tiene configurado `.requestMatchers("/api/v1/auth/**").permitAll()`, permitiendo acceso público indiscriminado sin validar privilegios en operaciones administrativas.
+* **Riesgos encontrados**:  
+  1. *Escalamiento Horizontal y Vertical en Registro*: Si el DTO `RegistroAuthRequestDTO` permitiera la inyección directa del campo de roles desde el cliente, un atacante podría autoasignarse roles administrativos.  
+  2. *Falta de Protección en Endpoints de Auditoría/Sesión*: No existen validaciones de rol para consultar sesiones activas o forzar revocación de credenciales.
+* **Qué se va a corregir**:  
+  1. Forzar en la lógica de dominio que todo auto-registro cree exclusivamente usuarios con el rol base `COMPRADOR`.  
+  2. Exigir autorización con `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")` para endpoints de asignación de roles privilegiados y revocación administrativa de cuentas.
+
+###### C. Integridad
+* **Cómo está hoy**:  
+  Flyway y JPA están desactivados (`FLYWAY_ENABLED: false`). Los objetos de transferencia usan validaciones sintácticas parciales de Jakarta Bean Validation.
+* **Riesgos encontrados**:  
+  1. *Falta de Integridad Relacional y Persistencia*: El estado de los usuarios no se persiste de forma transaccional, perdiéndose ante reinicios del contenedor.  
+  2. *Replay Attacks / Reutilización de Refresh Tokens*: No se valida si un refresh token ya fue utilizado previamente, permitiendo ataques de repetición.
+* **Qué se va a corregir**:  
+  1. Habilitar migraciones versionadas en Flyway (`V1__init_auth.sql`) con restricciones de unicidad `UNIQUE(email)` e índices B-Tree en campos de búsqueda.  
+  2. Implementar el estándar de *Refresh Token Rotation* (RTR): cada uso de un refresh token invalida el token anterior y emite uno nuevo; si se detecta un intento de reutilización, se invalida toda la familia de tokens del usuario.
+
+---
+
+##### 2. Servicio de Usuarios (`ms-usuarios` · `CADCHE-Users-Service`)
+
+###### A. Autenticación
+* **Cómo está hoy**:  
+  El microservicio cuenta con persistencia PostgreSQL y arquitectura hexagonal, pero **carece completamente de la dependencia `spring-boot-starter-security`** en su `pom.xml`. No posee `SecurityConfig`, ni filtro de intercepción de tokens (`JwtAuthFilter`).
+* **Riesgos encontrados**:  
+  1. *Zero Authentication (Servicio Completamente Abierto)*: Cualquier endpoint (`/api/v1/usuarios`, `/personalizacion`, `/estado-cuenta`) procesa solicitudes anónimas sin requerir cabecera `Authorization: Bearer <token>`.  
+  2. *Suplantación Total de Identidad*: Un atacante puede consultar o alterar preferencias de estilo, tallas habituales y datos personales de cualquier usuario sin autenticarse.
+* **Qué se va a corregir**:  
+  1. Incorporar `spring-boot-starter-security` y librerías JJWT (versión 0.12.5) en `pom.xml`.  
+  2. Implementar `SecurityConfig` en modo stateless (`SessionCreationPolicy.STATELESS`) y un `JwtAuthFilter` que valide firma, expiración e identidad del token emitido por `ms-auth`.  
+  3. Rechazar con HTTP `401 Unauthorized` cualquier petición no autenticada a rutas protegidas.
+
+###### B. Autorización
+* **Cómo está hoy**:  
+  No existen directivas `@PreAuthorize` ni verificación de pertenencia sobre los recursos (`UsuarioController`, `PersonalizacionController`, `GestionEstadoCuentaController`).
+* **Riesgos encontrados**:  
+  1. *Vulnerabilidad BOLA / IDOR Crítica*: Un usuario autenticado (o anónimo) puede modificar las tallas y búsquedas guardadas de cualquier otro usuario alterando el parámetro `{id}` en la URL (`PUT /api/v1/usuarios/45/preferencias`).  
+  2. *Falta de Control de Acceso Funcional en Estado de Cuenta*: El endpoint `/api/v1/usuarios/{id}/estado` permite cambiar el estado de la cuenta a `SUSPENDIDA` o `BLOQUEADA` sin validar si quien ejecuta la operación es un administrador de la plataforma.
+* **Qué se va a corregir**:  
+  1. Desarrollar un validador de propiedad BOLA que verifique que el `userId` presente en el JWT coincida estrictamente con el `{id}` del usuario afectado, retornando HTTP `403 Forbidden` ante discordancias.  
+  2. Proteger el endpoint de cambio de estado de cuenta exigiendo el rol administrativo: `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")`.
+
+###### C. Integridad
+* **Cómo está hoy**:  
+  Posee soporte JPA con PostgreSQL 16 y Flyway. Sin embargo, los identificadores son numéricos autoincrementales (`Long id`), no se implementa versionamiento optimista y los datos sensibles (PII) se almacenan en texto claro.
+* **Riesgos encontrados**:  
+  1. *Ataques de Enumeración*: Identificadores secuenciales permiten a competidores o atacantes mapear el universo completo de clientes mediante scraping.  
+  2. *Colisiones por Actualizaciones Concurrentes*: Dos peticiones concurrentes de modificación de perfil pueden generar condiciones de carrera sin detección de conflicto.  
+  3. *Incumplimiento de Habeas Data (Ley 1581)*: Teléfonos, nombres y preferencias sin cifrado en reposo a nivel de campo exponen la privacidad de los usuarios ante volcados de base de datos.
+* **Qué se va a corregir**:  
+  1. Exponer identificadores públicos basados en UUIDv7 en la API REST, desacoplándolos de la clave primaria relacional interna.  
+  2. Incorporar control de concurrencia optimista mediante columna `@Version` en la entidad `UsuarioEntity`.  
+  3. Implementar cifrado transparente en columnas sensibles mediante `AttributeConverter` con AES-256-GCM.
+
+---
+
+##### 3. Servicio de Tiendas (`ms-tiendas` · `CADCHE-Stores-Service`)
+
+###### A. Autenticación
+* **Cómo está hoy**:  
+  Implementa un Resource Server stateless con `JwtAuthFilter` y Spring Security 6.x. Valida la firma HMAC-SHA256, el algoritmo, la expiración (`exp`) y la estructura del token. Requiere entropía mínima de 256 bits para `JWT_SECRET` y responde `401 Unauthorized` bajo RFC 7807 sin revelar detalles de la JVM.
+* **Riesgos encontrados**:  
+  1. *Clave Secreta Simétrica Compartida*: Al compartir el secreto simétrico entre múltiples microservicios, el compromiso de uno de ellos permitiría falsificar tokens válidos para los demás.  
+  2. *Falta de Revocación Inmediata de Credenciales*: Si se bloquea preventivamente a un comercio o administrador, su token emitido continuará operando hasta que transcurran sus 24 horas de vigencia.
+* **Qué se va a corregir**:  
+  1. Migrar a validación de clave asimétrica mediante endpoint JWKS (`/.well-known/jwks.json`), de forma que `ms-tiendas` valide firmas exclusivamente con la clave pública de `ms-auth`.  
+  2. Integrar consulta a Redis para verificar la lista de revocación en tiempo real antes de procesar operaciones de alto impacto.
+
+###### B. Autorización
+* **Cómo está hoy**:  
+  Implementa mitigación estricta de BOLA/IDOR mediante `AutorizacionAlmacenValidator` (`SR-RNF-01`), contrastando en la base de datos que el `userId` del JWT sea administrador asignado del NIT comercial. Los endpoints de moderación (`/verificacion`) exigen `@PreAuthorize("hasRole('ADMIN_STYLERADAR')")`.
+* **Riesgos encontrados**:  
+  1. *Sobrecarga de Persistencia por Validación BOLA*: Cada petición HTTP entrante a rutas de administración de tiendas consulta `SpringDataAdministradorAlmacenRepository`, generando alta contención sobre la base de datos bajo tráfico elevado.  
+  2. *Granularidad Limitada en Sedes*: La autorización se restringe al NIT global de la tienda, sin distinguir permisos entre administradores de sucursales físicas específicas.
+* **Qué se va a corregir**:  
+  1. Implementar almacenamiento en caché distribuida en Redis (`auth:tienda:{userId}:{nit}`) con invalidación basada en eventos para validar BOLA en sub-milisegundos.  
+  2. Evolucionar hacia un modelo de autorización basado en atributos (ABAC) que incorpore el identificador de sede física en el contexto de seguridad.
+
+###### C. Integridad
+* **Cómo está hoy**:  
+  Persistencia transaccional ACID en PostgreSQL 16 con Flyway (V1–V4). Validación estricta de Magic Bytes en subida de fotografías y PDFs del RUT, cuota física máxima de 6 fotografías por vitrina, sanitización de URLs de Azure Blob Storage, supresión total de stack traces en errores 500 y resiliencia con RabbitMQ Dead Letter Exchange (`styleradar.dlx`).
+* **Riesgos encontrados**:  
+  1. *Problema de Doble Escritura (Dual-Write Problem)*: Si el microservicio confirma la transacción en base de datos pero la conexión con RabbitMQ falla antes de emitir el evento de dominio, los servicios consumidores quedarán desincronizados.  
+  2. *Ausencia de Escaneo Antivirus en Carga de Archivos*: Aunque se verifica el formato y los Magic Bytes de imágenes y PDFs, no se cuenta con un escáner heurístico que prevenga la carga de archivos con payloads exploit de día cero.
+* **Qué se va a corregir**:  
+  1. Implementar el patrón **Transactional Outbox** utilizando una tabla relacional `outbox_eventos` dentro de la misma transacción de base de datos, garantizando entrega confiable a RabbitMQ (*At-least-once Delivery*).  
+  2. Activar integración con **Microsoft Defender for Storage** en la cuenta de almacenamiento de Azure Blob Storage para escaneo y cuarentena automática de archivos maliciosos.
+
+---
+
+#### 15.4.3 Plan de Remediación y Priorización de Seguridad
+
+```mermaid
+flowchart TD
+    P1["Fase 1: Crítica (Sprint Actual)<br>• Añadir Spring Security a ms-usuarios<br>• Mitigar BOLA en ms-usuarios<br>• Activar BCrypt y JWT dinámico en ms-auth"]
+    P2["Fase 2: Alta (Siguiente Sprint)<br>• Habilitar persistencia real y Flyway en ms-auth<br>• Implementar Transactional Outbox en ms-tiendas<br>• Caché Redis para validación BOLA"]
+    P3["Fase 3: Media / Largo Plazo<br>• Migración a claves asimétricas RSA/JWKS<br>• Escaneo antivirus con Defender for Storage<br>• Cifrado de datos PII en reposo (Ley 1581)"]
+
+    P1 --> P2 --> P3
+
+    classDef crit fill:#FEE2E2,stroke:#DC2626,stroke-width:2px,color:#991B1B;
+    classDef high fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E;
+    classDef med fill:#DBEAFE,stroke:#2563EB,stroke-width:2px,color:#1E40AF;
+
+    class P1 crit;
+    class P2 high;
+    class P3 med;
+```
