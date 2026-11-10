@@ -78,6 +78,9 @@ public class ConfigurarUmbralUltimasUnidadesUseCaseImpl implements ConfigurarUmb
     }
 
     private ConfiguracionCatalogoAlmacenResponseDTO toResponseDTO(Almacen almacen) {
+        if (almacen == null) {
+            throw new IllegalStateException("El almacén persistido no puede ser nulo");
+        }
         return new ConfiguracionCatalogoAlmacenResponseDTO(
                 almacen.getNit(),
                 almacen.getUmbralUltimasUnidadesEfectivo(),

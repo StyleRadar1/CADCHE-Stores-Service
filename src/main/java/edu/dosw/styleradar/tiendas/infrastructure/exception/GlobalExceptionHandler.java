@@ -18,6 +18,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
@@ -48,6 +49,14 @@ public class GlobalExceptionHandler {
             IllegalArgumentException exception, HttpServletRequest request) {
         log.warn("Argumento inválido en {}: {}", request.getRequestURI(), exception.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(FalloAutenticacionException.class)
+    public ResponseEntity<ErrorResponseDTO> handleFalloAutenticacion(
+            FalloAutenticacionException exception, HttpServletRequest request) {
+        log.warn("Falla de autenticación (401) en {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 

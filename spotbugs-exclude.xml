@@ -27,4 +27,8 @@
         <Package name="~.*\.infrastructure\.adapter.*" />
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
     </Match>
+    <Match>
+        <Package name="~.*\.infrastructure\.security.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
 </FindBugsFilter>

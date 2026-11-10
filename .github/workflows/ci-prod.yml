@@ -1,7 +1,7 @@
 # ==============================================================================
 # STYLE RADAR - PIPELINE CD PROD
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
-# Flujo: Release Tag (v*.*.*) -> Docker Hub -> Aprobacion Manual -> Azure PROD
+# Flujo Automatizado: Quality Gate -> Build OCI SemVer -> Aprobacion Manual -> Azure PROD
 # ==============================================================================
 
 name: CD PROD - Tiendas
@@ -11,42 +11,93 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Tag o versión SemVer a desplegar (ej. v1.0.0)'
+        required: false
+        default: 'latest'
 
 env:
   IMAGE_NAME: styleradar-tiendas
   AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME_PROD || 'styleradar-tiendas-prod' }}
 
 jobs:
+  quality-gate-prod:
+    name: 1. Quality Gate y Verificacion Pre-Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codigo fuente (Full History)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java 21 Temurin (LTS)
+        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Cache de paquetes SonarQube
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache de dependencias Maven
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Compilar y ejecutar pruebas completas con JaCoCo
+        run: mvn -B clean verify --no-transfer-progress
+
+      - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
+        run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check "-Dspotbugs.excludeFilterFile=spotbugs-exclude.xml"
+
+      - name: Analisis estatico SonarQube Cloud (Quality Gate A)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service
+
   build-prod:
-    name: Build y Push Imagen Produccion
+    name: 2. Build y Push Imagen OCI Produccion
+    needs: quality-gate-prod
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
 
     steps:
       - name: Checkout del codigo fuente
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configurar Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
 
       - name: Iniciar sesion en Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extraer metadatos con SemVer
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest
+            type=raw,value=${{ github.event.inputs.version || 'prod-latest' }}
 
       - name: Compilar y publicar imagen OCI de Produccion
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6.11.0
         with:
           context: .
           platforms: linux/amd64
@@ -57,7 +108,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-prod:
-    name: Desplegar a Azure Produccion
+    name: 3. Desplegar a Azure App Service Produccion
     needs: build-prod
     runs-on: ubuntu-latest
     environment:
@@ -66,12 +117,12 @@ jobs:
 
     steps:
       - name: Autenticacion en Microsoft Azure
-        uses: azure/login@v2
+        uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Configurar App Settings y Puerto 8140 en Azure App Service PROD
-        uses: azure/cli@v2
+      - name: Configurar App Settings y Variables de Entorno en Azure PROD
+        uses: azure/cli@3c87847598b988e406a2c25e657114d760fd035c # v2.1.0
         with:
           inlineScript: |
             RG=$(az webapp list --query "[?name=='${{ env.AZURE_WEBAPP_NAME }}'].resourceGroup | [0]" -o tsv)
@@ -95,7 +146,7 @@ jobs:
 
       - name: Desplegar Contenedor Docker en Azure Web App (PROD)
         id: deploy
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@145a0687697df1d8a28909569f6e5d86213041f9 # v3.0.0
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build-prod.outputs.version || 'latest' }}
@@ -117,14 +168,14 @@ jobs:
           exit 1
 
   notify:
-    name: Resumen del Despliegue
+    name: 4. Resumen del Despliegue
     needs: deploy-prod
     runs-on: ubuntu-latest
     steps:
       - name: Resumen del despliegue en Produccion
         run: |
           echo "=========================================================="
-          echo "PROD desplegado exitosamente"
+          echo "PROD desplegado exitosamente a traves de CD automatizado"
           echo "Version: ${{ github.ref_name }}"
           echo "URL Swagger UI: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html"
           echo "URL OpenAPI Spec: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"

@@ -4,7 +4,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,7 +47,7 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
 
     @Override
     public ResponseEntity<VerificacionAlmacenResponseDTO> consultarUno(
-            @PathVariable String nit,
+            String nit,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         String rol = resolveRole(rolesHeader, roleHeader);
@@ -57,7 +56,7 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
 
     @Override
     public ResponseEntity<VerificacionAlmacenResponseDTO> decidir(
-            @PathVariable String nit,
+            String nit,
             @Valid @RequestBody DecisionVerificacionRequestDTO request,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
@@ -69,7 +68,7 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
 
     @Override
     public ResponseEntity<VerificacionAlmacenResponseDTO> solicitarRevision(
-            @PathVariable String nit,
+            String nit,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long adminId) {

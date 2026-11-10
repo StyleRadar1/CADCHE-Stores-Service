@@ -7,7 +7,6 @@ import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -85,7 +84,7 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
-    public ResponseEntity<AlmacenResponseDTO> obtenerPorNit(@PathVariable String nit) {
+    public ResponseEntity<AlmacenResponseDTO> obtenerPorNit(String nit) {
         return ResponseEntity.ok(new AlmacenResponseDTO(
                 nit,
                 "Atelier Urbano Chapinero",
@@ -97,14 +96,14 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
-    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(@PathVariable String nit) {
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(String nit) {
         ConfiguracionCatalogoAlmacenResponseDTO response = consultarUmbralUseCase.consultarConfiguracion(nit);
         return ResponseEntity.ok(response);
     }
 
     @Override
     public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> configurarCatalogo(
-            @PathVariable String nit,
+            String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ConfiguracionCatalogoAlmacenRequestDTO request) {
         ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarCatalogo(nit, request, usuarioId);
@@ -113,7 +112,7 @@ public class AlmacenController implements AlmacenApi {
 
     @Override
     public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarUmbralUltimasUnidades(
-            @PathVariable String nit,
+            String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarUmbralRequestDTO request) {
         ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarUmbral(nit, request.getUmbralUltimasUnidades(), usuarioId);
@@ -121,14 +120,14 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
-    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(@PathVariable String nit) {
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(String nit) {
         ConfiguracionCatalogoAlmacenResponseDTO response = consultarUmbralUseCase.consultarConfiguracion(nit);
         return ResponseEntity.ok(response);
     }
 
     @Override
     public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarDiasNuevaLlegada(
-            @PathVariable String nit,
+            String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarPeriodoRequestDTO request) {
         ConfiguracionCatalogoAlmacenResponseDTO response = configurarPeriodoUseCase.configurarPeriodo(nit, request.diasNuevaLlegada(), usuarioId);
@@ -136,15 +135,15 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
-    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(@PathVariable String nit) {
+    public ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(String nit) {
         ConfiguracionCatalogoAlmacenResponseDTO response = consultarPeriodoUseCase.consultarPeriodo(nit);
         return ResponseEntity.ok(response);
     }
 
     @Override
     public ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarUltimasUnidades(
-            @PathVariable String nit,
-            @PathVariable Long itemId) {
+            String nit,
+            Long itemId) {
         return ResponseEntity.ok(new DistintivoPrendaAlmacenResponseDTO(
                 nit,
                 itemId,
@@ -158,8 +157,8 @@ public class AlmacenController implements AlmacenApi {
 
     @Override
     public ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarNuevaLlegada(
-            @PathVariable String nit,
-            @PathVariable Long itemId) {
+            String nit,
+            Long itemId) {
         return ResponseEntity.ok(new DistintivoPrendaAlmacenResponseDTO(
                 nit,
                 itemId,
@@ -173,7 +172,7 @@ public class AlmacenController implements AlmacenApi {
 
     @Override
     public ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
-            @PathVariable String nit,
+            String nit,
             @RequestPart("archivo") MultipartFile archivo,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
         if (archivo == null || archivo.isEmpty()) {
@@ -194,14 +193,14 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
-    public ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(@PathVariable String nit) {
+    public ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(String nit) {
         return ResponseEntity.ok(registrarFotografiaUseCase.listarFotografias(nit));
     }
 
     @Override
     public ResponseEntity<Void> eliminarFotografia(
-            @PathVariable String nit,
-            @PathVariable Long fotoId,
+            String nit,
+            Long fotoId,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
         registrarFotografiaUseCase.eliminarFotografia(nit, fotoId, usuarioId);
         return ResponseEntity.noContent().build();
