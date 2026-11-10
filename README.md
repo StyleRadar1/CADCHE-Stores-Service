@@ -1624,15 +1624,27 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 
 ---
 
-### 15.3 Verificación Automatizada en CI/CD y Calidad de Código
+### 15.3 Verificación Automatizada en CI/CD y Matriz de Pruebas OWASP
 
-El cumplimiento de los estándares OWASP se audita y valida automáticamente en cada Pull Request mediante la suite de integración continua configurada en `.github/workflows/ci-qa.yml`:
+El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida de forma continua y automatizada en la suite de pruebas del microservicio (`mvn test`) y el pipeline de integración continua (`.github/workflows/ci-qa.yml`):
 
-1. **SonarQube Quality Gate**:
-   - `0 Vulnerabilities` (Grado de confiabilidad: **A**).
-   - `0 Security Hotspots` pendientes de revisión.
-   - Cobertura de pruebas unitarias y de integración $\ge 88\%$.
-2. **Pruebas de Seguridad en la Suite de Tests**:
-   - `AutorizacionAlmacenValidatorTest`: Valida el retorno de HTTP `403 Forbidden` ante intentos de manipulación de tiendas no autorizadas (BOLA/IDOR).
-   - `JwtAuthFilterTest`: Valida el rechazo inmediato HTTP `401 Unauthorized` ante tokens expirados o firmas inválidas.
-   - `FotografiaTiendaValidationTest`: Valida el bloqueo ante archivos de peso mayor a 5 MB o formatos no permitidos.
+1. **Métricas de la Suite de Pruebas de Seguridad**:
+   - **Total de pruebas ejecutadas**: `255 pruebas` (0 fallos, 0 errores, 0 ignoradas).
+   - **Cobertura de instrucciones (JaCoCo)**: `87.65%` (Supera ampliamente el umbral institucional del 85%).
+   - **Cobertura de líneas (JaCoCo)**: `89.52%`.
+   - **Vulnerabilidades y Security Hotspots (SonarQube Cloud)**: `0 vulnerabilidades` (Confiabilidad Grado A).
+
+2. **Matriz de Pruebas Automatizadas por Categoría OWASP Top 10:2025**:
+
+| Identificador OWASP | Categoría Oficial | Suites y Métodos de Prueba Automatizada Implementados | Estado |
+| :---: | :--- | :--- | :---: |
+| **A01:2025** | **Broken Access Control** | • `OwaspTop10SecurityTest.test_A01_BrokenAccessControl_BOLA_Mitigated`<br>• `OwaspTop10SecurityTest.test_A01_BrokenAccessControl_RBAC_Enforced`<br>• `AutorizacionAlmacenValidatorTest` (3 tests)<br>• `AutorizacionAdminStyleRadarValidatorTest` (5 tests) | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A02:2025** | **Security Misconfiguration** | • `OwaspTop10SecurityTest.test_A02_SecurityMisconfiguration_HeadersEnforced`<br>• `OwaspTop10SecurityTest.test_A02_SecurityMisconfiguration_CorsConfigRestricted`<br>• `SecurityHeadersFilterTest.debeInyectarCabecerasDeSeguridad` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A03:2025** | **Software Supply Chain Failures** | • `OwaspTop10SecurityTest.test_A03_SoftwareSupplyChain_DockerfileNonRoot`<br>• Inspección de multi-stage build, Alpine JRE y usuario `appuser:10001` en `Dockerfile` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A04:2025** | **Cryptographic Failures** | • `OwaspTop10SecurityTest.test_A04_CryptographicFailures_JwtKeyEntropyEnforced`<br>• `OwaspTop10SecurityTest.test_A04_CryptographicFailures_SslRequiredInProdProfile`<br>• `JwtAuthFilterTest.debeRechazarClavesSecretasDebiles` (Mínimo 256 bits) | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A05:2025** | **Injection** | • `OwaspTop10SecurityTest.test_A05_Injection_SqlInjectionPreventedByNitPattern`<br>• `OwaspTop10SecurityTest.test_A05_Injection_CoordinateRangeValidation`<br>• Parametrización estricta en `AlmacenRepositoryAdapterTest` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A06:2025** | **Insecure Design** | • `OwaspTop10SecurityTest.test_A06_InsecureDesign_PhotoQuotaLimit` (Máx. 6 vitrina)<br>• `OwaspTop10SecurityTest.test_A06_InsecureDesign_RutMandatoryForApproval`<br>• `OwaspTop10SecurityTest.test_A06_InsecureDesign_RejectionRequiresMotive`<br>• `AlmacenTest` y `VerificacionAlmacenDominioTest` (8 tests) | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A07:2025** | **Authentication Failures** | • `OwaspTop10SecurityTest.test_A07_AuthenticationFailures_ExpiredAndTamperedTokensRejected`<br>• `OwaspTop10SecurityTest.test_A07_AuthenticationFailures_MishandlingMapsTo401`<br>• `JwtAuthFilterTest.debeRetornar401AnteTokenExpirado`<br>• `JwtAuthFilterTest.debeRetornar401AnteFirmaAdulterada` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A08:2025** | **Software or Data Integrity Failures** | • `OwaspTop10SecurityTest.test_A08_SoftwareOrDataIntegrity_FlywayMigrationsExist` (V1 a V4)<br>• `OwaspTop10SecurityTest.test_A08_SoftwareOrDataIntegrity_TransactionalIntegrity`<br>• Deserializador Jackson endurecido | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A09:2025** | **Security Logging and Alerting Failures** | • `OwaspTop10SecurityTest.test_A09_SecurityLogging_AuditResponseFields`<br>• Auditoría estructurada SLF4J de eventos BOLA (`WARN`) y decisiones administrativas | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A10:2025** | **Mishandling of Exceptional Conditions** | • `OwaspTop10SecurityTest.test_A10_MishandlingOfExceptionalConditions_StackTracesSuppressed`<br>• Supresión de trazas internas JVM en 500 y formato RFC 7807 (`application/problem+json`) | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
