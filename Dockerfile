@@ -4,18 +4,17 @@
 # Estándares: OCI, CIS Benchmark, Non-Root User, JVM Container-Aware
 # ==============================================================================
 
-# ─── Etapa 1: Compilación con Maven (Build Environment) ────────────────────────
-FROM maven:3.9.9-eclipse-temurin-17 AS builder
+# ─── Etapa 1: Compilación con Maven (Build Environment Ligero Alpine) ─────────
+FROM maven:3.9.9-eclipse-temurin-17-alpine AS builder
 
 WORKDIR /build
 
-# 1. Cachear dependencias copiando pom.xml primero
+# 1. Copiar pom.xml y código fuente
 COPY pom.xml .
-RUN mvn dependency:go-offline -q || true
-
-# 2. Copiar código fuente y compilar binario optimizado
 COPY src ./src
-RUN mvn clean package -DskipTests -q
+
+# 2. Compilar binario optimizado omitiendo pruebas repetidas (ya validadas en CI)
+RUN mvn package -DskipTests -Dmaven.test.skip=true -q
 
 # ─── Etapa 2: Imagen Final Ultraligera y Segura (Runtime Environment) ─────────
 FROM eclipse-temurin:17-jre-alpine
