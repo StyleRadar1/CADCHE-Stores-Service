@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,8 +16,8 @@ public class AsociacionAdministradorAlmacenController implements AsociacionAdmin
 
     @Override
     public ResponseEntity<AdministradorAlmacenResponseDTO> asociar(
-            @PathVariable String nit,
-            @PathVariable Long usuarioId) {
+            String nit,
+            Long usuarioId) {
         return ResponseEntity.ok(new AdministradorAlmacenResponseDTO(
                 10L,
                 usuarioId,
@@ -28,7 +27,7 @@ public class AsociacionAdministradorAlmacenController implements AsociacionAdmin
     }
 
     @Override
-    public ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(@PathVariable String nit) {
+    public ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(String nit) {
         return ResponseEntity.ok(List.of(new AdministradorAlmacenResponseDTO(
                 10L,
                 15L,

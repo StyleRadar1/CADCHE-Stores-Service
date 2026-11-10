@@ -16,7 +16,15 @@ public class AzureBlobStorageAdapter implements AlmacenamientoBlobPort {
 
     public AzureBlobStorageAdapter(
             @Value("${azure.storage.blob-endpoint:https://styleradarblob.blob.core.windows.net}") String endpointBase) {
-        this.endpointBase = endpointBase != null ? endpointBase.replaceAll("/+$", "") : "https://styleradarblob.blob.core.windows.net";
+        if (endpointBase == null || endpointBase.isBlank()) {
+            this.endpointBase = "https://styleradarblob.blob.core.windows.net";
+        } else {
+            String trimmed = endpointBase.trim();
+            while (trimmed.endsWith("/")) {
+                trimmed = trimmed.substring(0, trimmed.length() - 1);
+            }
+            this.endpointBase = trimmed;
+        }
     }
 
     @Override

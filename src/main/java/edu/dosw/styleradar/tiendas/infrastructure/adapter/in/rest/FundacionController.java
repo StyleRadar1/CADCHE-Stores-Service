@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,7 +47,7 @@ public class FundacionController implements FundacionApi {
 
     @Override
     public ResponseEntity<FundacionResponseDTO> editar(
-            @PathVariable Long id,
+            Long id,
             @Valid @RequestBody FundacionRequestDTO request,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
@@ -59,7 +58,7 @@ public class FundacionController implements FundacionApi {
 
     @Override
     public ResponseEntity<FundacionResponseDTO> desactivar(
-            @PathVariable Long id,
+            Long id,
             @org.springframework.web.bind.annotation.RequestParam(value = "motivo", required = false) String motivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
