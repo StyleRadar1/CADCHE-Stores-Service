@@ -419,30 +419,30 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 
 ### Matriz Oficial de Enlaces por Entorno (PROD, QA, LOCAL)
 
-| Entorno | Estado | Propósito | URL Base del Servicio | Swagger OpenAPI UI | OpenAPI JSON Contract | Health Check |
+| Entorno | Estado | Propósito | Enrutamiento API Gateway (:8080) | URL Base Microservicio (:8140) | Swagger OpenAPI UI | Health Check |
 | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
-| **Producción (PROD)** | Active | Despliegue productivo de StyleRadar | `https://styleradar-tiendas-prod.azurewebsites.net` | [Swagger UI PROD](https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html) | [`/v3/api-docs`](https://styleradar-tiendas-prod.azurewebsites.net/v3/api-docs) | [`/actuator/health`](https://styleradar-tiendas-prod.azurewebsites.net/actuator/health) |
-| **Calidad / Pruebas (QA)** | Active | Pruebas integradas de Sprint y QA | `https://styleradar-tiendas-qa.azurewebsites.net` | [Swagger UI QA](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html) | [`/v3/api-docs`](https://styleradar-tiendas-qa.azurewebsites.net/v3/api-docs) | [`/actuator/health`](https://styleradar-tiendas-qa.azurewebsites.net/actuator/health) |
-| **Desarrollo Local (DEV)** | Local | Entorno de desarrollo local en máquina | `http://localhost:8140` | [Swagger UI Local](http://localhost:8140/swagger-ui/index.html) | [`/v3/api-docs`](http://localhost:8140/v3/api-docs) | [`/actuator/health`](http://localhost:8140/actuator/health) |
+| **Producción (PROD)** | Active | Despliegue productivo de StyleRadar | [`https://styleradar-backend-prod.azurewebsites.net/api/v1/almacenes`](https://styleradar-backend-prod.azurewebsites.net/api/v1/almacenes) | `https://styleradar-tiendas-prod.azurewebsites.net` | [Swagger UI PROD](https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-tiendas-prod.azurewebsites.net/actuator/health) |
+| **Calidad / Pruebas (QA)** | Active | Pruebas integradas de Sprint y QA | [`https://styleradar-backend-qa.azurewebsites.net/api/v1/almacenes`](https://styleradar-backend-qa.azurewebsites.net/api/v1/almacenes) | `https://styleradar-tiendas-qa.azurewebsites.net` | [Swagger UI QA](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-tiendas-qa.azurewebsites.net/actuator/health) |
+| **Desarrollo Local (DEV)** | Local | Entorno de desarrollo local en máquina | `http://localhost:8080/api/v1/almacenes` | `http://localhost:8140` | [Swagger UI Local](http://localhost:8140/swagger-ui/index.html) | [`/actuator/health`](http://localhost:8140/actuator/health) |
 
-* **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8140/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA con 18 endpoints activos).
+* **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8140/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA con 25 endpoints activos).
 
+#### Evidencia de Despliegue en Azure Producción (App Service & Gateway)
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+  <table width="100%" style="margin: 18px 0; border: 2px dashed #16A34A; border-radius: 8px; background-color: #F8FCF9;">
     <tr>
       <td align="center" style="padding: 22px;">
         <p>
-          <img src="https://img.shields.io/badge/ESPACIO_DE_CAPTURA-EVIDENCIA_01-5600EF?style=for-the-badge" alt="Evidencia 01" /><br />
-          <strong><font color="#5600EF" size="3">DOCUMENTACIÓN SWAGGER OPENAPI UI ACTIVA</font></strong>
+          <img src="https://img.shields.io/badge/EVIDENCIA-PRODUCCION_AZURE-16A34A?style=for-the-badge" alt="Evidencia PROD" /><br />
+          <strong><font color="#16A34A" size="3">MICROSERVICIO TIENDAS Y GATEWAY DESPLEGADOS EN PROD</font></strong>
         </p>
         <p>
-          <sub>Pega aquí la captura de pantalla de la interfaz interactiva corriendo en <code>http://localhost:8140/swagger-ui.html</code> mostrando los endpoints del controlador.</sub>
+          <img src="docs/evidencias/azure-app-service-prod.png" width="90%" alt="Azure App Service Producción" /><br />
+          <img src="docs/evidencias/swagger-prod.png" width="90%" alt="Swagger OpenAPI Producción" />
         </p>
         <p>
-<!-- Al generar tu captura, descomenta la siguiente línea y guarda la imagen en la ruta indicada: -->
-<!-- <img src="docs/evidencias/swagger-ui.png" width="90%" alt="Evidencia Swagger UI" /><br /> -->
-          <code>[ Pegar captura de Swagger UI aquí · docs/evidencias/swagger-ui.png ]</code>
+          <sub>El microservicio <code>CADCHE-Stores-Service</code> se encuentra operativo en Producción respondiendo a través del API Gateway perimetral (<code>https://styleradar-backend-prod.azurewebsites.net</code>) y en su URL directa (<code>https://styleradar-tiendas-prod.azurewebsites.net</code>). Todos los secretos y credenciales de acceso residen fuera del repositorio en Azure App Settings y Key Vault.</sub>
         </p>
       </td>
     </tr>
