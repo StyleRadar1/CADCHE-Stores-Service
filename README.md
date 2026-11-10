@@ -427,6 +427,28 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 
 * **Especificación OpenAPI (Contrato JSON Schema):** `http://localhost:8140/v3/api-docs` (o `/v3/api-docs` en los dominios de PROD y QA con 25 endpoints activos).
 
+#### Evidencia de Despliegue en Azure Calidad (QA) (App Service & Gateway)
+
+<div align="center">
+  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+    <tr>
+      <td align="center" style="padding: 22px;">
+        <p>
+          <img src="https://img.shields.io/badge/EVIDENCIA-CALIDAD_AZURE-5600EF?style=for-the-badge" alt="Evidencia QA" /><br />
+          <strong><font color="#5600EF" size="3">MICROSERVICIO TIENDAS Y GATEWAY DESPLEGADOS EN QA</font></strong>
+        </p>
+        <p>
+          <img src="docs/evidencias/azure-app-service-qa.png" width="90%" alt="Azure App Service Calidad QA" /><br />
+          <img src="docs/evidencias/swagger-qa.jpg" width="90%" alt="Swagger OpenAPI Calidad QA" />
+        </p>
+        <p>
+          <sub>El microservicio <code>CADCHE-Stores-Service</code> se encuentra operativo en Calidad (QA) respondiendo a través del API Gateway perimetral (<code>https://styleradar-backend-qa.azurewebsites.net</code>) y en su URL directa (<code>https://styleradar-tiendas-qa.azurewebsites.net</code>). Todas las variables de entorno operativas (<code>SPRING_PROFILES_ACTIVE=qa</code>, <code>WEBSITES_PORT=8140</code>, <code>DB_URL</code>) se gestionan en Azure App Settings y las credenciales residen fuera del repositorio en GitHub Secrets.</sub>
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>
+
 #### Evidencia de Despliegue en Azure Producción (App Service & Gateway)
 
 <div align="center">
