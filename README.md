@@ -1018,7 +1018,7 @@ El ciclo de vida del software implementa integración continua y entrega continu
 
 | Pipeline | Entorno Destino | Desencadenador (Trigger) | Quality Gate Exigido | Badge de Estado |
 | :--- | :--- | :--- | :--- | :---: |
-| **CI/CD - QA** | Calidad (`QA`) | Push o PR a rama `feature/*`, `develop` o `main` | Build Maven + Tests Unitarios/Integración (231 pruebas OK) + SpotBugs (0 bugs) + JaCoCo ≥ 85% + Docker Hub Push + Despliegue Azure App Service | [![QA Pipeline](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml/badge.svg)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml) |
+| **CI/CD - QA** | Calidad (`QA`) | Push o PR a rama `feature/*`, `develop` o `main` | Build Maven + Tests Unitarios/Integración (255 pruebas OK) + SpotBugs (0 bugs) + JaCoCo ≥ 85% + Despliegue Azure App Service | [![QA Pipeline](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml/badge.svg)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml) |
 | **CD - Producción (PROD)** | Producción (`PROD`) | Tag de versión `v*.*.*` o ejecución manual `workflow_dispatch` | Quality Gate QA Aprobado + Gate de Aprobación Manual en GitHub Environment `production` + Despliegue Azure App Service PROD | [![PROD Pipeline](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-prod.yml/badge.svg)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-prod.yml) |
 | **Quality Gate SonarQube** | Transversal | Ejecutado en cada build de CI | 0 Vulnerabilidades, 0 Bugs, Deuda Técnica &lt; 5% | [![Quality Gate](https://img.shields.io/badge/SonarQube-Quality_Gate_Passed-16A34A?style=for-the-badge&logo=sonarqube&logoColor=white)](https://sonarcloud.io/organizations/styleradar/projects) |
 
@@ -1133,7 +1133,6 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 * **Tablero Scrum del Squad CADche (Jira):** [https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog](https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog)
 * **API Swagger en Producción (PROD):** [https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html](https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html)
 * **API Swagger en Calidad (QA):** [https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html)
-* **Contenedor OCI Oficial (Docker Hub):** [hub.docker.com/r/juanamunoz/styleradar-tiendas](https://hub.docker.com/r/juanamunoz/styleradar-tiendas)
 * **Video de Respaldo de la Demostración:** [Demostración Funcional en Google Drive](https://drive.google.com/file/d/1W6dklNVi8Bp8LQUx1dkGrkMlly0gRjd7/view?usp=sharing)
 
 
@@ -1507,7 +1506,7 @@ Para visualizar el documento interactivo localmente o en el navegador:
 * **Pasar páginas:** Clic en las esquinas inferiores (`‹` / `›`), arrastrar con el cursor (swipe) o utilizar las flechas del teclado (`←` / `→`).
 * **Pestañas temáticas:** La barra inferior contiene pestañas de acceso rápido a cada sección (`Mapa`, `Ficha`, `Arquitectura`, `Componentes`, `Endpoints`, `Flujos`, `Datos`, `Ambientes`, `Eventos`, `Roles`, `Errores`, `Integraciones`, `Calidad`, `Enlaces`).
 * **Modo Responsive / 1 Página:** Al reducir el ancho de ventana (< 860px) o en dispositivos móviles, se adapta automáticamente a vista simple de 1 página con escalado vectorial perfecto.
-* **Enlaces directos:** La página 14 contiene accesos directos interactivos a Swagger QA, Swagger PROD, Docker Hub, GitHub y Jira.
+* **Enlaces directos:** La página 14 contiene accesos directos interactivos a Swagger QA, Swagger PROD, Azure App Service, GitHub y Jira.
 
 ### Contenido Estructurado del Documento (15 Páginas)
 
@@ -1528,7 +1527,7 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **12** | **11 · Errores** | Catálogo de códigos HTTP bajo estándar RFC 7807 (Problem Details) con ejemplo JSON. |
 | **13** | **12 · Integraciones** | Mapeo de dependencias Upstream (síncronas vía API Gateway) y Downstream (asíncronas vía RabbitMQ). |
 | **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (88%) y pipeline CI/CD GitHub Actions. |
-| **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Docker Hub, BDs y Jira). |
+| **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Azure App Service, BDs y Jira). |
 | **16** | **Contraportada** | Cierre editorial oficial: *"Descubre tu estilo. En tu ciudad."* |
 
 
