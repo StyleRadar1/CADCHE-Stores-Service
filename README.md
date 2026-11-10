@@ -976,20 +976,19 @@ mvn jacoco:report
 * **Descarga de Artefacto CI/CD:** Disponible en cada ejecución de pipeline en [GitHub Actions Runs](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions) bajo el nombre `coverage-report-jacoco`.
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+  <table width="100%" style="margin: 18px 0; border: 2px solid #16A34A; border-radius: 8px; background-color: #FBFBFE;">
     <tr>
       <td align="center" style="padding: 22px;">
         <p>
-          <img src="https://img.shields.io/badge/ESPACIO_DE_CAPTURA-EVIDENCIA_03-5600EF?style=for-the-badge" alt="Evidencia 03" /><br />
-          <strong><font color="#5600EF" size="3">REPORTE CONSOLIDADO DE COBERTURA JACOCO (≥ 85%)</font></strong>
+          <img src="https://img.shields.io/badge/EVIDENCIA-COBERTURA_JACOCO-16A34A?style=for-the-badge" alt="Evidencia JaCoCo" />&nbsp;
+          <img src="https://img.shields.io/badge/COBERTURA-87%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Cobertura 87%" /><br />
+          <strong><font color="#16A34A" size="3">REPORTE CONSOLIDADO DE COBERTURA JACOCO (≥ 85%)</font></strong>
         </p>
         <p>
-          <sub>Pega aquí la captura del reporte HTML (<code>target/site/jacoco/index.html</code>) evidenciando el cumplimiento de la cobertura mínima obligatoria (≥ 85%).</sub>
+          <sub>Reporte HTML generado tras la ejecución de las 255 pruebas automatizadas (unitarias, integración y contrato), alcanzando un 87% de cobertura de instrucciones y 86.9% de líneas.</sub>
         </p>
         <p>
-<!-- Al generar tu captura, descomenta la siguiente línea y guarda la imagen en la ruta indicada: -->
-<!-- <img src="docs/evidencias/cobertura-jacoco.png" width="90%" alt="Reporte JaCoCo" /><br /> -->
-          <code>[ Pegar captura de JaCoCo ≥ 85% aquí · docs/evidencias/cobertura-jacoco.png ]</code>
+          <img src="docs/evidencias/jacoco-cobertura.png" width="95%" alt="Reporte Cobertura JaCoCo" />
         </p>
       </td>
     </tr>
