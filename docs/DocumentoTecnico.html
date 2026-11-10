@@ -212,14 +212,18 @@ var MET=['GET','POST','PUT','DELETE','PATCH'];
 var D=[
 {c:'vio',cover:1,h:cover('Documento Técnico de Arquitectura','CADCHE · ms-tiendas','Gestión de Tiendas y Fundaciones',['Puerto Oficial :8140','v1.0.0 · Producción','Hexagonal DDD','Squad CADche'],1)},
 {c:'cream',toc:1,tab:'Sumario'},
-{c:'cream',t:'Mapa del ecosistema',tag:'01',tab:'Mapa',h:K('01 · Mapa')+H('Dónde vive','este microservicio')+'<div class="g2">'+[
-  {p:'P1: Identidad · :8140',n:'ms-tiendas (Este Servicio)',e:'18 endpoints · Almacenes, RUT y Sedes',act:1},
+{c:'cream',t:'Mapa del ecosistema',tag:'01',tab:'Mapa',h:K('01 · Mapa')+H('Dónde vive','este microservicio')+'<div class="g2" style="gap:8px">'+[
+  {p:'P1: Identidad · :8140',n:'ms-tiendas (Este Servicio)',e:'18 endpoints · Almacenes y RUT',act:1},
   {p:'P1: Identidad · :8081/:8082',n:'ms-auth / ms-usuarios',e:'Autenticación JWT y Perfiles',act:0},
-  {p:'P2: Catálogo · :8084/:8085',n:'ms-catalogo / ms-inventario',e:'Prendas, Tallas y Stock Local',act:0},
-  {p:'P3: Notificaciones · :8088',n:'ms-notificaciones',e:'Alertas Push, Email y Mensajería',act:0},
-  {p:'P4: Pagos · :8090/:8091',n:'ms-pagos-suscripc / ms-estadisticas',e:'Cobros y Métricas de Negocio',act:0},
+  {p:'P2: Catálogo · :8084/:8085',n:'ms-catalogo / ms-inventario',e:'Prendas, Tallas y Stock',act:0},
+  {p:'P3: Notificaciones · :8088',n:'ms-notificaciones',e:'Alertas Push y Email',act:0},
+  {p:'P4: Pagos · :8090/:8091',n:'ms-pagos-suscripc / ms-estadisticas',e:'Cobros y Métricas Negocio',act:0},
   {p:'P5: Donaciones · :8093',n:'ms-segunda-vida-donaciones',e:'Prendas y Moda Circular',act:0}
-].map(function(s){return '<div class="card pop"'+(s.act?' style="background:#48119A;color:#FBF7F0;border:0"':'')+'><p class="lab"'+(s.act?' style="color:#E8DCCB"':'')+'>'+s.p+'</p><p><b>'+s.n+'</b></p><p class="sm"'+(s.act?' style="color:#FBF7F0;opacity:.9"':'')+'>'+s.e+'</p></div>'}).join('')+'</div>'+cd('Aislamiento por Microservicios','ms-tiendas gestiona de forma autónoma el registro tributario (NIT), verificación de documentos RUT (PDF de hasta 6 MB), geolocalización Haversine, galería fotográfica y fundaciones aliadas, aislando estas transacciones del probador virtual y del catálogo de alta concurrencia.')},
+].map(function(s){return '<div class="card pop" style="padding:8px 12px;gap:2px'+(s.act?';background:#48119A;color:#FBF7F0;border:0':'')+'"><p class="lab" style="font-size:10px;margin:0'+(s.act?';color:#E8DCCB':'')+'">'+s.p+'</p><p style="font-size:14px;margin:0"><b>'+s.n+'</b></p><p class="sm" style="font-size:11px;margin:0'+(s.act?';color:#FBF7F0;opacity:.9':'')+'">'+s.e+'</p></div>'}).join('')+'</div>'+
+'<div class="card" style="padding:10px 14px;gap:3px;margin-top:2px">'+
+'<p class="lab" style="font-size:11px;color:#48119A;margin:0">Aislamiento por Microservicios</p>'+
+'<p class="sm" style="font-size:12px;line-height:1.4;margin:0;opacity:1">Aísla el procesamiento pesado de documentos RUT (PDF de hasta 6 MB), fotografías de vitrina (5 MB) y cálculo Haversine de las consultas concurrentes de catálogo y del probador virtual.</p>'+
+'</div>'},
 {c:'arena',t:'Ficha del microservicio',tag:'02',tab:'Ficha',h:K('02 · Ficha')+H('Datos','clave y bounded context')+cv('Propósito del Bounded Context','Microservicio especializado en la gestión integral de almacenes aliados (registro por NIT, verificación documental del RUT, georreferenciación Haversine y fotografías de sedes) y fundaciones aliadas para StyleRadar en Bogotá.')+'<div class="g2">'+cd('Equipo y Responsables','Tech Lead: Julian Camilo Giral<br>PO / Scrum: Juan Diego Gaitan')+cd('Puerto Oficial y Paquete','Puerto 8140 (sin colisión)<br>Paquete 1: Identidad y Comercios')+cd('Dependencias Técnicas','PostgreSQL 16 (Relacional ACID)<br>Azure Blob Storage · RabbitMQ 3.12')+cd('Clientes que lo Consumen','Frontend Web Bogotá · API Gateway :8080<br>ms-catalogo · ms-segunda-vida-donaciones')+'</div><div style="display:flex;gap:10px;align-items:center"><span class="lab">Estado de Despliegue</span><span class="pill">'+cy(['PRODUCCIÓN · QA ACTIVO','EN DESARROLLO','EN PRUEBAS'])+'</span></div>'},
 {c:'graf',t:'Arquitectura hexagonal',tag:'03',tab:'Arquitectura',h:K('03 · Arquitectura')+H('Decisiones de diseño','arquitectura hexagonal DDD')+'<div class="col" style="gap:8px">'+[
   ['ADR-001: Dominio Puro (0% Spring/JPA)','El núcleo de dominio (entidades Tienda, Horario, Fundacion, cálculo Haversine) es Java puro, garantizando testeabilidad instantánea y desacoplamiento absoluto de frameworks.'],
@@ -349,7 +353,7 @@ var D=[
 ];
 var R=mkdoc(D),P=R.P,T=R.T;
 
-var KEY='sr-rv-backm-stores-v2',store={};
+var KEY='sr-rv-backm-stores-v3',store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 var book=document.getElementById('book'),fit=document.getElementById('fit'),ind=document.getElementById('ind');
