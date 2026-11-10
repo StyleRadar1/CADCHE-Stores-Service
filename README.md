@@ -39,7 +39,7 @@
     <a href="https://sonarcloud.io/project/overview?id=StyleRadar1_CADCHE-Stores-Service">
       <img src="https://img.shields.io/badge/SonarQube-Quality_Gate_Passed-16A34A?style=for-the-badge&logo=sonarqube&logoColor=white" alt="Quality Gate" />
     </a>
-    <a href="target/site/jacoco/index.html">
+    <a href="https://sonarcloud.io/component_measures?id=StyleRadar1_CADCHE-Stores-Service&metric=coverage&view=list">
       <img src="https://img.shields.io/badge/JaCoCo_Coverage-%E2%89%A5_85%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" />
     </a>
     <a href="#6-tecnologías-y-dependencias">
@@ -971,7 +971,9 @@ mvn clean verify
 mvn jacoco:report
 ```
 
-* **Ruta del Reporte HTML:** `target/site/jacoco/index.html`
+* **Ruta del Reporte HTML Local:** `target/site/jacoco/index.html`
+* **Reporte Publicado en SonarQube Cloud:** [https://sonarcloud.io/component_measures?id=StyleRadar1_CADCHE-Stores-Service&metric=coverage&view=list](https://sonarcloud.io/component_measures?id=StyleRadar1_CADCHE-Stores-Service&metric=coverage&view=list)
+* **Descarga de Artefacto CI/CD:** Disponible en cada ejecución de pipeline en [GitHub Actions Runs](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions) bajo el nombre `coverage-report-jacoco`.
 
 <div align="center">
   <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
