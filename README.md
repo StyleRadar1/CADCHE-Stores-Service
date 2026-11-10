@@ -30,6 +30,9 @@
     <a href="https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html">
       <img src="https://img.shields.io/badge/QA-Active-5600EF?style=for-the-badge&logo=azure-app-services&logoColor=white" alt="QA Deployment" />
     </a>
+    <a href="docs/DocumentoTecnico.html">
+      <img src="https://img.shields.io/badge/DOC_T%C3%89CNICO-REVISTA_INTERACTIVA-5600EF?style=for-the-badge&logo=book&logoColor=white" alt="Documento Técnico de Arquitectura" />
+    </a>
     <a href="https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml">
       <img src="https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml/badge.svg" alt="CI/CD QA Tiendas" />
     </a>
@@ -70,6 +73,7 @@
 11. [Ramas y cómo contribuir](#11-ramas-y-cómo-contribuir)
 12. [Enlace a la épica en Jira](#12-enlace-a-la-épica-en-jira)
 13. [Análisis de tecnologías del servicio](#13-análisis-de-tecnologías-del-servicio)
+14. [Documento técnico de arquitectura e instrucciones](#14-documento-técnico-de-arquitectura-e-instrucciones)
 
 ---
 
@@ -1383,3 +1387,60 @@ La adopción de Java 21 LTS y Spring Boot 3.2.x garantiza un ecosistema robusto,
 | **QA Lead & DevOps Engineer** | Paula Alejandra Díaz | APROBADO | `Paula A. Díaz` |
 
 *Aprobación para el Desarrollo:* El presente documento constituye la línea base técnica (Technical Baseline) autorizada por el equipo CADche para el desarrollo de los microservicios de StyleRadar.
+
+---
+
+<a id="14-documento-técnico-de-arquitectura-e-instrucciones"></a>
+
+## <img src="https://img.shields.io/badge/14-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 14. DOCUMENTO TÉCNICO DE ARQUITECTURA E INSTRUCCIONES
+
+El microservicio cuenta con su **Documento Técnico de Arquitectura** en formato de revista digital interactiva de alta fidelidad (15 páginas), estructurado bajo los lineamientos y estándares oficiales de StyleRadar.
+
+* **Enlace principal al documento:** [docs/DocumentoTecnico.html](docs/DocumentoTecnico.html)
+* **Visualización en GitHub:** [docs/DocumentoTecnico.html (enlace directo al código fuente)](https://github.com/StyleRadar1/CADCHE-Stores-Service/blob/feature/historiasCompletas/docs/DocumentoTecnico.html)
+
+---
+
+### Cómo Visualizar el Documento
+
+Para visualizar el documento interactivo localmente o en el navegador:
+
+1. **Apertura directa:**
+   - Abre el archivo `docs/DocumentoTecnico.html` directamente en cualquier navegador moderno (Google Chrome, Microsoft Edge, Mozilla Firefox o Safari) haciendo doble clic o arrastrándolo a una pestaña.
+2. **Servidor local (opcional):**
+   - Con Python:
+     ```bash
+     cd docs
+     python -m http.server 8089
+     ```
+     Luego ingresa a [http://localhost:8089/DocumentoTecnico.html](http://localhost:8089/DocumentoTecnico.html).
+   - Con VS Code: Clic derecho sobre `docs/DocumentoTecnico.html` &rarr; *"Open with Live Server"*.
+
+### Controles de Navegación Interactiva
+
+* **Pasar páginas:** Clic en las esquinas inferiores (`‹` / `›`), arrastrar con el cursor (swipe) o utilizar las flechas del teclado (`←` / `→`).
+* **Pestañas temáticas:** La barra inferior contiene pestañas de acceso rápido a cada sección (`Mapa`, `Ficha`, `Arquitectura`, `Componentes`, `Endpoints`, `Flujos`, `Datos`, `Ambientes`, `Eventos`, `Roles`, `Errores`, `Integraciones`, `Calidad`, `Enlaces`).
+* **Modo Responsive / 1 Página:** Al reducir el ancho de ventana (< 860px) o en dispositivos móviles, se adapta automáticamente a vista simple de 1 página con escalado vectorial perfecto.
+* **Enlaces directos:** La página 14 contiene accesos directos interactivos a Swagger QA, Swagger PROD, Docker Hub, GitHub y Jira.
+
+### Contenido Estructurado del Documento (15 Páginas)
+
+| Página | Sección | Contenido Clave |
+| :---: | :--- | :--- |
+| **00** | **Portada** | Identidad de marca StyleRadar, Squad CADche, puerto `:8140` y arquetipos visuales. |
+| **01** | **Sumario** | Tabla de contenido interactiva con navegación a cada capítulo. |
+| **02** | **01 · Mapa** | Mapa del ecosistema de microservicios (P1 a P5) y justificación de aislamiento. |
+| **03** | **02 · Ficha** | Bounded Context, equipo responsable, clientes consumidores y estado de despliegue. |
+| **04** | **03 · Arquitectura** | Decisiones arquitectónicas: Dominio puro (ADR-001), Inversión de Control (ADR-002), PostgreSQL (ADR-003) y Azure Blob Storage (ADR-004). |
+| **05** | **04 · Componentes** | Diagrama de puertos y adaptadores: Driving Adapters (REST/AMQP) &rarr; Dominio Puro &rarr; Driven Adapters (SQL, Storage, RabbitMQ). |
+| **06** | **05 · Endpoints** | Catálogo OpenAPI de 18 endpoints en `:8140`, métodos, roles RBAC y prueba Haversine en vivo. |
+| **07** | **06 · Flujo** | Casos de uso de negocio en 4 fases secuenciales: Controller &rarr; Agregado &rarr; Persistencia &rarr; Eventos AMQP. |
+| **08** | **07 · Datos** | Modelo de datos PostgreSQL 16 ACID: tablas `tiendas`, `ubicaciones_geograficas`, `horarios_atencion`, `historial_moderaciones` y `fundaciones`. |
+| **09** | **08 · Ambientes** | Aislamiento estricto de infraestructura entre QA, Producción y Local (PostgreSQL SSL, contenedores y puertos). |
+| **10** | **09 · Eventos** | Mensajería asíncrona AMQP con RabbitMQ: exchanges, routing keys, evento `FundacionDesactivadaEvent` y Dead Letter Exchange (`styleradar.dlx`). |
+| **11** | **10 · Roles** | Matriz RBAC por endpoint y mitigación de vulnerabilidades BOLA/IDOR (`SR-RNF-01`). |
+| **12** | **11 · Errores** | Catálogo de códigos HTTP bajo estándar RFC 7807 (Problem Details) con ejemplo JSON. |
+| **13** | **12 · Integraciones** | Mapeo de dependencias Upstream (síncronas vía API Gateway) y Downstream (asíncronas vía RabbitMQ). |
+| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (88%) y pipeline CI/CD GitHub Actions. |
+| **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Docker Hub, BDs y Jira). |
+| **16** | **Contraportada** | Cierre editorial oficial: *"Descubre tu estilo. En tu ciudad."* |
