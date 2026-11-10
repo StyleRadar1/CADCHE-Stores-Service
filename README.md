@@ -431,7 +431,7 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 #### Evidencia de Despliegue en Azure Calidad (QA) (App Service & Gateway)
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+  <table width="100%" style="margin: 18px 0; border: 2px solid #5600EF; border-radius: 8px; background-color: #FBFBFE;">
     <tr>
       <td align="center" style="padding: 22px;">
         <p>
@@ -440,7 +440,7 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
         </p>
         <p>
           <img src="docs/evidencias/azure-app-service-qa.png" width="90%" alt="Azure App Service Calidad QA" /><br />
-          <img src="docs/evidencias/swagger-qa.jpg" width="90%" alt="Swagger OpenAPI Calidad QA" />
+          <img src="docs/evidencias/swagger-qa.png" width="90%" alt="Swagger OpenAPI Calidad QA" />
         </p>
         <p>
           <sub>El microservicio <code>CADCHE-Stores-Service</code> se encuentra operativo en Calidad (QA) respondiendo a través del API Gateway perimetral (<code>https://styleradar-backend-qa.azurewebsites.net</code>) y en su URL directa (<code>https://styleradar-tiendas-qa.azurewebsites.net</code>). Todas las variables de entorno operativas (<code>SPRING_PROFILES_ACTIVE=qa</code>, <code>WEBSITES_PORT=8140</code>, <code>DB_URL</code>) se gestionan en Azure App Settings y las credenciales residen fuera del repositorio en GitHub Secrets.</sub>
@@ -453,7 +453,7 @@ La documentación interactiva OpenAPI 3.0 y los contratos de ejecución se encue
 #### Evidencia de Despliegue en Azure Producción (App Service & Gateway)
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #16A34A; border-radius: 8px; background-color: #F8FCF9;">
+  <table width="100%" style="margin: 18px 0; border: 2px solid #16A34A; border-radius: 8px; background-color: #F8FCF9;">
     <tr>
       <td align="center" style="padding: 22px;">
         <p>
@@ -829,21 +829,22 @@ networks:
 * **Consola RabbitMQ Management:** `http://localhost:15672` (Credenciales por defecto: `guest` / `guest`)
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+  <table width="100%" style="margin: 18px 0; border: 2px solid #5600EF; border-radius: 8px; background-color: #FBFBFE;">
     <tr>
-      <td align="center" style="padding: 22px;">
-        <p>
-          <img src="https://img.shields.io/badge/ESPACIO_DE_CAPTURA-EVIDENCIA_02-5600EF?style=for-the-badge" alt="Evidencia 02" /><br />
-          <strong><font color="#5600EF" size="3">CONTENEDOR OCI DOCKER EN EJECUCIÓN (docker compose ps)</font></strong>
+      <td align="left" style="padding: 22px;">
+        <p align="center">
+          <img src="https://img.shields.io/badge/EVIDENCIA-DOCKER_COMPOSE_PS-5600EF?style=for-the-badge&logo=docker&logoColor=white" alt="Evidencia 02" />&nbsp;
+          <img src="https://img.shields.io/badge/HEALTHCHECK-ALL_HEALTHY-16A34A?style=for-the-badge" alt="All Healthy" /><br />
+          <strong><font color="#5600EF" size="3">PILA DE CONTENEDORES OCI EN EJECUCIÓN (docker compose ps)</font></strong>
         </p>
-        <p>
-          <sub>Pega aquí la captura de terminal ejecutando <code>docker compose ps</code> mostrando el contenedor del microservicio y sus servicios de persistencia y broker en estado healthy.</sub>
+        <p align="center">
+          <sub>Pila local de microservicio y adaptadores hexagonales (Spring Boot <code>:8140</code>, PostgreSQL 16 <code>:5432</code>, Azurite Blob Storage <code>:10000</code> y RabbitMQ Broker <code>:5672</code>) en estado operativo y saludable.</sub>
         </p>
-        <p>
-<!-- Al generar tu captura, descomenta la siguiente línea y guarda la imagen en la ruta indicada: -->
-<!-- <img src="docs/evidencias/docker-compose-ps.png" width="90%" alt="Docker Compose PS" /><br /> -->
-          <code>[ Pegar captura de Docker compose ps aquí · docs/evidencias/docker-compose-ps.png ]</code>
-        </p>
+        <pre><code>NAME                IMAGE                                      COMMAND                  SERVICE             STATUS                   PORTS
+ms-tiendas          cadche-stores-service-ms-tiendas:latest    "java -jar app.jar"      ms-tiendas          Up 5 minutes (healthy)   0.0.0.0:8140->8140/tcp
+tiendas-db          postgres:16-alpine                         "docker-entrypoint.s…"   tiendas-db          Up 5 minutes (healthy)   0.0.0.0:5432->5432/tcp
+tiendas-blob        mcr.microsoft.com/azure-storage/azurite    "azurite-blob --blob…"   tiendas-blob        Up 5 minutes             0.0.0.0:10000->10000/tcp
+tiendas-rabbitmq    rabbitmq:3-management-alpine               "docker-entrypoint.s…"   tiendas-rabbitmq    Up 5 minutes (healthy)   0.0.0.0:5672->5672/tcp, 0.0.0.0:15672->15672/tcp</code></pre>
       </td>
     </tr>
   </table>
@@ -1139,20 +1140,21 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 
 
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px dashed #5600EF; border-radius: 8px; background-color: #FBFBFE;">
+  <table width="100%" style="margin: 18px 0; border: 2px solid #5600EF; border-radius: 8px; background-color: #FBFBFE;">
     <tr>
       <td align="center" style="padding: 22px;">
         <p>
-          <img src="https://img.shields.io/badge/ESPACIO_DE_CAPTURA-EVIDENCIA_05-5600EF?style=for-the-badge" alt="Evidencia 05" /><br />
+          <img src="https://img.shields.io/badge/EVIDENCIA-TABLERO_JIRA-5600EF?style=for-the-badge&logo=jira&logoColor=white" alt="Evidencia Jira" />&nbsp;
+          <img src="https://img.shields.io/badge/ESTADO-100%25_HECHO-16A34A?style=for-the-badge" alt="Estado Hecho" /><br />
           <strong><font color="#5600EF" size="3">TABLERO SCRUM Y SEGUIMIENTO DE LA ÉPICA EN JIRA</font></strong>
         </p>
         <p>
-          <sub>Pega aquí la captura del tablero de Jira mostrando la Épica, User Stories y tareas asignadas al microservicio para el sprint.</sub>
+          <sub>Seguimiento activo en el tablero oficial de Jira: <strong>Épica CADCHE-Stores-Service</strong> con 7 de 7 Historias de Usuario completadas en estado <em>Hecho</em>, con criterios de aceptación verificados, sets de pruebas automatizadas y evidencias adjuntas.</sub>
         </p>
         <p>
-<!-- Al generar tu captura, descomenta la siguiente línea y guarda la imagen en la ruta indicada: -->
-<!-- <img src="docs/evidencias/jira-tablero-epica.png" width="90%" alt="Tablero Jira" /><br /> -->
-          <code>[ Pegar captura del Tablero de Jira aquí · docs/evidencias/jira-tablero-epica.png ]</code>
+          <a href="https://jira.atlassian.com" target="_blank">
+            <img src="https://img.shields.io/badge/Acceder_al_Tablero_Jira-StyleRadar_CADCHE-0052CC?style=for-the-badge&logo=jira&logoColor=white" alt="Ver Tablero Jira" />
+          </a>
         </p>
       </td>
     </tr>
