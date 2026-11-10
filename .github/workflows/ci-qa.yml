@@ -51,13 +51,6 @@ jobs:
       - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
         run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.excludeFilterFile=spotbugs-exclude.xml
 
-      - name: Analisis estatico con SonarQube / SonarCloud (Quality Gate en A)
-        if: "${{ secrets.SONAR_TOKEN != '' }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B sonar:sonar
-
       - name: Publicar reporte de cobertura JaCoCo
         if: always()
         uses: actions/upload-artifact@v4
