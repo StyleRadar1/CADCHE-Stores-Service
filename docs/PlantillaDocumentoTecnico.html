@@ -231,30 +231,67 @@ var D=[
   ['ADR-003: Database-per-Service en PostgreSQL 16','Persistencia relacional estricta para garantizar consistencia ACID en unicidad de NIT, integridad referencial en horarios y búsqueda geoespacial por coordenadas.'],
   ['ADR-004: Azure Blob Storage para Binarios','Los PDFs de RUT y fotografías de vitrina (hasta 5 MB) se almacenan en Azure Blob Storage (Azurite en local) para no saturar los búferes de memoria de PostgreSQL.']
 ].map(function(a){return '<div class="card dk"><p class="lab" style="color:#B79CF0">'+a[0]+'</p><p class="sm" style="opacity:.95;color:#FBF7F0">'+a[1]+'</p></div>'}).join('')+'</div>'},
-{c:'vio',t:'Diagrama de componentes',tag:'04',tab:'Componentes',h:K('04 · Componentes')+H('Estructura interna','puertos y adaptadores')+svgw('0 0 500 360',
-  '<g stroke="#E8DCCB" stroke-width="2" fill="none">'+
-  '<path d="M110 50 L200 110"/><path d="M110 90 L200 125"/><path d="M110 130 L200 145"/><path d="M110 170 L200 160"/>'+
-  '<path d="M300 135 L380 75"/><path d="M300 150 L380 150"/><path d="M300 165 L380 225"/>'+
+{c:'vio',t:'Diagrama de componentes',tag:'04',tab:'Componentes',h:K('04 · Componentes')+H('Estructura interna','puertos y adaptadores')+svgw('0 0 510 275',
+  '<g stroke="#5600EF" stroke-width="1.5" fill="none" opacity="0.75">'+
+  '<path d="M154 51 L172 105" stroke-dasharray="3,2"/>'+
+  '<path d="M154 95 L172 120"/>'+
+  '<path d="M154 139 L172 145"/>'+
+  '<path d="M154 183 L172 165"/>'+
+  '<path d="M154 227 L172 185" stroke-dasharray="3,2"/>'+
   '</g>'+
-  '<rect x="190" y="100" width="120" height="80" rx="14" fill="#E8DCCB" stroke="#48119A" stroke-width="2"/>'+
-  '<text x="250" y="135" text-anchor="middle" fill="#48119A" font-size="12">NÚCLEO DOMINIO</text>'+
-  '<text x="250" y="152" text-anchor="middle" fill="#262626" font-size="10">Tienda · Haversine</text>'+
-  '<text x="250" y="167" text-anchor="middle" fill="#5A5A66" font-size="9">Fundacion · VO Nit</text>'+
-  '<g fill="#262626" stroke="#E8DCCB" stroke-width="1.5">'+
-  '<rect x="10" y="32" width="105" height="30" rx="6"/><rect x="10" y="72" width="105" height="30" rx="6"/>'+
-  '<rect x="10" y="112" width="105" height="30" rx="6"/><rect x="10" y="152" width="105" height="30" rx="6"/>'+
-  '<rect x="375" y="60" width="115" height="35" rx="6"/><rect x="375" y="132" width="115" height="35" rx="6"/>'+
-  '<rect x="375" y="208" width="115" height="35" rx="6"/>'+
+  '<g stroke="#16A34A" stroke-width="1.8" fill="none" opacity="0.75">'+
+  '<path d="M338 115 L356 70"/>'+
+  '<path d="M338 145 L356 140"/>'+
+  '<path d="M338 175 L356 210"/>'+
   '</g>'+
-  '<g fill="#FBF7F0" font-size="9" text-anchor="middle">'+
-  '<text x="62" y="51">AlmacenController</text><text x="62" y="91">VerificacionController</text>'+
-  '<text x="62" y="131">AdminAlmacenCtrl</text><text x="62" y="171">FundacionController</text>'+
-  '<text x="432" y="78">PostgreSQL 16 (JPA)</text><text x="432" y="88" fill="#B9B9CA" font-size="8">styleradar_tiendas</text>'+
-  '<text x="432" y="150">Azure Blob Storage</text><text x="432" y="160" fill="#B9B9CA" font-size="8">RUT PDF &amp; Fotos 5MB</text>'+
-  '<text x="432" y="226">RabbitMQ Producer</text><text x="432" y="236" fill="#B9B9CA" font-size="8">styleradar.exchange</text>'+
+  '<text x="81" y="18" text-anchor="middle" fill="#48119A" font-family="var(--fb)" font-size="10.5" font-weight="800" letter-spacing="0.5">DRIVING ADAPTERS (IN)</text>'+
+  '<text x="429" y="18" text-anchor="middle" fill="#48119A" font-family="var(--fb)" font-size="10.5" font-weight="800" letter-spacing="0.5">DRIVEN ADAPTERS (OUT)</text>'+
+  '<g fill="#F8FAFC" stroke="#48119A" stroke-width="1.3">'+
+  '<rect x="8" y="28" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="72" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="116" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="160" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="204" width="146" height="38" rx="7"/>'+
   '</g>'+
-  '<text x="62" y="20" fill="#E8DCCB" font-size="10" text-anchor="middle">DRIVING ADAPTERS (IN)</text>'+
-  '<text x="432" y="45" fill="#E8DCCB" font-size="10" text-anchor="middle">DRIVEN ADAPTERS (OUT)</text>',
+  '<g text-anchor="middle" font-family="var(--fb)">'+
+  '<text x="81" y="43" fill="#12063A" font-size="10" font-weight="700">AlmacenController</text>'+
+  '<text x="81" y="56" fill="#5600EF" font-size="8">Mapa · Sedes · Haversine</text>'+
+  '<text x="81" y="87" fill="#12063A" font-size="10" font-weight="700">VerificacionController</text>'+
+  '<text x="81" y="100" fill="#5600EF" font-size="8">Validación RUT en PDF</text>'+
+  '<text x="81" y="131" fill="#12063A" font-size="10" font-weight="700">AdminAlmacenCtrl</text>'+
+  '<text x="81" y="144" fill="#5600EF" font-size="8">Control BOLA / IDOR</text>'+
+  '<text x="81" y="175" fill="#12063A" font-size="10" font-weight="700">FundacionController</text>'+
+  '<text x="81" y="188" fill="#5600EF" font-size="8">Cercanía &amp; Ciclo Vida</text>'+
+  '<text x="81" y="219" fill="#12063A" font-size="10" font-weight="700">AMQP Listener</text>'+
+  '<text x="81" y="232" fill="#5600EF" font-size="8">Suscripciones Queue</text>'+
+  '</g>'+
+  '<rect x="172" y="75" width="166" height="140" rx="14" fill="#EDE7FF" stroke="#5600EF" stroke-width="2"/>'+
+  '<g text-anchor="middle">'+
+  '<text x="255" y="98" fill="#48119A" font-family="var(--fb)" font-size="11" font-weight="800">NÚCLEO DE DOMINIO</text>'+
+  '<text x="255" y="112" fill="#6B21A8" font-family="var(--fm)" font-size="8.5">(Java Puro · 0% Spring)</text>'+
+  '<line x1="186" y1="118" x2="324" y2="118" stroke="#C4B5FD" stroke-width="1.2"/>'+
+  '<text x="255" y="133" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Tienda · HorarioAtencion</text>'+
+  '<text x="255" y="148" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Fundacion · FotografiaSede</text>'+
+  '<text x="255" y="163" fill="#5600EF" font-family="var(--fb)" font-size="9.5" font-weight="700">DistanciaHaversine (km)</text>'+
+  '<text x="255" y="178" fill="#4B5563" font-family="var(--fb)" font-size="8.5">Value Objects: Nit, Coords</text>'+
+  '<text x="255" y="193" fill="#4B5563" font-family="var(--fb)" font-size="8.5">Reglas de Negocio Puras</text>'+
+  '</g>'+
+  '<g fill="#F8FAFC" stroke="#16A34A" stroke-width="1.3">'+
+  '<rect x="356" y="46" width="146" height="48" rx="7"/>'+
+  '<rect x="356" y="116" width="146" height="48" rx="7"/>'+
+  '<rect x="356" y="186" width="146" height="48" rx="7"/>'+
+  '</g>'+
+  '<g text-anchor="middle" font-family="var(--fb)">'+
+  '<text x="429" y="62" fill="#12063A" font-size="10" font-weight="700">PostgreSQL 16 (JPA)</text>'+
+  '<text x="429" y="75" fill="#16A34A" font-size="8.5" font-weight="600">styleradar_tiendas</text>'+
+  '<text x="429" y="86" fill="#4B5563" font-size="8">Índice espacial coords</text>'+
+  '<text x="429" y="132" fill="#12063A" font-size="10" font-weight="700">Azure Blob Storage</text>'+
+  '<text x="429" y="145" fill="#16A34A" font-size="8.5" font-weight="600">Documentos RUT en PDF</text>'+
+  '<text x="429" y="156" fill="#4B5563" font-size="8">Fotos vitrina (≤ 5 MB)</text>'+
+  '<text x="429" y="202" fill="#12063A" font-size="10" font-weight="700">RabbitMQ Event Producer</text>'+
+  '<text x="429" y="215" fill="#16A34A" font-size="8.5" font-weight="600">styleradar.exchange</text>'+
+  '<text x="429" y="226" fill="#4B5563" font-size="8">fundacion.desactivada (DLX)</text>'+
+  '</g>',
   'Diagrama de componentes hexagonal de ms-tiendas')+
   '<p class="sm" style="color:#FBF7F0;opacity:.9">Separación estricta: Driving Adapters (controladores REST y listeners) &rarr; Casos de Uso (Application) &rarr; Dominio Puro &rarr; Driven Adapters (SQL, Storage, AMQP).</p>'},
 {c:'cream',t:'Endpoints y contratos',tag:'05',tab:'Endpoints',h:K('05 · Endpoints')+H('Contratos OpenAPI','18 endpoints en puerto :8140')+tb(['Método','Ruta','Rol Requerido','HU Asignada / Función'],[
@@ -353,7 +390,7 @@ var D=[
 ];
 var R=mkdoc(D),P=R.P,T=R.T;
 
-var KEY='sr-rv-backm-stores-v3',store={};
+var KEY='sr-rv-backm-stores-v4',store={};
 try{store=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 var book=document.getElementById('book'),fit=document.getElementById('fit'),ind=document.getElementById('ind');
