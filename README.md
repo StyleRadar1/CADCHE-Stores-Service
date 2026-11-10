@@ -205,39 +205,79 @@ flowchart TD
 
 <div align="center">
   <img src="docs/uml/DiagramaClases.png" width="95%" alt="Diagrama de Clases ms-tiendas" /><br />
-  <sub>Figura 7.1: Diagrama de clases del núcleo de dominio puro para ms-tiendas (Draw.io editable en <a href="docs/uml/DiagramaClases.drawio"><code>docs/uml/DiagramaClases.drawio</code></a>).</sub>
+  <sub>Figura 7.1: Diagrama de clases del núcleo de dominio puro para ms-tiendas bajo el estándar corporativo <code>EstiloDiagramas.xml</code> (Draw.io editable en <a href="docs/uml/DiagramaClases.drawio"><code>docs/uml/DiagramaClases.drawio</code></a>).</sub>
 </div>
 
 ##### Justificación de Diseño y Principios Arquitecturales
-El diagrama de clases de `ms-tiendas` modela las entidades comerciales, los horarios operativos, las coordenadas espaciales y el ciclo de vida de moderación bajo Domain-Driven Design:
-- **Encapsulación de Reglas Comerciales Complejas**: La verificación de solapamiento de horarios de atención y el cálculo trigonométrico de distancias geográficas son tratados como responsabilidades intrínsecas de dominio puro (0% dependencias de librerías geoespaciales externas o Spring).
-- **Inmutabilidad de Coordenadas y NIT**: Los atributos tributarios y espaciales se aíslan en Value Objects inmutables (`Nit`, `CoordenadaGeografica`, `HorarioDia`), asegurando que ninguna latitud/longitud o formato de NIT inválido pueda ser construido o procesado.
-- **Auditoría Legal de Moderación**: El historial de decisiones de aprobación y rechazo de tiendas (`HistorialModeracionTienda`) forma parte del modelo conceptual de dominio para garantizar trazabilidad inalterable de cada dictamen de verificación.
+El diagrama de clases de `ms-tiendas` modela de forma integral el núcleo de negocio bajo **Domain-Driven Design (DDD)** y **Arquitectura Hexagonal (Puertos y Adaptadores)**, complementado con patrones de comportamiento como **Chain of Responsibility**:
+- **Dominio Puro (0% Spring / JPA)**: Las entidades y agregados encapsulan todas las reglas de negocio e invariantes críticas (validación de personería jurídica, límites de fotos, cálculo Haversine de radio 6.371 km y transiciones de estados de verificación) sin anotaciones de persistencia ni acoplamiento a frameworks.
+- **Cadena de Responsabilidad (Chain of Responsibility)**: La validación multi-etapa de comercios (`TiendaValidationHandler`) delega de forma desacoplada la validación de fotografías (SR-RF-74), control de acceso y propiedad BOLA/IDOR (SR-RNF-01), verificación tributaria del RUT (SR-RF-62) y asociación de fundaciones cercanas (SR-RF-43, SR-RF-63).
+- **Inmutabilidad y Robustez en Value Objects**: Atributos críticos del negocio como umbrales de stock, días de nueva llegada, coordenadas geográficas y NIT están blindados en Value Objects inmutables con validación en tiempo de construcción.
+- **Desacoplamiento Asíncrono por Eventos**: Las transiciones de ciclo de vida (desactivación de fundaciones y aprobación/rechazo de tiendas) publican eventos de dominio formalmente estructurados hacia RabbitMQ.
 
-##### Explicación Detallada de los Elementos
-1. **Agregado Raíz `Tienda`**:
-   - `id`: Identificador único UUID del comercio.
-   - `nit`: Value Object que valida la estructura tributaria del NIT y su dígito de verificación.
-   - `razonSocial`, `nombreComercial`, `descripcion`: Datos legales y de marca.
-   - `telefono`, `emailContacto`: Medios de comunicación corporativos.
-   - `estado`: Estado de verificación operativa (`PENDIENTE_APROBACION`, `APROBADA`, `RECHAZADA`, `SUSPENDIDA`).
-   - `horarios`: Colección de entidades `HorarioAtencion`.
-   - `ubicacion`: Entidad `UbicacionGeografica`.
-   - Métodos de negocio: `registrarHorario()`, `eliminarHorario()`, `actualizarUbicacion()`, `solicitarRevision()`, `aprobar()`, `rechazar()`.
-2. **Entidad `HorarioAtencion`**:
-   - Representa los turnos de apertura y cierre por día de la semana.
-   - Atributos: `diaSemana` (enumeración: `LUNES` a `DOMINGO`), `horaApertura`, `horaCierre`, `esFestivo`.
-   - Invariantes: `horaApertura` debe ser estrictamente anterior a `horaCierre`.
-3. **Entidad `UbicacionGeografica`**:
-   - Modela el punto físico del local comercial.
-   - Atributos: `coordenada` (Value Object con `latitud` y `longitud` validadas en rango de -90 a 90 y -180 a 180), `direccion`, `ciudad`, `zonaComercial`.
-4. **Validadores y Calculadores de Dominio**:
-   - `TiendaValidator`: Valida completitud de datos comerciales, longitud de nombres y consistencia de NIT.
-   - `HorarioSolapamientoValidator`: Verifica que no existan traslapes o colisiones de franjas horarias dentro de un mismo día.
-   - `DistanciaHaversineCalculator`: Implementa la fórmula trigonométrica del semiverseno (Haversine) sobre la esfera terrestre para calcular distancias en kilómetros entre dos coordenadas sin dependencias de base de datos ni librerías externas.
-5. **Puertos de Entrada y Salida**:
-   - Puertos de Entrada: `GestionarTiendaUseCase`, `BuscarTiendasCercanasUseCase`, `ModerarTiendaUseCase`.
-   - Puertos de Salida: `TiendaRepositoryPort`, `UbicacionGeograficaRepositoryPort`, `HistorialModeracionRepositoryPort`, `EventPublisherPort`.
+##### Explicación Detallada de los Elementos del Dominio
+
+###### 1. Agregados (Aggregate Roots)
+- **`Almacen` (`<<AggregateRoot>>`)**:
+  - *Atributos clave*: `nit` (Value Object), `nombreComercial`, `descripcion`, `telefono`, `correoContacto`, `latitud`, `longitud`, `reputacion`, `categorias` (`Set<CategoriaAlmacen>`), `estadoVerificacion` (`EstadoVerificacionAlmacen`), `urlRutPdf`, `administradorDecisionId`, `motivoVerificacion`, `umbralUltimasUnidades`, `diasNuevaLlegada`, `fotos` (`List<FotografiaTienda>`).
+  - *Invariantes y Reglas de Negocio*:
+    - Límite estricto de máximo 6 fotografías de vitrina (`MAXIMO_FOTOGRAFIAS = 6`).
+    - Solo puede aprobarse un comercio si tiene adjunto el documento RUT en PDF (`RutRequeridoParaAprobacionException`).
+    - El rechazo exige un motivo explicativo no vacío (`ReglaDeNegocioException`).
+    - No se permite decidir un almacén previamente aprobado o rechazado (`AlmacenYaDecididoException`).
+  - *Métodos de negocio*: `configurarUmbralUltimasUnidades(int)`, `configurarDiasNuevaLlegada(int)`, `configurarCatalogo(int, int)`, `decidirVerificacion(decision, motivo, adminId, fecha)`, `solicitarRevision()`, `agregarFotografia(url, fecha)`, `removerFotografia(id)`.
+- **`Fundacion` (`<<AggregateRoot>>`)**:
+  - *Atributos clave*: `id`, `nombre`, `descripcion`, `direccion`, `telefono`, `email`, `latitud`, `longitud`, `categoriasAceptadas` (`Set<TipoPrenda>`), `representanteId`, `urlCertificadoPersoneriaJuridica`, `activa` (`boolean`), `fechaRegistro`.
+  - *Invariantes y Reglas de Negocio*:
+    - Coordenadas geográficas obligatorias en rangos válidos (-90 a 90 y -180 a 180).
+    - Exige al menos una categoría de prenda de donación aceptada.
+    - Exige certificado de personería jurídica en PDF para habilitar la alianza institucional.
+    - Desactivación lógica protegida que impide doble desactivación (`FundacionYaDesactivadaException`).
+  - *Métodos de negocio*: `validarDatosObligatoriosRegistro()`, `validarDatosEdicion()`, `actualizarDatosInstitucionales(cambios)`, `desactivar()`.
+
+###### 2. Entidades
+- **`FotografiaTienda` (`<<Entity>>`)**:
+  - Modela cada fotografía de vitrina o fachada asociada al almacén.
+  - *Atributos*: `id` (Long), `almacenNit` (String), `url` (String en Azure Blob Storage), `orden` (int), `portada` (boolean), `fechaRegistro` (Instant).
+  - *Regla*: Solo una fotografía puede actuar como portada activa simultáneamente.
+- **`HorarioAtencion` & `UbicacionGeografica`**:
+  - Entidades de soporte para turnos de atención comercial y geolocalización espacial en cuadrantes urbanos de Bogotá.
+
+###### 3. Value Objects (VOs) & Enumeraciones
+- **`UmbralUltimasUnidades` (`<<Value Object>>`)**:
+  - Inmutable, encapsula el umbral de alerta de inventario bajo (`[0..50]`, default: `3`). Lanza `UmbralInvalidoException` si se infringe el rango.
+- **`PeriodoNuevaLlegada` (`<<Value Object>>`)**:
+  - Inmutable, delimita la ventana de días en que un producto conserva la etiqueta "Nueva Colección" (`[1..60]` días, default: `7`). Lanza `PeriodoInvalidoException`.
+- **`Nit` & `Coordenadas`**:
+  - Validación de sintaxis DIAN con dígito de verificación y cálculo esférico Haversine ($R = 6.371\text{ km}$).
+- **Enumeraciones de Dominio**:
+  - `EstadoVerificacionAlmacen`: `PENDIENTE`, `APROBADO`, `RECHAZADO`.
+  - `DecisionVerificacionAlmacen`: `APROBADO`, `RECHAZADO`.
+  - `CategoriaAlmacen`: `CASUAL`, `FORMAL`, `DEPORTIVA`, `VINTAGE`, `ACCESORIOS`.
+  - `TipoPrenda`: `SUPERIOR`, `INFERIOR`, `CALZADO`, `VESTIDO`, `ACCESORIO`.
+
+###### 4. Eventos de Dominio (Domain Events)
+- **`FundacionDesactivadaEvent` (`<<Domain Event>>`)**:
+  - Publicado hacia el exchange `styleradar.fundaciones.exchange` con routing key `fundacion.desactivada` al ejecutar `desactivar()`. Notifica a `ms-segunda-vida-donaciones` (:8093) para reasignar donaciones huérfanas.
+- **`TiendaVerificadaEvent` (`<<Domain Event>>`)**:
+  - Publicado en `styleradar.tiendas.events` con routing key `tienda.verificacion.decidida` tras la decisión de un administrador, alertando a `ms-catalogo` y `ms-notificaciones`.
+- **`TiendaConfiguracionActualizadaEvent` (`<<Domain Event>>`)**:
+  - Publicado con routing key `tienda.configuracion.actualizada` para sincronizar parámetros con `ms-catalogo` e `ms-inventario`.
+
+###### 5. Cadena de Responsabilidad (Chain of Responsibility)
+- **`TiendaValidationHandler` (`<<abstract>>`)**: Define el contrato `# siguiente: TiendaValidationHandler` y `+ procesarValidacion()`.
+  - `FotografiaTiendaHandler`: Valida cuota de fotos ($\le 5$) y peso multipart ($\le 5\text{ MB}$).
+  - `PropiedadAlmacenBolaHandler`: Mitiga BOLA/IDOR contrastando `usuarioId` del JWT contra el NIT de la tienda.
+  - `VerificacionRutHandler`: Valida tipo MIME `application/pdf` y tamaño ($\le 6\text{ MB}$).
+  - `FundacionCercanaHandler`: Ejecuta cálculo Haversine de proximidad geográfica.
+  - `TiendaServiceImpl`: Implementación orquestadora del caso de uso.
+
+###### 6. Puertos de Salida y Adaptadores (Arquitectura Hexagonal)
+- **`InterfaceTiendaOutputPort` (`<<interface>>`)**: Contrato de salida implementado por:
+  - `PostgresAlmacenAdapter`: Persistencia relacional de almacenes, categorías y administradores.
+  - `PostgresFundacionAdapter`: Persistencia relacional de fundaciones y prendas aceptadas.
+  - `BlobStorageArchivoAdapter`: Carga binaria a Azure Blob Storage con URLs HTTPS firmadas.
+  - `RabbitMqTiendaEventAdapter`: Publicación asíncrona a los exchanges corporativos de RabbitMQ.
 
 ---
 
