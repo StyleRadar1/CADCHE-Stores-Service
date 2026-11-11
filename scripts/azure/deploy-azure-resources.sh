@@ -129,7 +129,7 @@ deploy_environment() {
       --resource-group "$RG" \
       --plan "$PLAN_NAME" \
       --name "$APP_NAME" \
-      --runtime "JAVA|17-java17" \
+      --runtime "JAVA|21-java21" \
       --output none
   fi
 

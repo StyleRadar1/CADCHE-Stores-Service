@@ -119,7 +119,7 @@ function Deploy-StyleRadarEnvironment {
         --resource-group $rg `
         --plan $planName `
         --name $appName `
-        --runtime "JAVA|17-java17" `
+        --runtime "JAVA|21-java21" `
         --output none
 
     # 6. Variables de Entorno del Ambiente (Puerto Oficial 8140)

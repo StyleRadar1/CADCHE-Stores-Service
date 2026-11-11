@@ -213,68 +213,64 @@ var D=[
 {c:'vio',cover:1,h:cover('Documento Técnico de Arquitectura','CADCHE · ms-tiendas','Gestión de Tiendas y Fundaciones',['Puerto Oficial :8140','v1.0.0 · Producción','Hexagonal DDD','Squad CADche'],1)},
 {c:'cream',toc:1,tab:'Sumario'},
 {c:'cream',t:'Mapa del ecosistema',tag:'01',tab:'Mapa',h:K('01 · Mapa')+H('Dónde vive','este microservicio')+'<div class="g2" style="gap:8px">'+[
-  {p:'P1: Identidad · :8140',n:'ms-tiendas (Este Servicio)',e:'18 endpoints · Almacenes y RUT',act:1},
-  {p:'P1: Identidad · :8081/:8082',n:'ms-auth / ms-usuarios',e:'Autenticación JWT y Perfiles',act:0},
-  {p:'P2: Catálogo · :8084/:8085',n:'ms-catalogo / ms-inventario',e:'Prendas, Tallas y Stock',act:0},
-  {p:'P3: Notificaciones · :8088',n:'ms-notificaciones',e:'Alertas Push y Email',act:0},
-  {p:'P4: Pagos · :8090/:8091',n:'ms-pagos-suscripc / ms-estadisticas',e:'Cobros y Métricas Negocio',act:0},
-  {p:'P5: Donaciones · :8093',n:'ms-segunda-vida-donaciones',e:'Prendas y Moda Circular',act:0}
+  {p:'P1: Identidad · :8140',n:'ms-tiendas (Este Servicio)',e:'25 endpoints · Almacenes y Fundaciones',act:1},
+  {p:'P1: Identidad · :8100/:8120',n:'ms-auth / ms-usuarios',e:'Autenticación JWT y Perfiles',act:0},
+  {p:'P2: Catálogo · :8200/:8220',n:'ms-inventario / ms-item-catalogo',e:'Stock, Tallas y Prendas',act:0},
+  {p:'P3: Notificaciones · :8300/:8320',n:'ms-notificaciones / ms-chat',e:'Alertas Push, Email y Chat',act:0},
+  {p:'P4: Pagos · :8400/:8420',n:'ms-pagos-suscripc / ms-estadisticas',e:'Cobros y Métricas Negocio',act:0},
+  {p:'P5: Experiencia · :8500/:8520',n:'ms-probador / ms-segunda-vida',e:'Probador Virtual y Donaciones',act:0}
 ].map(function(s){return '<div class="card pop" style="padding:8px 12px;gap:2px'+(s.act?';background:#48119A;color:#FBF7F0;border:0':'')+'"><p class="lab" style="font-size:10px;margin:0'+(s.act?';color:#E8DCCB':'')+'">'+s.p+'</p><p style="font-size:14px;margin:0"><b>'+s.n+'</b></p><p class="sm" style="font-size:11px;margin:0'+(s.act?';color:#FBF7F0;opacity:.9':'')+'">'+s.e+'</p></div>'}).join('')+'</div>'+
 '<div class="card" style="padding:10px 14px;gap:3px;margin-top:2px">'+
 '<p class="lab" style="font-size:11px;color:#48119A;margin:0">Aislamiento por Microservicios</p>'+
-'<p class="sm" style="font-size:12px;line-height:1.4;margin:0;opacity:1">Aísla el procesamiento pesado de documentos RUT (PDF de hasta 6 MB), fotografías de vitrina (5 MB) y cálculo Haversine de las consultas concurrentes de catálogo y del probador virtual.</p>'+
+'<p class="sm" style="font-size:12px;line-height:1.4;margin:0;opacity:1">Aísla la verificación documental del RUT, la configuración de umbrales de catálogo, la cuota de fotografías de vitrina (multipart ≤ 6 MB por archivo) y la gestión de fundaciones aliadas con persistencia propia PostgreSQL 16.</p>'+
 '</div>'},
-{c:'arena',t:'Ficha del microservicio',tag:'02',tab:'Ficha',h:K('02 · Ficha')+H('Datos','clave y bounded context')+cv('Propósito del Bounded Context','Microservicio especializado en la gestión integral de almacenes aliados (registro por NIT, verificación documental del RUT, georreferenciación Haversine y fotografías de sedes) y fundaciones aliadas para StyleRadar en Bogotá.')+'<div class="g2">'+cd('Equipo y Responsables','Tech Lead: Julian Camilo Giral<br>PO / Scrum: Juan Diego Gaitan')+cd('Puerto Oficial y Paquete','Puerto 8140 (sin colisión)<br>Paquete 1: Identidad y Comercios')+cd('Dependencias Técnicas','PostgreSQL 16 (Relacional ACID)<br>Azure Blob Storage · RabbitMQ 3.12')+cd('Clientes que lo Consumen','Frontend Web Bogotá · API Gateway :8080<br>ms-catalogo · ms-segunda-vida-donaciones')+'</div><div style="display:flex;gap:10px;align-items:center"><span class="lab">Estado de Despliegue</span><span class="pill">'+cy(['PRODUCCIÓN · QA ACTIVO','EN DESARROLLO','EN PRUEBAS'])+'</span></div>'},
+{c:'arena',t:'Ficha del microservicio',tag:'02',tab:'Ficha',h:K('02 · Ficha')+H('Datos','clave y bounded context')+cv('Propósito del Bounded Context','Microservicio especializado en la gestión de almacenes aliados (NIT, verificación documental RUT, umbrales de catálogo y galería fotográfica de hasta 6 imágenes) y fundaciones aliadas para StyleRadar.')+'<div class="g2">'+cd('Equipo y Responsables','Líder: Juan Diego Valderrama<br>Tech Lead: Julian Camilo Giral<br>PO / Scrum: Juan Diego Gaitan')+cd('Puerto Oficial y Paquete','Puerto 8140 (sin colisión)<br>Paquete 1: Identidad · Java 21 LTS')+cd('Dependencias Técnicas','PostgreSQL 16 (Flyway V1–V4)<br>AzureBlobStorageAdapter · AMQP (off hoy)')+'<div class="card"><h4>Clientes que lo Consumen</h4><p>Frontend Web · API Gateway :8080<br>ms-item-catalogo · ms-segunda-vida (:8520)</p></div>'+'</div><div style="display:flex;gap:10px;align-items:center"><span class="lab">Estado de Despliegue</span><span class="pill">'+cy(['PRODUCCIÓN · QA ACTIVO','EN DESARROLLO','EN PRUEBAS'])+'</span></div>'},
 {c:'graf',t:'Arquitectura hexagonal',tag:'03',tab:'Arquitectura',h:K('03 · Arquitectura')+H('Decisiones de diseño','arquitectura hexagonal DDD')+'<div class="col" style="gap:8px">'+[
-  ['ADR-001: Dominio Puro (0% Spring/JPA)','El núcleo de dominio (entidades Tienda, Horario, Fundacion, cálculo Haversine) es Java puro, garantizando testeabilidad instantánea y desacoplamiento absoluto de frameworks.'],
-  ['ADR-002: Inversión de Control con BeanConfig','Los casos de uso e implementaciones de servicio se cablean manualmente en BeanConfig.java sin anotaciones @Service, respetando la regla de dependencia hacia adentro.'],
-  ['ADR-003: Database-per-Service en PostgreSQL 16','Persistencia relacional estricta para garantizar consistencia ACID en unicidad de NIT, integridad referencial en horarios y búsqueda geoespacial por coordenadas.'],
-  ['ADR-004: Azure Blob Storage para Binarios','Los PDFs de RUT y fotografías de vitrina (hasta 5 MB) se almacenan en Azure Blob Storage (Azurite en local) para no saturar los búferes de memoria de PostgreSQL.']
+  ['ADR-001: Dominio Puro (0% Spring/JPA en Modelos)','El núcleo de dominio (Almacen, FotografiaTienda, Fundacion, UmbralUltimasUnidades, PeriodoNuevaLlegada, eventos y puertos) es Java 21 puro sin acoplamiento a Spring ni JPA; sus 4 Validators se registran como @Component.'],
+  ['ADR-002: Puertos e Inversión de Control (@Service)','Los 9 Casos de Uso (*UseCaseImpl anotados con @Service) implementan domain.port.in y dependen únicamente de interfaces domain.port.out hacia persistencia, almacenamiento y eventos.'],
+  ['ADR-003: Database-per-Service en PostgreSQL 16','Persistencia relacional ACID (Flyway V1–V4): almacenes (nit PK), administradores_almacenes, almacen_fotos (ON DELETE CASCADE) y fundaciones con categorías aceptadas.'],
+  ['ADR-004: AzureBlobStorageAdapter desacoplado','Las URLs HTTPS de fotografías de vitrina (máx. 6 por sede, multipart ≤ 6 MB/archivo) y documentos RUT se gestionan tras el puerto AlmacenamientoBlobPort (Azurite local / Blob QA y PROD).']
 ].map(function(a){return '<div class="card dk"><p class="lab" style="color:#B79CF0">'+a[0]+'</p><p class="sm" style="opacity:.95;color:#FBF7F0">'+a[1]+'</p></div>'}).join('')+'</div>'},
 {c:'vio',t:'Diagrama de componentes',tag:'04',tab:'Componentes',h:K('04 · Componentes')+H('Estructura interna','puertos y adaptadores')+svgw('0 0 510 275',
   '<g stroke="#5600EF" stroke-width="1.5" fill="none" opacity="0.75">'+
-  '<path d="M154 51 L172 105" stroke-dasharray="3,2"/>'+
-  '<path d="M154 95 L172 120"/>'+
-  '<path d="M154 139 L172 145"/>'+
-  '<path d="M154 183 L172 165"/>'+
-  '<path d="M154 227 L172 185" stroke-dasharray="3,2"/>'+
+  '<path d="M154 53 L172 105"/>'+
+  '<path d="M154 105 L172 125"/>'+
+  '<path d="M154 157 L172 150"/>'+
+  '<path d="M154 209 L172 175" stroke-dasharray="3,2"/>'+
   '</g>'+
   '<g stroke="#16A34A" stroke-width="1.8" fill="none" opacity="0.75">'+
   '<path d="M338 115 L356 70"/>'+
   '<path d="M338 145 L356 140"/>'+
-  '<path d="M338 175 L356 210"/>'+
+  '<path d="M338 175 L356 210" stroke-dasharray="3,2"/>'+
   '</g>'+
   '<text x="81" y="18" text-anchor="middle" fill="#48119A" font-family="var(--fb)" font-size="10.5" font-weight="800" letter-spacing="0.5">DRIVING ADAPTERS (IN)</text>'+
   '<text x="429" y="18" text-anchor="middle" fill="#48119A" font-family="var(--fb)" font-size="10.5" font-weight="800" letter-spacing="0.5">DRIVEN ADAPTERS (OUT)</text>'+
   '<g fill="#F8FAFC" stroke="#48119A" stroke-width="1.3">'+
-  '<rect x="8" y="28" width="146" height="38" rx="7"/>'+
-  '<rect x="8" y="72" width="146" height="38" rx="7"/>'+
-  '<rect x="8" y="116" width="146" height="38" rx="7"/>'+
-  '<rect x="8" y="160" width="146" height="38" rx="7"/>'+
-  '<rect x="8" y="204" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="34" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="86" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="138" width="146" height="38" rx="7"/>'+
+  '<rect x="8" y="190" width="146" height="38" rx="7"/>'+
   '</g>'+
   '<g text-anchor="middle" font-family="var(--fb)">'+
-  '<text x="81" y="43" fill="#12063A" font-size="10" font-weight="700">AlmacenController</text>'+
-  '<text x="81" y="56" fill="#5600EF" font-size="8">Mapa · Sedes · Haversine</text>'+
-  '<text x="81" y="87" fill="#12063A" font-size="10" font-weight="700">VerificacionController</text>'+
-  '<text x="81" y="100" fill="#5600EF" font-size="8">Validación RUT en PDF</text>'+
-  '<text x="81" y="131" fill="#12063A" font-size="10" font-weight="700">AdminAlmacenCtrl</text>'+
-  '<text x="81" y="144" fill="#5600EF" font-size="8">Control BOLA / IDOR</text>'+
-  '<text x="81" y="175" fill="#12063A" font-size="10" font-weight="700">FundacionController</text>'+
-  '<text x="81" y="188" fill="#5600EF" font-size="8">Cercanía &amp; Ciclo Vida</text>'+
-  '<text x="81" y="219" fill="#12063A" font-size="10" font-weight="700">AMQP Listener</text>'+
-  '<text x="81" y="232" fill="#5600EF" font-size="8">Suscripciones Queue</text>'+
+  '<text x="81" y="49" fill="#12063A" font-size="10" font-weight="700">AlmacenController</text>'+
+  '<text x="81" y="62" fill="#5600EF" font-size="8">14 endpoints · Catálogo/Fotos</text>'+
+  '<text x="81" y="101" fill="#12063A" font-size="10" font-weight="700">VerificacionAlmacenCtrl</text>'+
+  '<text x="81" y="114" fill="#5600EF" font-size="8">4 endpoints · Revisión RUT</text>'+
+  '<text x="81" y="153" fill="#12063A" font-size="10" font-weight="700">FundacionController</text>'+
+  '<text x="81" y="166" fill="#5600EF" font-size="8">5 endpoints · Fundaciones</text>'+
+  '<text x="81" y="205" fill="#12063A" font-size="10" font-weight="700">AsociacionAdminCtrl</text>'+
+  '<text x="81" y="218" fill="#5600EF" font-size="8">2 endpoints · Contrato BOLA</text>'+
   '</g>'+
   '<rect x="172" y="75" width="166" height="140" rx="14" fill="#EDE7FF" stroke="#5600EF" stroke-width="2"/>'+
   '<g text-anchor="middle">'+
   '<text x="255" y="98" fill="#48119A" font-family="var(--fb)" font-size="11" font-weight="800">NÚCLEO DE DOMINIO</text>'+
-  '<text x="255" y="112" fill="#6B21A8" font-family="var(--fm)" font-size="8.5">(Java Puro · 0% Spring)</text>'+
+  '<text x="255" y="112" fill="#6B21A8" font-family="var(--fm)" font-size="8.5">(Modelos Puros · 0% Spring/JPA)</text>'+
   '<line x1="186" y1="118" x2="324" y2="118" stroke="#C4B5FD" stroke-width="1.2"/>'+
-  '<text x="255" y="133" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Tienda · HorarioAtencion</text>'+
-  '<text x="255" y="148" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Fundacion · FotografiaSede</text>'+
-  '<text x="255" y="163" fill="#5600EF" font-family="var(--fb)" font-size="9.5" font-weight="700">DistanciaHaversine (km)</text>'+
-  '<text x="255" y="178" fill="#4B5563" font-family="var(--fb)" font-size="8.5">Value Objects: Nit, Coords</text>'+
-  '<text x="255" y="193" fill="#4B5563" font-family="var(--fb)" font-size="8.5">Reglas de Negocio Puras</text>'+
+  '<text x="255" y="133" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Almacen · FotografiaTienda</text>'+
+  '<text x="255" y="148" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Fundacion · Event</text>'+
+  '<text x="255" y="163" fill="#5600EF" font-family="var(--fb)" font-size="9.5" font-weight="700">Umbral · Periodo (VOs)</text>'+
+  '<text x="255" y="178" fill="#4B5563" font-family="var(--fb)" font-size="8.5">4 Domain Validators (BOLA)</text>'+
+  '<text x="255" y="193" fill="#4B5563" font-family="var(--fb)" font-size="8.5">9 UseCases (@Service)</text>'+
   '</g>'+
   '<g fill="#F8FAFC" stroke="#16A34A" stroke-width="1.3">'+
   '<rect x="356" y="46" width="146" height="48" rx="7"/>'+
@@ -284,18 +280,18 @@ var D=[
   '<g text-anchor="middle" font-family="var(--fb)">'+
   '<text x="429" y="62" fill="#12063A" font-size="10" font-weight="700">PostgreSQL 16 (JPA)</text>'+
   '<text x="429" y="75" fill="#16A34A" font-size="8.5" font-weight="600">styleradar_tiendas</text>'+
-  '<text x="429" y="86" fill="#4B5563" font-size="8">Índice espacial coords</text>'+
-  '<text x="429" y="132" fill="#12063A" font-size="10" font-weight="700">Azure Blob Storage</text>'+
-  '<text x="429" y="145" fill="#16A34A" font-size="8.5" font-weight="600">Documentos RUT en PDF</text>'+
-  '<text x="429" y="156" fill="#4B5563" font-size="8">Fotos vitrina (≤ 5 MB)</text>'+
-  '<text x="429" y="202" fill="#12063A" font-size="10" font-weight="700">RabbitMQ Event Producer</text>'+
-  '<text x="429" y="215" fill="#16A34A" font-size="8.5" font-weight="600">styleradar.exchange</text>'+
-  '<text x="429" y="226" fill="#4B5563" font-size="8">fundacion.desactivada (DLX)</text>'+
+  '<text x="429" y="86" fill="#4B5563" font-size="8">Almacen &amp; FundacionRepo</text>'+
+  '<text x="429" y="132" fill="#12063A" font-size="10" font-weight="700">AzureBlobStorageAdapter</text>'+
+  '<text x="429" y="145" fill="#16A34A" font-size="8.5" font-weight="600">Contenedor tiendas</text>'+
+  '<text x="429" y="156" fill="#4B5563" font-size="8">Máx. 6 fotos (≤ 6 MB)</text>'+
+  '<text x="429" y="202" fill="#12063A" font-size="10" font-weight="700">RabbitMQ Event Publisher</text>'+
+  '<text x="429" y="215" fill="#16A34A" font-size="8.5" font-weight="600">styleradar.fundaciones</text>'+
+  '<text x="429" y="226" fill="#4B5563" font-size="8">fundacion.desactivada (off)</text>'+
   '</g>',
   'Diagrama de componentes hexagonal de ms-tiendas')+
-  '<p class="sm" style="color:#FBF7F0;opacity:.9">Separación estricta: Driving Adapters (controladores REST y listeners) &rarr; Casos de Uso (Application) &rarr; Dominio Puro &rarr; Driven Adapters (SQL, Storage, AMQP).</p>'},
+  '<p class="sm" style="color:#FBF7F0;opacity:.9">Separación estricta: JwtAuthFilter / 4 Controladores REST &rarr; 9 Casos de Uso (@Service) &rarr; Dominio Puro &rarr; Adaptadores PostgreSQL 16, Blob Storage y AMQP.</p>'},
 {c:'cream',t:'Endpoints y contratos',tag:'05',tab:'Endpoints',h:K('05 · Endpoints')+
-  H('Contratos OpenAPI','18 Endpoints :8140')+
+  H('Contratos OpenAPI','25 Endpoints :8140')+
   '<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:11px;color:#262626">'+
   '<colgroup><col style="width:46px"><col style="width:198px"><col style="width:108px"><col style="width:152px"></colgroup>'+
   '<thead><tr style="border-bottom:2px solid #48119A">'+
@@ -305,27 +301,27 @@ var D=[
   '<th style="padding:6px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#48119A;text-align:left">HU Asignada / Función</th>'+
   '</tr></thead>'+
   '<tbody>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DBEAFE;color:#1D4ED8;border:1px solid #93C5FD">POST</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:10px;color:#12063A">/almacenes</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#F0F9FF;color:#0284C7;border:1px solid #BAE6FD">Autenticado</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-62</b> · Registro y RUT</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC">GET</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:10px;color:#12063A">/almacenes</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Público</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-17</b> · Mapa y filtro</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC">GET</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/almacenes/{nit}/distancia</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Público</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-21</b> · Distancia Haversine</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DBEAFE;color:#1D4ED8;border:1px solid #93C5FD">POST</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:10px;color:#12063A">/almacenes</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#F0F9FF;color:#0284C7;border:1px solid #BAE6FD">Contrato DTO</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-62</b> · Registro almacén</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC">GET</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:10px;color:#12063A">/almacenes</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Público (DTO)</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-17</b> · Listado paginado</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC">GET</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/almacenes/{nit}/configuracion-catalogo</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Público</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-59/60</b> · Consulta config</td></tr>'+
   '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#FEF3C7;color:#B45309;border:1px solid #FCD34D">PUT</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/almacenes/{nit}/configuracion-catalogo</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FAF5FF;color:#7C3AED;border:1px solid #E9D5FF">ADMIN_ALMACEN</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-59/60</b> · Umbral catálogo</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DBEAFE;color:#1D4ED8;border:1px solid #93C5FD">POST</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/almacenes/{nit}/fotografias</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FAF5FF;color:#7C3AED;border:1px solid #E9D5FF">ADMIN_ALMACEN</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-74</b> · Vitrina (≤5MB)</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DBEAFE;color:#1D4ED8;border:1px solid #93C5FD">POST</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/almacenes/{nit}/fotografias</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FAF5FF;color:#7C3AED;border:1px solid #E9D5FF">ADMIN_ALMACEN</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-74</b> · Vitrina (≤6MB)</td></tr>'+
   '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD">PATCH</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/admin/almacenes/{nit}/verificacion</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA">ADMIN_STYLERADAR</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-62</b> · Aprobación/Rechazo</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD">PATCH</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/admin/fundaciones/{id}/desactivar</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA">ADMIN_STYLERADAR</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-65</b> · Baja y RabbitMQ</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC">GET</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:10px;color:#12063A">/fundaciones</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FFFBEB;color:#D97706;border:1px solid #FDE68A">COMPRADOR</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-43</b> · Cercanía Haversine</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD">PATCH</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#12063A">/admin/fundaciones/{id}/desactivar</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA">ADMIN_STYLERADAR</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-65</b> · Baja + Evento</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><span style="display:inline-block;padding:2px 4px;border-radius:4px;font:700 9.5px var(--fm);text-align:center;min-width:38px;background:#DCFCE7;color:#15803D;border:1px solid #86EFAC">GET</span></td><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:10px;color:#12063A">/fundaciones</code></td><td style="padding:4.5px 3px"><span style="display:inline-block;font-size:8.5px;font-weight:700;padding:2px 4px;border-radius:4px;background:#FFFBEB;color:#D97706;border:1px solid #FDE68A">Público (DTO)</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-43</b> · Contrato cercanas</td></tr>'+
   '</tbody></table>'+
   '<div class="card" style="padding:9px 12px;background:#18112C;border:1px solid #48119A;border-radius:10px;color:#FBF7F0;margin-top:auto">'+
-  '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font:700 10px var(--fm);color:#C4B5FD;letter-spacing:0.04em">PRUEBA HAVERSINE · GET :8140</span><a href="https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html" target="_blank" style="font:700 9.5px var(--fm);color:#86EFAC;text-decoration:none">Swagger QA Activo ↗</a></div>'+
-  '<div style="font:400 10.5px/1.35 var(--fm);color:#E8DCCB;margin-bottom:2px">GET /api/v1/almacenes/900123456-7/distancia?lat=4.65&amp;lng=-74.06</div>'+
-  '<div style="font:600 10.5px/1.35 var(--fm);color:#6EE7B7">&rarr; 200 OK { &quot;nit&quot;: &quot;900123456-7&quot;, &quot;distanciaKm&quot;: 1.42, &quot;enRango&quot;: true }</div>'+
+  '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font:700 10px var(--fm);color:#C4B5FD;letter-spacing:0.04em">EJEMPLO CONTRATO · GET :8140</span><a href="https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html" target="_blank" style="font:700 9.5px var(--fm);color:#86EFAC;text-decoration:none">Swagger QA Activo ↗</a></div>'+
+  '<div style="font:400 10.5px/1.35 var(--fm);color:#E8DCCB;margin-bottom:2px">GET /api/v1/almacenes/900123456-7/configuracion-catalogo (17 persistentes + 8 DTO)</div>'+
+  '<div style="font:600 10.5px/1.35 var(--fm);color:#6EE7B7">&rarr; 200 OK { &quot;nit&quot;: &quot;900123456-1&quot;, &quot;umbralUltimasUnidades&quot;: 3, &quot;diasNuevaLlegada&quot;: 7 }</div>'+
   '</div>'},
 {c:'arena',t:'Flujo interno',tag:'06',tab:'Flujos',h:K('06 · Flujo')+H('Ejecución interna','Casos de uso')+'<div class="col" style="gap:2px">'+[
-  ['1 · Driving Adapter & RBAC BOLA/IDOR','AlmacenController recibe la petición, valida anotaciones @Valid y comprueba el claim del JWT contra el NIT antes de delegar al caso de uso (prevención BOLA SR-RNF-01).'],
-  ['2 · Caso de Uso & Dominio Puro','GestionarTiendaUseCaseImpl invoca el agregado Tienda; se valida el NIT con algoritmo DIAN y se calcula la distancia con DistanciaHaversineCalculator sin dependencias de Spring.'],
-  ['3 · Driven Adapter & Persistencia ACID','TiendaRepositoryAdapter persiste los datos en PostgreSQL 16; StorageAdapter sube el documento RUT en PDF a Azure Blob Storage obteniendo la URL HTTPS segura.'],
-  ['4 · Desacoplamiento Asíncrono AMQP','Si el dictamen es aprobatorio o se desactiva una fundación (SR-RF-65), RabbitMQFundacionEventPublisherAdapter publica el evento en styleradar.fundaciones.exchange y retorna HTTP 200/201.']
+  ['1 · Driving Adapter & Filtros HTTP','AlmacenController o VerificacionAlmacenController recibe la petición tras SecurityHeadersFilter y JwtAuthFilter, validando @Valid antes de invocar el UseCase.'],
+  ['2 · Validadores & Dominio Puro','UseCaseImpl (@Service) ejecuta AutorizacionAlmacenValidator (BOLA por NIT) o AutorizacionAdminStyleRadarValidator y opera sobre Almacen, Fundacion o VOs sin Spring/JPA.'],
+  ['3 · Driven Adapter & Persistencia ACID','AlmacenRepositoryAdapter o FundacionRepositoryAdapter persiste en PostgreSQL 16; AzureBlobStorageAdapter gestiona las rutas HTTPS de fotografías e imágenes.'],
+  ['4 · Evento AMQP Resiliente','Al desactivar una fundación (DesactivarFundacionUseCaseImpl), RabbitMQFundacionEventPublisherAdapter emite FundacionDesactivadaEvent capturando AmqpException si el broker está off.']
 ].map(function(r,i){return (i?'<p style="text-align:center;font-size:12px;line-height:1;margin:1px 0;color:#48119A">↓</p>':'')+'<div class="card" style="padding:9px 13px;gap:2px"><p class="lab" style="font-size:10.5px;font-weight:700;margin:0;color:#48119A">'+r[0]+'</p><p class="sm" style="font-size:11px;line-height:1.35;margin:0;color:#262626;opacity:1">'+r[1]+'</p></div>'}).join('')+'</div>'},
-{c:'graf',t:'Datos y persistencia',tag:'07',tab:'Datos',h:K('07 · Datos')+H('Modelo de datos','PostgreSQL 16 ACID')+
+{c:'graf',t:'Datos y persistencia',tag:'07',tab:'Datos',h:K('07 · Datos')+H('Modelo de datos','PostgreSQL 16 Flyway V1–V4')+
   '<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:10.5px;color:#FBF7F0">'+
   '<colgroup><col style="width:155px"><col style="width:95px"><col style="width:134px"><col style="width:120px"></colgroup>'+
   '<thead><tr style="border-bottom:2px solid #E8DCCB">'+
@@ -335,15 +331,15 @@ var D=[
   '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#E8DCCB;text-align:left">Integridad</th>'+
   '</tr></thead>'+
   '<tbody>'+
-  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">tiendas</code></td><td style="padding:4px 3px">PK id (UUID)</td><td style="padding:4px 3px">nit (UNIQUE), razon_social</td><td style="padding:4px 3px">ACID · NIT validado</td></tr>'+
-  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">ubicaciones_geograficas</code></td><td style="padding:4px 3px">FK tienda_id (1:1)</td><td style="padding:4px 3px">latitud, longitud, direccion</td><td style="padding:4px 3px">ON DELETE CASCADE</td></tr>'+
-  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">horarios_atencion</code></td><td style="padding:4px 3px">FK tienda_id (1:N)</td><td style="padding:4px 3px">dia_semana, apertura, cierre</td><td style="padding:4px 3px">CHECK apertura &lt; cierre</td></tr>'+
-  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">historial_moderaciones</code></td><td style="padding:4px 3px">FK tienda_id (1:N)</td><td style="padding:4px 3px">decision, motivo, admin_id</td><td style="padding:4px 3px">Auditoría inmutable</td></tr>'+
-  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">fundaciones</code></td><td style="padding:4px 3px">PK id (BIGINT)</td><td style="padding:4px 3px">nit, nombre, activa, lat/lng</td><td style="padding:4px 3px">Desactivación lógica</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">almacenes</code></td><td style="padding:4px 3px">PK nit (VARCHAR 30)</td><td style="padding:4px 3px">nombre_comercial, estado_verificacion, rut</td><td style="padding:4px 3px">PENDIENTE/APROBADO</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">almacen_fotos</code></td><td style="padding:4px 3px">FK almacen_nit (1:N)</td><td style="padding:4px 3px">url_foto, orden, es_portada, fecha_subida</td><td style="padding:4px 3px">ON DELETE CASCADE</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">administradores_almacenes</code></td><td style="padding:4px 3px">FK almacen_nit (1:N)</td><td style="padding:4px 3px">usuario_id, almacen_nit, fecha_asignacion</td><td style="padding:4px 3px">UNIQUE (usuario_id, nit)</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">fundaciones</code></td><td style="padding:4px 3px">PK id (BIGSERIAL)</td><td style="padding:4px 3px">nombre, representante_id, activa, lat/lng</td><td style="padding:4px 3px">UNIQUE nombre · Idx rep/act</td></tr>'+
+  '<tr style="border-bottom:1px solid rgba(232,220,203,.28)"><td style="padding:4px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#86EFAC">*_categorias*</code></td><td style="padding:4px 3px">PK/FK compuesta</td><td style="padding:4px 3px">almacen_categorias · fundacion_categorias</td><td style="padding:4px 3px">ON DELETE CASCADE</td></tr>'+
   '</tbody></table>'+
   '<div class="card dk" style="padding:8px 12px;margin-top:8px">'+
-  '<p class="lab" style="font-size:10.5px;color:#B79CF0;margin-bottom:3px">Optimización Geoespacial e Índices</p>'+
-  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#FBF7F0;margin:0"><code style="color:#86EFAC">CREATE INDEX idx_coords ON ubicaciones_geograficas(latitud, longitud);</code> optimiza el filtrado bounding-box antes de computar Haversine en memoria. PostgreSQL garantiza consistencia ACID estricta en unicidad de NIT y registros mercantiles.</p>'+
+  '<p class="lab" style="font-size:10.5px;color:#B79CF0;margin-bottom:3px">Migraciones Flyway V1–V4 e Índices Reales</p>'+
+  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#FBF7F0;margin:0">Índices reales <code>idx_almacenes_nombre</code>, <code>idx_almacenes_estado_verif</code>, <code>idx_admin_almacenes_usuario</code>, <code>idx_almacen_fotos_nit/orden</code> y <code>idx_fundaciones_*</code> en PostgreSQL 16 (<code>styleradar_tiendas</code>). Sin NoSQL ni Redis.</p>'+
   '</div>'},
 {c:'cream',t:'Aislamiento de bases de datos',tag:'08',tab:'Aislamiento',h:K('08 · Ambientes')+
   H('Aislamiento estricto','QA vs PROD vs Local')+
@@ -374,17 +370,15 @@ var D=[
   '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#48119A;text-align:left">Disparador / Efecto</th>'+
   '</tr></thead>'+
   '<tbody>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#5600EF;font-weight:700">fundacion.desactivada</code><br><span style="font-size:8.5px;color:#6B7280">styleradar.fundaciones.exchange</span></td><td style="padding:4.5px 3px"><span style="font-size:9.5px;font-weight:600">ms-tiendas</span><br>&rarr; <span style="font-size:9.5px;color:#16A34A">ms-segunda-vida</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-65</b>: Desactiva fundación y reasigna donaciones huérfanas (:8093).</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#5600EF;font-weight:700">tienda.verificacion.decidida</code><br><span style="font-size:8.5px;color:#6B7280">styleradar.tiendas.events</span></td><td style="padding:4.5px 3px"><span style="font-size:9.5px;font-weight:600">ms-tiendas</span><br>&rarr; <span style="font-size:9.5px;color:#16A34A">ms-catalogo, notif</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-62</b>: Notifica dictamen de aprobación o rechazo del RUT.</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#5600EF;font-weight:700">tienda.configuracion.act</code><br><span style="font-size:8.5px;color:#6B7280">styleradar.tiendas.events</span></td><td style="padding:4.5px 3px"><span style="font-size:9.5px;font-weight:600">ms-tiendas</span><br>&rarr; <span style="font-size:9.5px;color:#16A34A">ms-catalogo, inv</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-59/60</b>: Propaga umbrales de catálogo e inventario.</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4.5px 3px"><code style="font-family:var(--fm);font-size:9.5px;color:#5600EF;font-weight:700">fundacion.desactivada</code><br><span style="font-size:8.5px;color:#6B7280">styleradar.fundaciones.exchange</span></td><td style="padding:4.5px 3px"><span style="font-size:9.5px;font-weight:600">ms-tiendas</span><br>&rarr; <span style="font-size:9.5px;color:#16A34A">ms-segunda-vida</span></td><td style="padding:4.5px 3px;font-size:10px"><b>SR-RF-65</b>: Desactiva fundación y notifica hacia donaciones (:8520).</td></tr>'+
   '</tbody></table>'+
   '<div class="card" style="padding:8px 12px;background:#18112C;border:1px solid #48119A;border-radius:8px;color:#FBF7F0;margin-top:6px">'+
   '<div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font:700 9.5px var(--fm);color:#C4B5FD">PAYLOAD: FundacionDesactivadaEvent (SR-RF-65)</span><span style="font:700 9px var(--fm);color:#86EFAC">Routing: fundacion.desactivada</span></div>'+
-  '<code style="display:block;font:400 9.5px/1.3 var(--fm);color:#E8DCCB">{ "fundacionId": 105, "nombre": "Moda Sostenible", "fecha": "2026-11-09T18:30Z", "motivo": "Cese operaciones" }</code>'+
+  '<code style="display:block;font:400 9.5px/1.3 var(--fm);color:#E8DCCB">{ "fundacionId": 105, "nombreFundacion": "Moda Sostenible", "representanteId": 42, "fechaDesactivacion": "2026-11-09T18:30Z", "motivo": "Cese operaciones" }</code>'+
   '</div>'+
   '<div class="card" style="padding:8px 12px;gap:2px;margin-top:6px">'+
-  '<p class="lab" style="font-size:10.5px;color:#48119A;margin:0">Resiliencia y Dead Letter Exchange (DLX)</p>'+
-  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#262626;margin:0">RabbitMQFundacionEventPublisherAdapter captura AmqpException ante caídas del broker sin bloquear la transacción relacional en PostgreSQL. Mensajes fallidos se enrutan a <code>styleradar.dlx</code>.</p>'+
+  '<p class="lab" style="font-size:10.5px;color:#48119A;margin:0">Resiliencia y Estado Actual AMQP</p>'+
+  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#262626;margin:0">RabbitMQFundacionEventPublisherAdapter captura <code>AmqpException</code> sin bloquear PostgreSQL. Actualmente ni Stores ni Auth conectan al broker compartido (<code>management.health.rabbit.enabled=false</code> en QA/PROD/DEV).</p>'+
   '</div>'},
 {c:'graf',t:'Matriz de roles y seguridad',tag:'10',tab:'Roles',h:K('10 · Roles')+
   H('Seguridad RBAC','Prevención BOLA / IDOR')+
@@ -406,28 +400,28 @@ var D=[
   '</tbody></table>'+
   '<div class="card dk" style="padding:8px 12px;gap:2px;margin-top:8px">'+
   '<p class="lab" style="font-size:10.5px;color:#B79CF0;margin:0">Mitigación BOLA/IDOR (SR-RNF-01)</p>'+
-  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#FBF7F0;margin:0">Para evitar que un administrador mute la tienda de otro, el filtro valida que el <code>usuarioId</code> firmado en el JWT coincida con el vínculo registrado para dicho NIT (retorna 403 Forbidden en caso contrario).</p>'+
+  '<p class="sm" style="font-size:10.5px;line-height:1.35;color:#FBF7F0;margin:0">Para evitar que un administrador mute la tienda de otro, <code>AutorizacionAlmacenValidator</code> valida vía <code>AlmacenRepositoryPort</code> que <code>usuarioId</code> corresponda al NIT objetivo (retorna 403 Forbidden en caso contrario).</p>'+
   '</div>'},
 {c:'cream',t:'Manejo de errores',tag:'11',tab:'Errores',h:K('11 · Errores')+
-  H('Respuestas de error','Estándar RFC 7807')+
+  H('Respuestas de error','ErrorResponseDTO HTTP')+
   '<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:10.5px;color:#262626">'+
   '<colgroup><col style="width:120px"><col style="width:190px"><col style="width:194px"></colgroup>'+
   '<thead><tr style="border-bottom:2px solid #48119A">'+
   '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#48119A;text-align:left">HTTP Code</th>'+
   '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#48119A;text-align:left">Condición de Disparo</th>'+
-  '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#48119A;text-align:left">Diagnóstico RFC 7807</th>'+
+  '<th style="padding:5px 3px;font:700 10px var(--fm);letter-spacing:.06em;text-transform:uppercase;color:#48119A;text-align:left">Respuesta ErrorResponseDTO</th>'+
   '</tr></thead>'+
   '<tbody>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEF3C7;color:#B45309">400 Bad Request</span></td><td style="padding:4px 3px">Coords inválidas o DTO fallido</td><td style="padding:4px 3px">Lista de violaciones de validación</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEE2E2;color:#B91C1C">401 Unauthorized</span></td><td style="padding:4px 3px">Token JWT ausente o expirado</td><td style="padding:4px 3px">Firma criptográfica inválida</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEE2E2;color:#B91C1C">403 Forbidden</span></td><td style="padding:4px 3px">Intento mutar tienda ajena (BOLA)</td><td style="padding:4px 3px">Acceso denegado sobre recurso</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#F3F4F6;color:#374151">404 Not Found</span></td><td style="padding:4px 3px">NIT no registrado o fundación inexistente</td><td style="padding:4px 3px">Recurso no encontrado en PostgreSQL</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEF3C7;color:#B45309">409 Conflict</span></td><td style="padding:4px 3px">NIT ya registrado o límite superado</td><td style="padding:4px 3px">Conflicto de unicidad relacional</td></tr>'+
-  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEE2E2;color:#B91C1C">413 Payload Large</span></td><td style="padding:4px 3px">RUT &gt; 6 MB o foto &gt; 5 MB</td><td style="padding:4px 3px">Límite multipart excedido</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEF3C7;color:#B45309">400 Bad Request</span></td><td style="padding:4px 3px">Archivo inválido o DTO fallido</td><td style="padding:4px 3px">Mapa <code>validationErrors</code> controlado</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEE2E2;color:#B91C1C">401 Unauthorized</span></td><td style="padding:4px 3px">Token JWT ausente o expirado</td><td style="padding:4px 3px"><code>JwtAuthFilter</code> (problem+json)</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEE2E2;color:#B91C1C">403 Forbidden</span></td><td style="padding:4px 3px">Intento mutar tienda ajena (BOLA)</td><td style="padding:4px 3px"><code>AccesoDenegadoAlmacenException</code></td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#F3F4F6;color:#374151">404 Not Found</span></td><td style="padding:4px 3px">NIT o fundación inexistente</td><td style="padding:4px 3px">Recurso no encontrado en SQL</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEF3C7;color:#B45309">409 / 422</span></td><td style="padding:4px 3px">Conflicto o límite superado (6 fotos)</td><td style="padding:4px 3px">Reglas de negocio de dominio</td></tr>'+
+  '<tr style="border-bottom:1px solid #E3DDD2"><td style="padding:4px 3px"><span style="display:inline-block;padding:1px 5px;border-radius:4px;font:700 9.5px var(--fm);background:#FEE2E2;color:#B91C1C">Multipart</span></td><td style="padding:4px 3px">Archivo &gt; 6 MB (petición &gt; 7 MB)</td><td style="padding:4px 3px">Límite configurado en Spring</td></tr>'+
   '</tbody></table>'+
   '<div class="card" style="padding:8px 12px;background:#18112C;border:1px solid #48119A;border-radius:8px;color:#FBF7F0;margin-top:8px">'+
-  '<div style="font:700 9.5px var(--fm);color:#C4B5FD;margin-bottom:3px">ESTRUCTURA JSON RFC 7807 (PROBLEM DETAILS)</div>'+
-  '<code style="display:block;font:400 9.5px/1.35 var(--fm);color:#E8DCCB">{ "type": "https://styleradar.com/errors/almacen-no-encontrado", "title": "Almacén no encontrado", "status": 404, "detail": "No existe ningún almacén verificado con el NIT: 900123456-7" }</code>'+
+  '<div style="font:700 9.5px var(--fm);color:#C4B5FD;margin-bottom:3px">ESTRUCTURA ErrorResponseDTO (GlobalExceptionHandler)</div>'+
+  '<code style="display:block;font:400 9.5px/1.35 var(--fm);color:#E8DCCB">{ "status": 404, "error": "Not Found", "message": "No existe un almacén con el NIT 900123456-7", "path": "/api/v1/almacenes/900123456-7/umbral-ultimas-unidades", "validationErrors": {} }</code>'+
   '</div>'},
 {c:'arena',t:'Relaciones e integraciones',tag:'12',tab:'Relaciones',h:K('12 · Relaciones')+H('Con quién se conecta','ecosistema de microservicios')+svgw('0 0 500 320',
   '<g stroke="#48119A" stroke-width="2.5" fill="none">'+
@@ -444,35 +438,35 @@ var D=[
   '<g fill="#262626" text-anchor="middle" font-size="10">'+
   '<text x="77" y="68">API Gateway :8080</text><text x="77" y="82" fill="#5A5A66" font-size="8">Enrutamiento &amp; JWT</text>'+
   '<text x="77" y="248">Frontend Web Bogotá</text><text x="77" y="262" fill="#5A5A66" font-size="8">Mapa &amp; Comercios</text>'+
-  '<text x="422" y="68">ms-catalogo :8084</text><text x="422" y="82" fill="#5A5A66" font-size="8">Recibe verif. tiendas</text>'+
-  '<text x="422" y="248">ms-segunda-vida :8093</text><text x="422" y="262" fill="#5A5A66" font-size="8">Recibe fund. desact.</text>'+
+  '<text x="422" y="68">ms-item-catalogo :8220</text><text x="422" y="82" fill="#5A5A66" font-size="8">Consulta config catálogo</text>'+
+  '<text x="422" y="248">ms-segunda-vida :8520</text><text x="422" y="262" fill="#5A5A66" font-size="8">Destino fund. desact. (AMQP off)</text>'+
   '</g>'+
   '<g fill="#48119A" font-weight="700" text-anchor="middle" font-size="10">'+
-  '<text x="77" y="32">CLIENTES / CONSUMO</text><text x="422" y="32">DOWNSTREAM AMQP</text>'+
+  '<text x="77" y="32">CLIENTES / CONSUMO</text><text x="422" y="32">INTEGRACIÓN ECOSISTEMA</text>'+
   '</g>',
   'Diagrama de relaciones de ms-tiendas con el ecosistema StyleRadar')+
-  '<p class="sm" style="font-size:11px;line-height:1.4">Izquierda: Clientes perimetrales que consumen la API REST. Derecha: Microservicios downstream que reaccionan asíncronamente a los eventos emitidos por ms-tiendas.</p>'},
+  '<p class="sm" style="font-size:11px;line-height:1.4">Izquierda: Clientes perimetrales que consumen la API REST. Derecha: Servicios relacionados (integración RabbitMQ deshabilitada en QA/PROD actualmente).</p>'},
 {c:'graf',t:'Calidad y CI/CD',tag:'13',tab:'Calidad',h:K('13 · Calidad')+H('Quality gates','Pruebas y CI/CD')+'<div style="font-size:13.5px;line-height:1.4">'+
-  chk('18 endpoints OpenAPI 3.0 documentados en vivo')+
-  chk('Capa de dominio 100% pura (0% Spring/JPA en domain)')+
-  chk('231 pruebas unitarias y de integración pasando')+
-  chk('Cobertura JaCoCo ≥ 85% obligatoria en build')+
-  chk('SpotBugs: 0 advertencias y 0 vulnerabilidades')+
-  chk('Pipeline GitHub Actions en verde (QA y PROD)')+
+  chk('25 endpoints OpenAPI 3.0 (17 persistentes + 8 DTOs)')+
+  chk('Capa domain.model/event/port 100% pura (0% Spring/JPA)')+
+  chk('289 pruebas unitarias, contrato e integración pasando')+
+  chk('Cobertura JaCoCo ≥ 85% bloqueante en pom.xml')+
+  chk('SpotBugs: 0 bugs y 0 errores (Java 21 LTS)')+
+  chk('Pipeline ci-qa.yml y ci-prod.yml completos con Smoke Test')+
 '</div>'+
-'<div class="card dk" style="padding:9px 12px;margin-top:6px"><p class="lab" style="font-size:10.5px;color:#B79CF0;margin-bottom:3px">Cobertura JaCoCo Consolidada</p><div class="bar"><i style="width:88%;background:#16A34A"></i></div><p class="sm" style="font-size:11px;color:#FBF7F0;margin:0"><b>88% de líneas cubiertas</b> (Mínimo exigido: 85%) · 231 tests ejecutados con éxito</p></div>'+
-'<p class="sm" style="font-size:11px;line-height:1.4;color:#FBF7F0;opacity:.9;margin-top:6px">El pipeline ci-qa.yml compila, ejecuta SpotBugs y JaCoCo, construye la imagen Docker y despliega automáticamente en Azure App Service tras superar los tests de humo.</p>'},
+'<div class="card dk" style="padding:9px 12px;margin-top:6px"><p class="lab" style="font-size:10.5px;color:#B79CF0;margin-bottom:3px">Cobertura JaCoCo Consolidada</p><div class="bar"><i style="width:89.41%;background:#16A34A"></i></div><p class="sm" style="font-size:11px;color:#FBF7F0;margin:0"><b>89.41% instrucciones · 91.05% líneas</b> (Mínimo: 85%) · 289 tests · 0 bugs SpotBugs</p></div>'+
+'<p class="sm" style="font-size:11px;line-height:1.4;color:#FBF7F0;opacity:.9;margin-top:6px">El pipeline ci-qa.yml compila en Java 21, valida SpotBugs y JaCoCo (≥ 85%), construye la imagen Docker (temurin:21) y ejecuta Smoke Tests contra /v3/api-docs y /actuator/health.</p>'},
 {c:'cream',t:'Enlaces y evidencias',tag:'14',tab:'Enlaces',h:K('14 · Enlaces')+
   H('Evidencias','y Accesos Directos')+
   '<div class="g2" style="gap:8px">'+[
     ['Repositorio GitHub','StyleRadar1/CADCHE-Stores-Service','https://github.com/StyleRadar1/CADCHE-Stores-Service'],
     ['Swagger UI QA (200 OK)','styleradar-tiendas-qa.azurewebsites.net','https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html'],
     ['Swagger UI PROD','styleradar-tiendas-prod.azurewebsites.net','https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html'],
-    ['OpenAPI JSON Spec','18 endpoints OpenAPI 3.0 (/v3/api-docs)','https://styleradar-tiendas-qa.azurewebsites.net/v3/api-docs'],
+    ['OpenAPI JSON Spec','25 endpoints OpenAPI 3.0 (/v3/api-docs)','https://styleradar-tiendas-qa.azurewebsites.net/v3/api-docs'],
     ['Docker Hub Oficial','r/juanamunoz/styleradar-tiendas','https://hub.docker.com/r/juanamunoz/styleradar-tiendas'],
     ['PostgreSQL QA (SSL)','styleradar-pg-qa.postgres.database...:5432','styleradar-pg-qa.postgres.database.azure.com:5432'],
     ['PostgreSQL PROD (SSL)','styleradar-pg-prod.postgres.database...:5432','styleradar-pg-prod.postgres.database.azure.com:5432'],
-    ['Tablero Scrum Jira','Jira Cloud CADCHE · Sprint Activo','https://atlassian.net/jira/software/projects/CADCHE']
+    ['Tablero Scrum Jira','Jira Cloud CADCHE · Sprint Activo','https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog']
   ].map(function(l){
     var isLink = l[2].indexOf('http') === 0;
     return '<'+(isLink?'a href="'+l[2]+'" target="_blank" rel="noopener noreferrer"':'div')+
@@ -483,7 +477,7 @@ var D=[
   }).join('')+'</div>'+
   '<div class="card" style="padding:10px 14px;gap:3px;margin-top:10px;background:#18112C;border:1px solid #48119A;border-radius:10px;color:#FBF7F0">'+
   '<div style="display:flex;justify-content:space-between;align-items:center"><p class="lab" style="font-size:10.5px;color:#C4B5FD;margin:0">Verificación Automática de Despliegue</p><span style="font:700 9.5px var(--fm);padding:2px 6px;border-radius:4px;background:#064E3B;color:#6EE7B7;border:1px solid #059669">CI/CD PASS</span></div>'+
-  '<p class="sm" style="font-size:11px;line-height:1.4;color:#E8DCCB;margin:0">Ambos entornos (QA y PROD) cuentan con health check activo en <code>/actuator/health</code> y pipeline GitHub Actions <code>ci-qa.yml</code> verificado con 0 vulnerabilidades.</p>'+
+  '<p class="sm" style="font-size:11px;line-height:1.4;color:#E8DCCB;margin:0">Los workflows <code>ci-qa.yml</code> y <code>ci-prod.yml</code> construyen en Java 21, validan JaCoCo y SpotBugs, publican en Docker Hub y verifican <code>/v3/api-docs</code> y <code>/actuator/health</code> tras el despliegue (con RabbitMQ health deshabilitado en QA/PROD/DEV).</p>'+
   '</div>'},
 {c:'vio',back:1,h:backcover('StyleRadar','CADCHE · ms-tiendas · Versión 1.0.0 · Bogotá 2026')}
 ];
