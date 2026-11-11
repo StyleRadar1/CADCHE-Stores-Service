@@ -367,20 +367,21 @@ El microservicio `ms-tiendas` se apoya exclusivamente en **PostgreSQL 16** (sin 
 </div>
 
 ##### Justificación del Enfoque Hexagonal Concreto (Puertos y Adaptadores)
-El diagrama de componentes refleja **exactamente** los artefactos compilados en `src/main/java/`, sus interfaces de ensamble (**ball-and-socket**) entre puertos de entrada/salida y el aislamiento respecto a infraestructura:
-- **Perímetro HTTP / Security**: `JwtAuthFilter` (`JwtSecurityValidator`), `SecurityHeadersFilter` (`CorsConfig`) y `GlobalExceptionHandler` protegen e interceptan las solicitudes hacia los cuatro controladores REST.
-- **Conexiones por Puerto (`domain.port.in` / `domain.port.out`)**: Cada controlador invoca los puertos de entrada implementados por los **9 casos de uso `@Service`**; los casos de uso dependen exclusivamente del núcleo de dominio puro y de puertos de salida implementados por `AlmacenRepositoryAdapter`, `FundacionRepositoryAdapter`, `AzureBlobStorageAdapter` y `RabbitMQFundacionEventPublisherAdapter`.
-- **Alcance Real Controladores vs Núcleo Hexagonal**: De los 25 endpoints REST totales expuestos, **17 endpoints** delegan a los 9 casos de uso persistentes; los **8 endpoints restantes** (`GET/POST /api/v1/almacenes`, `GET /api/v1/almacenes/{nit}`, `PATCH .../ultimas-unidades`, `PATCH .../nueva-llegada`, `PUT/GET .../administradores`, `GET /api/v1/fundaciones`) retornan DTOs de contrato sin persistencia todavía, documentado explícitamente en el diagrama.
+El diagrama de componentes específico sigue un estilo minimalista hexagonal bajo el estándar `EstiloDiagramas.xml` (sin entidades de dominio, reservadas para el Diagrama de Clases §7.1), conectando únicamente los componentes estructurales compilados en `src/main/java/` mediante interfaces **ball-and-socket**:
+- **Driving Adapters (REST Controllers)**: `AlmacenController`, `VerificacionAlmacenController`, `FundacionController` y `AsociacionAdministradorAlmacenController` exponen los endpoints REST y delegan a los casos de uso mediante puertos de entrada (`domain.port.in`).
+- **Application & Domain Validators**: Los **9 casos de uso `@Service`** (`*UseCaseImpl`) orquestan los flujos apoyándose en sus 4 validadores (`AutorizacionAlmacenValidator`, `UmbralInventarioValidator`, `PeriodoNuevaLlegadaValidator`, `AutorizacionAdminStyleRadarValidator`) y consumen los puertos de salida (`domain.port.out`).
+- **Driven Adapters OUT, Mappers y Repositorios JPA**: `AzureBlobStorageAdapter`, `AlmacenRepositoryAdapter`, `FundacionRepositoryAdapter` y `RabbitMQFundacionEventPublisherAdapter` conectan con `AlmacenPersistenceMapper`, `FundacionPersistenceMapper`, los repositorios `SpringData*Repository` y la infraestructura externa (`PostgreSQL 16`, `Azure Blob Storage`, `RabbitMQ`).
+- **Alcance Real en Controladores**: De los 25 endpoints REST totales expuestos, **17 endpoints** delegan a los 9 casos de uso persistentes; los **8 endpoints restantes** (`GET/POST /api/v1/almacenes`, `GET /api/v1/almacenes/{nit}`, `PATCH .../ultimas-unidades`, `PATCH .../nueva-llegada`, `PUT/GET .../administradores`, `GET /api/v1/fundaciones`) retornan DTOs de contrato sin persistencia aún.
 
 ##### Explicación Concreta de los Flujos de Componentes Codificados
 
 1. **Flujo 1: Catálogo y Fotografías de Tiendas (`AlmacenController`)**:
-   - 9 de sus 14 endpoints conectan vía Input Ports con `ConfigurarUmbralUltimasUnidadesUseCaseImpl`, `ConsultarUmbralUltimasUnidadesUseCaseImpl`, `ConfigurarPeriodoNuevaLlegadaUseCaseImpl`, `ConsultarPeriodoNuevaLlegadaUseCaseImpl` y `RegistrarFotografiaTiendaUseCaseImpl`.
-   - Los casos de uso ejecutan `AutorizacionAlmacenValidator`, operando sobre `Almacen`, `FotografiaTienda`, `UmbralUltimasUnidades` y `PeriodoNuevaLlegada`, y salen por `AlmacenRepositoryPort` (`AlmacenRepositoryAdapter` -> PostgreSQL 16) y `AlmacenamientoBlobPort` (`AzureBlobStorageAdapter` -> Azurite/Blob).
-2. **Flujo 2: Moderación y Verificación RUT (`VerificacionAlmacenController`)**:
-   - Sus 4 endpoints conectan con `VerificarAlmacenUseCase`, implementado por `VerificarAlmacenUseCaseImpl` (valida rol `ROLE_ADMIN_STYLERADAR` con `AutorizacionAdminStyleRadarValidator`, ejecuta reglas en `Almacen` y persiste vía `AlmacenRepositoryAdapter` en PostgreSQL 16).
+   - 9 de sus 14 endpoints conectan vía puertos de entrada con `RegistrarFotografiaTiendaUseCaseImpl`, `ConsultarUmbralUltimasUnidadesUseCaseImpl`, `ConsultarPeriodoNuevaLlegadaUseCaseImpl`, `ConfigurarPeriodoNuevaLlegadaUseCaseImpl` y `ConfigurarUmbralUltimasUnidadesUseCaseImpl`.
+   - Validan reglas mediante `AutorizacionAlmacenValidator`, `UmbralInventarioValidator` y `PeriodoNuevaLlegadaValidator`, y salen por `AzureBlobStorageAdapter` (hacia `Azure Blob Storage`) y `AlmacenRepositoryAdapter` (`AlmacenPersistenceMapper`, `SpringDataAlmacenRepository`, `SpringDataFotografiaTiendaRepository` y `SpringDataAdministradorAlmacenRepository` hacia `PostgreSQL 16`).
+2. **Flujo 2: Verificación Documental (`VerificacionAlmacenController`)**:
+   - Sus 4 endpoints conectan con `VerificarAlmacenUseCaseImpl`, validan permisos con `AutorizacionAdminStyleRadarValidator` y persisten vía `AlmacenRepositoryAdapter` en `PostgreSQL 16`.
 3. **Flujo 3: Fundaciones Aliadas (`FundacionController`)**:
-   - Los endpoints administrativos conectan con `RegistrarFundacionUseCaseImpl`, `EditarFundacionUseCaseImpl` y `DesactivarFundacionUseCaseImpl`; validan rol admin, operan sobre `Fundacion` (`domain.model`), persisten vía `FundacionRepositoryAdapter` en PostgreSQL 16 y emiten `FundacionDesactivadaEvent` mediante `RabbitMQFundacionEventPublisherAdapter`.
+   - Conecta con `RegistrarFundacionUseCaseImpl`, `EditarFundacionUseCaseImpl` y `DesactivarFundacionUseCaseImpl`, valida mediante `AutorizacionAdminStyleRadarValidator`, persiste con `FundacionRepositoryAdapter` (`FundacionPersistenceMapper` y `SpringDataFundacionRepository` hacia `PostgreSQL 16`) y publica mediante `RabbitMQFundacionEventPublisherAdapter` hacia `RabbitMQ`.
 4. **Flujo 4: Asociación de Administradores (`AsociacionAdministradorAlmacenController`)**:
    - Expone los 2 endpoints de contrato `/api/v1/admin/almacenes/{nit}/administradores*` con `AdministradorAlmacenResponseDTO`.
 
@@ -389,7 +390,7 @@ El diagrama de componentes refleja **exactamente** los artefactos compilados en 
 ```text
 src/main/java/edu/dosw/styleradar/tiendas/
 ├── TiendasApplication.java                  <-- Punto de entrada Spring Boot (ms-tiendas :8140)
-├── domain/                                  <-- NÚCLEO DE DOMINIO (0% Spring / 0% JPA)
+├── domain/                                  <-- NÚCLEO DE DOMINIO (modelos, eventos, excepciones y puertos 0% Spring/JPA; validadores @Component)
 │   ├── model/                               <-- Almacen, FotografiaTienda, Fundacion, UmbralUltimasUnidades, PeriodoNuevaLlegada, CategoriaAlmacen, EstadoVerificacionAlmacen, DecisionVerificacionAlmacen, TipoPrenda
 │   ├── event/                               <-- FundacionDesactivadaEvent
 │   ├── exception/                           <-- 14 Excepciones de dominio (AccesoDenegadoAlmacenException, AlmacenNoEncontradoException, LimiteFotografiasSuperadoException, ...)

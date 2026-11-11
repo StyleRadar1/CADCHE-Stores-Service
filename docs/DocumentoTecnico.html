@@ -263,14 +263,14 @@ var D=[
   '</g>'+
   '<rect x="172" y="75" width="166" height="140" rx="14" fill="#EDE7FF" stroke="#5600EF" stroke-width="2"/>'+
   '<g text-anchor="middle">'+
-  '<text x="255" y="98" fill="#48119A" font-family="var(--fb)" font-size="11" font-weight="800">NÚCLEO DE DOMINIO</text>'+
-  '<text x="255" y="112" fill="#6B21A8" font-family="var(--fm)" font-size="8.5">(Modelos Puros · 0% Spring/JPA)</text>'+
+  '<text x="255" y="98" fill="#48119A" font-family="var(--fb)" font-size="11" font-weight="800">APLICACIÓN &amp; REGLAS</text>'+
+  '<text x="255" y="112" fill="#6B21A8" font-family="var(--fm)" font-size="8.5">(Puertos &amp; Casos de Uso)</text>'+
   '<line x1="186" y1="118" x2="324" y2="118" stroke="#C4B5FD" stroke-width="1.2"/>'+
-  '<text x="255" y="133" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Almacen · FotografiaTienda</text>'+
-  '<text x="255" y="148" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">Fundacion · Event</text>'+
-  '<text x="255" y="163" fill="#5600EF" font-family="var(--fb)" font-size="9.5" font-weight="700">Umbral · Periodo (VOs)</text>'+
-  '<text x="255" y="178" fill="#4B5563" font-family="var(--fb)" font-size="8.5">4 Domain Validators (BOLA)</text>'+
-  '<text x="255" y="193" fill="#4B5563" font-family="var(--fb)" font-size="8.5">9 UseCases (@Service)</text>'+
+  '<text x="255" y="135" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">9 UseCases (*UseCaseImpl)</text>'+
+  '<text x="255" y="152" fill="#1F2937" font-family="var(--fb)" font-size="9.5" font-weight="600">4 Domain Validators (BOLA)</text>'+
+  '<text x="255" y="169" fill="#5600EF" font-family="var(--fb)" font-size="9.5" font-weight="700">domain.port.in / port.out</text>'+
+  '<text x="255" y="186" fill="#4B5563" font-family="var(--fb)" font-size="8.5">Almacen &amp; FundacionMapper</text>'+
+  '<text x="255" y="201" fill="#4B5563" font-family="var(--fb)" font-size="8.5">SpringData JPA Repositories</text>'+
   '</g>'+
   '<g fill="#F8FAFC" stroke="#16A34A" stroke-width="1.3">'+
   '<rect x="356" y="46" width="146" height="48" rx="7"/>'+
@@ -289,7 +289,7 @@ var D=[
   '<text x="429" y="226" fill="#4B5563" font-size="8">fundacion.desactivada (off)</text>'+
   '</g>',
   'Diagrama de componentes hexagonal de ms-tiendas')+
-  '<p class="sm" style="color:#FBF7F0;opacity:.9">Separación estricta: JwtAuthFilter / 4 Controladores REST &rarr; 9 Casos de Uso (@Service) &rarr; Dominio Puro &rarr; Adaptadores PostgreSQL 16, Blob Storage y AMQP.</p>'},
+  '<p class="sm" style="color:#FBF7F0;opacity:.9">Separación hexagonal concreta: 4 Controladores REST &rarr; 9 Casos de Uso (@Service) &amp; 4 Validators &rarr; Adaptadores, Mappers, SpringData Repositories &rarr; PostgreSQL 16, Blob Storage y AMQP.</p>'},
 {c:'cream',t:'Endpoints y contratos',tag:'05',tab:'Endpoints',h:K('05 · Endpoints')+
   H('Contratos OpenAPI','25 Endpoints :8140')+
   '<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:11px;color:#262626">'+
