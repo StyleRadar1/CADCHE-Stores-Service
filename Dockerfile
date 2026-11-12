@@ -31,6 +31,10 @@ WORKDIR /app
 # Seguridad: Crear usuario no privilegiado (No-Root User) según CIS Benchmarks
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+# Certificado público CA del broker RabbitMQ QA (AMQPS TLS :5671)
+COPY rabbitmq-ca.pem /tmp/rabbitmq-ca.pem
+RUN keytool -importcert -trustcacerts -cacerts -storepass changeit -noprompt -alias styleradar-rabbitmq-ca -file /tmp/rabbitmq-ca.pem && rm -f /tmp/rabbitmq-ca.pem
+
 # Copiar el ejecutable JAR desde la etapa de compilación
 COPY --from=builder --chown=appuser:appgroup /build/target/*.jar app.jar
 
