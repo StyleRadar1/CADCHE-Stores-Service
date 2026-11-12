@@ -150,6 +150,10 @@ jobs:
                 DB_URL="${{ secrets.DB_URL_QA }}" \
                 DB_USERNAME="${{ secrets.DB_USERNAME_QA }}" \
                 DB_PASSWORD="${{ secrets.DB_PASSWORD_QA }}" \
+                RABBITMQ_HOST="${{ secrets.RABBITMQ_HOST || 'styleradar-rabbitmq-qa.northcentralus.cloudapp.azure.com' }}" \
+                RABBITMQ_PORT="${{ secrets.RABBITMQ_PORT || '5671' }}" \
+                RABBITMQ_USER="${{ secrets.RABBITMQ_USER }}" \
+                RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD }}" \
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_QA || 'https://styleradarblobqa.blob.core.windows.net' }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
             if [ -n "${{ secrets.JWT_SECRET_QA }}" ]; then
