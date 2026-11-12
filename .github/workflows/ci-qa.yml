@@ -55,7 +55,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2-
 
-      - name: Compilar y ejecutar pruebas completas con JaCoCo (255 pruebas)
+      - name: Compilar y ejecutar pruebas completas con JaCoCo
         run: mvn -B clean verify --no-transfer-progress
 
       - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
@@ -152,6 +152,13 @@ jobs:
                 DB_PASSWORD="${{ secrets.DB_PASSWORD_QA }}" \
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_QA || 'https://styleradarblobqa.blob.core.windows.net' }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+            if [ -n "${{ secrets.JWT_SECRET_QA }}" ]; then
+              az webapp config appsettings set \
+                --name "${{ env.AZURE_WEBAPP_NAME }}" \
+                --resource-group "$RG" \
+                --output none \
+                --settings JWT_SECRET="${{ secrets.JWT_SECRET_QA }}"
+            fi
 
       - name: Desplegar Contenedor Docker en Azure Web App (QA)
         id: deploy
@@ -160,18 +167,20 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-latest
 
-      - name: Smoke Test - Verificacion Swagger OpenAPI en Vivo
+      - name: Smoke Test - Verificacion Swagger OpenAPI y Health en Vivo
         run: |
-          URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
-          echo "Ejecutando Smoke Test contra: $URL"
+          API_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
+          HEALTH_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/actuator/health"
+          echo "Ejecutando Smoke Test contra: $API_URL y $HEALTH_URL"
           for i in $(seq 1 25); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
-            echo "Intento $i: HTTP $STATUS"
-            if [ "$STATUS" = "200" ]; then
-              echo "Swagger OpenAPI UI desplegado y respondiendo 200 OK en QA"
+            STATUS_API=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" || true)
+            STATUS_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+            echo "Intento $i: OpenAPI=$STATUS_API Health=$STATUS_HEALTH"
+            if [ "$STATUS_API" = "200" ] && [ "$STATUS_HEALTH" = "200" ]; then
+              echo "Microservicio QA desplegado y respondiendo 200 OK (OpenAPI y Actuator Health)"
               exit 0
             fi
             sleep 15
           done
-          echo "Advertencia: La API tardo en iniciar o no respondio HTTP 200 en $URL"
+          echo "Advertencia: La API tardo en iniciar o no respondio HTTP 200 (OpenAPI=$STATUS_API, Health=$STATUS_HEALTH)"
           exit 1

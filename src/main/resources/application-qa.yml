@@ -52,4 +52,7 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  health:
+    rabbit:
+      enabled: false
 

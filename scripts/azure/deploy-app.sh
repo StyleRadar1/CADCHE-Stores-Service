@@ -32,7 +32,7 @@ deploy_to() {
   echo "  Desplegando en Ambiente: ${ENV_NAME^^} ($APP)"
   echo "=========================================================="
 
-  echo "[2/5] Habilitando permisos SCM y configurando Java 17..."
+  echo "[2/5] Habilitando permisos SCM y configurando Java 21 LTS..."
   # Habilitar permisos SCM si Azure los bloqueó por defecto
   az resource update \
     --resource-group "$RG" \
@@ -42,11 +42,11 @@ deploy_to() {
     --set properties.allow=true \
     --output none 2>/dev/null || true
 
-  # Fijar runtime oficial Java 17
+  # Fijar runtime oficial Java 21 LTS
   az webapp config set \
     --resource-group "$RG" \
     --name "$APP" \
-    --linux-fx-version "JAVA|17-java17" \
+    --linux-fx-version "JAVA|21-java21" \
     --output none
 
   echo "[3/5] Arrancando Web App para activar motor de despliegue Kudu..."

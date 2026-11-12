@@ -5,7 +5,7 @@
 # ==============================================================================
 
 # ─── Etapa 1: Compilación con Maven (Build Environment Ligero Alpine) ─────────
-FROM maven:3.9.9-eclipse-temurin-17-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /build
 
@@ -17,7 +17,7 @@ COPY src ./src
 RUN mvn package -DskipTests -Dmaven.test.skip=true -q
 
 # ─── Etapa 2: Imagen Final Ultraligera y Segura (Runtime Environment) ─────────
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 # Metadatos estándar OCI (Open Container Initiative)
 LABEL org.opencontainers.image.title="StyleRadar CADCHE Stores Service" \
