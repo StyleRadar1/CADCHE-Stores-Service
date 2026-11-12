@@ -46,6 +46,9 @@
       <img src="https://img.shields.io/badge/Java-21_LTS-12063A?style=for-the-badge&logo=openjdk&logoColor=C4B5FD" alt="Java 21 LTS" />
     </a>
     <a href="#6-tecnologías-y-dependencias">
+      <img src="https://img.shields.io/badge/PostgreSQL-16-12063A?style=for-the-badge&logo=postgresql&logoColor=C4B5FD" alt="PostgreSQL 16" />
+    </a>
+    <a href="#6-tecnologías-y-dependencias">
       <img src="https://img.shields.io/badge/Spring_Boot-3.2.12-12063A?style=for-the-badge&logo=spring&logoColor=C4B5FD" alt="Spring Boot 3.2.12" />
     </a>
     <a href="#7-cómo-ejecutar-local-y-con-docker">
@@ -368,7 +371,7 @@ El microservicio `ms-tiendas` se apoya exclusivamente en **PostgreSQL 16** (sin 
 
 ##### Justificación del Enfoque Hexagonal Concreto (Puertos y Adaptadores)
 El diagrama de componentes específico sigue un estilo minimalista hexagonal bajo el estándar `EstiloDiagramas.xml` (sin entidades de dominio, reservadas para el Diagrama de Clases §7.1), conectando únicamente los componentes estructurales compilados en `src/main/java/` mediante interfaces **ball-and-socket**:
-- **Driving Adapters (REST Controllers)**: `AlmacenController`, `VerificacionAlmacenController`, `FundacionController` y `AsociacionAdministradorAlmacenController` exponen los endpoints REST y delegan a los casos de uso mediante puertos de entrada (`domain.port.in`).
+- **Driving Adapters & Security (IN)**: `JwtAuthFilter` (junto con `JwtSecurityValidator`) resguarda el perímetro REST y da paso a `AlmacenController`, `VerificacionAlmacenController`, `FundacionController` y `AsociacionAdministradorAlmacenController`, los cuales exponen los endpoints REST y delegan a los casos de uso mediante puertos de entrada (`domain.port.in`).
 - **Application & Domain Validators**: Los **9 casos de uso `@Service`** (`*UseCaseImpl`) orquestan los flujos apoyándose en sus 4 validadores (`AutorizacionAlmacenValidator`, `UmbralInventarioValidator`, `PeriodoNuevaLlegadaValidator`, `AutorizacionAdminStyleRadarValidator`) y consumen los puertos de salida (`domain.port.out`).
 - **Driven Adapters OUT, Mappers y Repositorios JPA**: `AzureBlobStorageAdapter`, `AlmacenRepositoryAdapter`, `FundacionRepositoryAdapter` y `RabbitMQFundacionEventPublisherAdapter` conectan con `AlmacenPersistenceMapper`, `FundacionPersistenceMapper`, los repositorios `SpringData*Repository` y la infraestructura externa (`PostgreSQL 16`, `Azure Blob Storage`, `RabbitMQ`).
 - **Alcance Real en Controladores**: De los 25 endpoints REST totales expuestos, **17 endpoints** delegan a los 9 casos de uso persistentes; los **8 endpoints restantes** (`GET/POST /api/v1/almacenes`, `GET /api/v1/almacenes/{nit}`, `PATCH .../ultimas-unidades`, `PATCH .../nueva-llegada`, `PUT/GET .../administradores`, `GET /api/v1/fundaciones`) retornan DTOs de contrato sin persistencia aún.
