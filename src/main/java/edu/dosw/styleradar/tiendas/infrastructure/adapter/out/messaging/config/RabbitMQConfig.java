@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String DEFAULT_EXCHANGE_FUNDACIONES = "styleradar.fundaciones.exchange";
-    public static final String DEFAULT_ROUTING_KEY_DESACTIVADA = "fundacion.desactivada";
+    public static final String DEFAULT_EXCHANGE_FUNDACIONES = "styleradar.exchange";
+    public static final String DEFAULT_ROUTING_KEY_DESACTIVADA = "styleradar.tiendas.fundacion.desactivada";
 
     @Bean
     public TopicExchange fundacionesExchange(
