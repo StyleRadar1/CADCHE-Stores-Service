@@ -67,5 +67,13 @@ class RabbitMQFundacionEventPublisherAdapterTest {
 
         assertDoesNotThrow(() -> adapter.publicarFundacionDesactivada(evento));
     }
+
+    @Test
+    @DisplayName("SR-RF-65 Contrato: Constructor de 5 parámetros genera eventoId único automáticamente")
+    void debeGenerarEventoIdEnConstructorDeCincoParametros() {
+        FundacionDesactivadaEvent ev = new FundacionDesactivadaEvent(
+                10L, "Fundación Esperanza", 22L, Instant.now(), "Cierre");
+        org.junit.jupiter.api.Assertions.assertNotNull(ev.getEventoId());
+    }
 }
 
