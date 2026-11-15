@@ -189,6 +189,31 @@ class AlmacenRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("Debe guardar y retornar asociación de administrador cuando no existe y cuando ya existe")
+    void debeGuardarYListarAsociacionAdministrador() {
+        AdministradorAlmacenEntity entityGuardada = AdministradorAlmacenEntity.builder()
+                .id(10L)
+                .almacenNit(NIT)
+                .usuarioId(USUARIO_ID)
+                .fechaAsignacion(Instant.now())
+                .build();
+
+        when(administradorRepository.findByAlmacenNitAndUsuarioId(NIT, USUARIO_ID))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(entityGuardada));
+        when(administradorRepository.save(any(AdministradorAlmacenEntity.class))).thenReturn(entityGuardada);
+        when(administradorRepository.findByAlmacenNit(NIT)).thenReturn(List.of(entityGuardada));
+
+        var creado = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
+        var existente = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
+        var lista = adapter.listarAdministradoresPorNit(NIT);
+
+        assertThat(creado.getId()).isEqualTo(10L);
+        assertThat(existente.getUsuarioId()).isEqualTo(USUARIO_ID);
+        assertThat(lista).hasSize(1);
+    }
+
+    @Test
     @DisplayName("Debe consultar fotografías por NIT de almacén ordenadas")
     void debeConsultarFotografiasPorAlmacenNit() {
         FotografiaTiendaEntity entity = FotografiaTiendaEntity.builder()
@@ -259,5 +284,118 @@ class AlmacenRepositoryAdapterTest {
         adapter.deleteFoto(10L, NIT);
 
         verify(fotografiaRepository).deleteByIdAndAlmacenNit(10L, NIT);
+    }
+
+    @Test
+    @DisplayName("SR-RF-62-A: Debe consultar almacén por usuarioId de administrador y validar existencia")
+    void debeConsultarAlmacenPorAdministradorUsuarioIdYExistencia() {
+        assertThat(adapter.findByAdministradorUsuarioId(null)).isEmpty();
+        assertThat(adapter.existeAlmacenParaUsuario(null)).isFalse();
+        assertThat(adapter.esAdministradorDeAlmacen(NIT, null)).isFalse();
+
+        when(almacenRepository.existsById(NIT)).thenReturn(true);
+        assertThat(adapter.existsByNit(NIT)).isTrue();
+
+        when(administradorRepository.existsByUsuarioId(USUARIO_ID)).thenReturn(true);
+        assertThat(adapter.existeAlmacenParaUsuario(USUARIO_ID)).isTrue();
+
+        AdministradorAlmacenEntity vinculo = AdministradorAlmacenEntity.builder()
+                .id(1L)
+                .almacenNit(NIT)
+                .usuarioId(USUARIO_ID)
+                .build();
+        AlmacenEntity entidad = AlmacenEntity.builder()
+                .nit(NIT)
+                .nombreComercial("Tienda Centro")
+                .build();
+        when(administradorRepository.findFirstByUsuarioIdOrderByFechaAsignacionAsc(USUARIO_ID))
+                .thenReturn(Optional.of(vinculo));
+        when(almacenRepository.findByNit(NIT)).thenReturn(Optional.of(entidad));
+
+        assertThat(adapter.findByAdministradorUsuarioId(USUARIO_ID)).isPresent();
+    }
+
+    @Test
+    @DisplayName("SR-RF-63..65: FundacionRepositoryAdapter delega consultas de unicidad por NIT, nombre y representante")
+    void debeDelegarConsultasEnFundacionRepositoryAdapter() {
+        var springFundacionRepo = org.mockito.Mockito.mock(
+                edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.repository.SpringDataFundacionRepository.class);
+        var fundacionMapper = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.mapper.FundacionPersistenceMapper();
+        var fundacionAdapter = new FundacionRepositoryAdapter(springFundacionRepo, fundacionMapper);
+
+        when(springFundacionRepo.existsByNitIgnoreCase("900215884-1")).thenReturn(true);
+        when(springFundacionRepo.existsByNitIgnoreCaseAndIdNot("900215884-1", 1L)).thenReturn(false);
+        when(springFundacionRepo.existsByNombreIgnoreCase("Fundacion")).thenReturn(true);
+        when(springFundacionRepo.existsByNombreIgnoreCaseAndIdNot("Fundacion", 1L)).thenReturn(false);
+        when(springFundacionRepo.existsByRepresentanteId(45L)).thenReturn(true);
+        when(springFundacionRepo.existsByRepresentanteIdAndIdNot(45L, 1L)).thenReturn(false);
+        when(springFundacionRepo.findByNombreIgnoreCase("Fundacion")).thenReturn(Optional.empty());
+
+        assertThat(fundacionAdapter.existsByNitIgnoreCase("900215884-1")).isTrue();
+        assertThat(fundacionAdapter.existsByNitIgnoreCaseAndIdNot("900215884-1", 1L)).isFalse();
+        assertThat(fundacionAdapter.existsByNombreIgnoreCase("Fundacion")).isTrue();
+        assertThat(fundacionAdapter.existsByNombreIgnoreCaseAndIdNot("Fundacion", 1L)).isFalse();
+        assertThat(fundacionAdapter.existsByRepresentanteId(45L)).isTrue();
+        assertThat(fundacionAdapter.existsByRepresentanteIdAndIdNot(45L, 1L)).isFalse();
+        assertThat(fundacionAdapter.findByNombre("Fundacion")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("B-2.3 / B-0.3: AzureBlobStorageAdapter, AuthRequestContextResolver y excepciones 409")
+    void debeCubrirStorageResolverYExcepcionesConflicto() {
+        var blobAdapter = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.AzureBlobStorageAdapter(
+                "https://styleradarblob.blob.core.windows.net///");
+        var blobDefault = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.AzureBlobStorageAdapter("  ");
+
+        String url = blobAdapter.subirArchivo("tiendas", "1/foto.jpg",
+                new java.io.ByteArrayInputStream(new byte[]{1, 2, 3}), "image/jpeg", 3L);
+        assertThat(blobAdapter.existeBlob(url)).isTrue();
+        assertThat(blobAdapter.existeBlob(null)).isFalse();
+        assertThat(blobAdapter.obtenerBlob(url)).isPresent();
+        assertThat(blobAdapter.obtenerBlob(null)).isEmpty();
+        assertThat(blobAdapter.obtenerBlob("https://noexiste")).isEmpty();
+        blobAdapter.eliminarArchivo(url);
+        blobAdapter.eliminarArchivo(null);
+        blobAdapter.eliminarArchivo("  ");
+        assertThat(blobAdapter.existeBlob(url)).isFalse();
+
+        String urlVacio = blobDefault.subirArchivo("tiendas", "1/vacio.jpg", null, "image/jpeg", 0L);
+        assertThat(blobDefault.obtenerBlob(urlVacio)).isPresent();
+
+        var req = new org.springframework.mock.web.MockHttpServletRequest();
+        req.setAttribute("authenticatedUserId", 77L);
+        req.setAttribute("authenticatedRoles", "ROLE_ADMIN_STYLERADAR");
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(req));
+        try {
+            assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveUserId(10L))
+                    .isEqualTo(10L);
+            assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveUserId(null))
+                    .isEqualTo(77L);
+            assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveRole("ROLE_TIENDA", null))
+                    .isEqualTo("ROLE_TIENDA");
+            assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveRole(null, "ROLE_ADMIN"))
+                    .isEqualTo("ROLE_ADMIN");
+            assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveRole(null, null))
+                    .isEqualTo("ROLE_ADMIN_STYLERADAR");
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+
+        var exFund1 = new edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException("NIT duplicado");
+        var exFund2 = new edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException("nombre duplicado");
+        var exFund3 = new edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException("representante duplicado");
+        var exFund4 = new edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException("nit", "NIT ya existe");
+        assertThat(exFund1.getValidationErrors()).containsKey("nit");
+        assertThat(exFund2.getValidationErrors()).containsKey("nombre");
+        assertThat(exFund3.getValidationErrors()).containsKey("representanteId");
+        assertThat(exFund4.getValidationErrors()).containsEntry("nit", "NIT ya existe");
+
+        var exAlm1 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("NIT duplicado");
+        var exAlm2 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("Otro error");
+        var exAlm3 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("usuarioId", "Ya administra");
+        assertThat(exAlm1.getValidationErrors()).containsKey("nit");
+        assertThat(exAlm2.getValidationErrors()).isEmpty();
+        assertThat(exAlm3.getValidationErrors()).containsEntry("usuarioId", "Ya administra");
     }
 }

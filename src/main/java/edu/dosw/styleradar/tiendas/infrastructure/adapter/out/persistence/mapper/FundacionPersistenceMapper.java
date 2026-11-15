@@ -16,9 +16,11 @@ public class FundacionPersistenceMapper {
         }
         return Fundacion.builder()
                 .id(entity.getId())
+                .nit(entity.getNit())
                 .nombre(entity.getNombre())
                 .descripcion(entity.getDescripcion())
                 .direccion(entity.getDireccion())
+                .barrio(entity.getBarrio())
                 .telefono(entity.getTelefono())
                 .email(entity.getEmail())
                 .latitud(entity.getLatitud())
@@ -40,9 +42,11 @@ public class FundacionPersistenceMapper {
         }
         return FundacionEntity.builder()
                 .id(domain.getId())
+                .nit(domain.getNit())
                 .nombre(domain.getNombre())
                 .descripcion(domain.getDescripcion())
                 .direccion(domain.getDireccion())
+                .barrio(domain.getBarrio())
                 .telefono(domain.getTelefono())
                 .email(domain.getEmail())
                 .latitud(domain.getLatitud())

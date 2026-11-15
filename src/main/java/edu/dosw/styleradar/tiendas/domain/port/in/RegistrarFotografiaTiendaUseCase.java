@@ -18,5 +18,6 @@ public interface RegistrarFotografiaTiendaUseCase {
     List<FotografiaTiendaResponseDTO> listarFotografias(String nit);
 
     void eliminarFotografia(String nit, Long fotoId, Long usuarioId);
-}
 
+    List<FotografiaTiendaResponseDTO> reordenarFotografias(String nit, List<Long> fotoIds, Long usuarioId);
+}

@@ -1,6 +1,7 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -20,6 +21,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import edu.dosw.styleradar.tiendas.domain.event.FundacionDesactivadaEvent;
+import edu.dosw.styleradar.tiendas.domain.event.FundacionReactivadaEvent;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging.config.RabbitMQConfig;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,11 +35,13 @@ class RabbitMQFundacionEventPublisherAdapterTest {
     private RabbitMQFundacionEventPublisherAdapter adapter;
 
     private FundacionDesactivadaEvent evento;
+    private FundacionReactivadaEvent eventoReactivada;
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(adapter, "exchangeName", RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES);
         ReflectionTestUtils.setField(adapter, "routingKey", RabbitMQConfig.DEFAULT_ROUTING_KEY_DESACTIVADA);
+        ReflectionTestUtils.setField(adapter, "routingKeyReactivada", RabbitMQConfig.DEFAULT_ROUTING_KEY_REACTIVADA);
 
         evento = FundacionDesactivadaEvent.builder()
                 .fundacionId(10L)
@@ -46,17 +50,30 @@ class RabbitMQFundacionEventPublisherAdapterTest {
                 .fechaDesactivacion(Instant.now())
                 .motivo("Cierre administrativo")
                 .build();
+
+        eventoReactivada = FundacionReactivadaEvent.builder()
+                .fundacionId(10L)
+                .nombreFundacion("Fundación Esperanza")
+                .representanteId(22L)
+                .fechaReactivacion(Instant.now())
+                .motivo("Reapertura")
+                .build();
     }
 
     @Test
-    @DisplayName("SR-RF-65 Integración: Debe convertir y publicar evento al exchange y routing key configurados")
+    @DisplayName("SR-RF-65 Integración: Debe convertir y publicar eventos de desactivación y reactivación al exchange y routing keys configurados")
     void debePublicarEventoExitosamente() {
         assertDoesNotThrow(() -> adapter.publicarFundacionDesactivada(evento));
+        assertDoesNotThrow(() -> adapter.publicarFundacionReactivada(eventoReactivada));
 
         verify(rabbitTemplate).convertAndSend(
                 eq(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES),
                 eq(RabbitMQConfig.DEFAULT_ROUTING_KEY_DESACTIVADA),
                 eq(evento));
+        verify(rabbitTemplate).convertAndSend(
+                eq(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES),
+                eq(RabbitMQConfig.DEFAULT_ROUTING_KEY_REACTIVADA),
+                eq(eventoReactivada));
     }
 
     @Test
@@ -66,14 +83,17 @@ class RabbitMQFundacionEventPublisherAdapterTest {
                 .when(rabbitTemplate).convertAndSend(any(String.class), any(String.class), any(Object.class));
 
         assertDoesNotThrow(() -> adapter.publicarFundacionDesactivada(evento));
+        assertDoesNotThrow(() -> adapter.publicarFundacionReactivada(eventoReactivada));
     }
 
     @Test
-    @DisplayName("SR-RF-65 Contrato: Constructor de 5 parámetros genera eventoId único automáticamente")
+    @DisplayName("SR-RF-65 Contrato: Constructores de 5 parámetros generan eventoId único automáticamente")
     void debeGenerarEventoIdEnConstructorDeCincoParametros() {
         FundacionDesactivadaEvent ev = new FundacionDesactivadaEvent(
                 10L, "Fundación Esperanza", 22L, Instant.now(), "Cierre");
-        org.junit.jupiter.api.Assertions.assertNotNull(ev.getEventoId());
+        FundacionReactivadaEvent evRe = new FundacionReactivadaEvent(
+                10L, "Fundación Esperanza", 22L, Instant.now(), "Reapertura");
+        assertNotNull(ev.getEventoId());
+        assertNotNull(evRe.getEventoId());
     }
 }
-

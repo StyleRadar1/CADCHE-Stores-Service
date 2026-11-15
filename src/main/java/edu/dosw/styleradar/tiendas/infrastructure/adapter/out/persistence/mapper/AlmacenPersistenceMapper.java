@@ -4,8 +4,10 @@ import java.util.HashSet;
 
 import org.springframework.stereotype.Component;
 
+import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AdministradorAlmacenEntity;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AlmacenEntity;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.FotografiaTiendaEntity;
 
@@ -89,6 +91,19 @@ public class AlmacenPersistenceMapper {
                 .orden(domain.getOrden())
                 .esPortada(domain.isPortada())
                 .fechaSubida(domain.getFechaRegistro())
+                .build();
+    }
+
+    public AdministradorAlmacen toDomain(AdministradorAlmacenEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return AdministradorAlmacen.builder()
+                .id(entity.getId())
+                .usuarioId(entity.getUsuarioId())
+                .almacenNit(entity.getAlmacenNit())
+                .asignadoPorId(1L)
+                .fechaAsignacion(entity.getFechaAsignacion())
                 .build();
     }
 }

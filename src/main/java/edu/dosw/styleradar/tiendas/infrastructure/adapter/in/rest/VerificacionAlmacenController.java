@@ -41,7 +41,7 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
             @Valid @ModelAttribute VerificacionConsultaRequestDTO request,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         return ResponseEntity.ok(verificarAlmacenUseCase.consultar(request, rol));
     }
 
@@ -50,7 +50,7 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
             String nit,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         return ResponseEntity.ok(verificarAlmacenUseCase.consultarUno(nit, rol));
     }
 
@@ -61,8 +61,8 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long adminId) {
-        String rol = resolveRole(rolesHeader, roleHeader);
-        Long idAdmin = adminId != null ? adminId : 1L;
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
+        Long idAdmin = AuthRequestContextResolver.resolveUserId(adminId);
         return ResponseEntity.ok(verificarAlmacenUseCase.decidir(nit, request, idAdmin, rol));
     }
 
@@ -72,18 +72,8 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long adminId) {
-        String rol = resolveRole(rolesHeader, roleHeader);
-        Long idAdmin = adminId != null ? adminId : 1L;
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
+        Long idAdmin = AuthRequestContextResolver.resolveUserId(adminId);
         return ResponseEntity.ok(verificarAlmacenUseCase.solicitarRevision(nit, idAdmin, rol));
-    }
-
-    private String resolveRole(String rolesHeader, String roleHeader) {
-        if (rolesHeader != null && !rolesHeader.isBlank()) {
-            return rolesHeader;
-        }
-        if (roleHeader != null && !roleHeader.isBlank()) {
-            return roleHeader;
-        }
-        return null;
     }
 }

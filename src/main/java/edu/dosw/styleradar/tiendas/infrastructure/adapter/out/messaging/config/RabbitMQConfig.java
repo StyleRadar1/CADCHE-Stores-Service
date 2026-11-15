@@ -10,10 +10,10 @@ public class RabbitMQConfig {
 
     public static final String DEFAULT_EXCHANGE_FUNDACIONES = "styleradar.exchange";
     public static final String DEFAULT_ROUTING_KEY_DESACTIVADA = "styleradar.tiendas.fundacion.desactivada";
+    public static final String DEFAULT_ROUTING_KEY_REACTIVADA = "styleradar.tiendas.fundacion.reactivada";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 }
-

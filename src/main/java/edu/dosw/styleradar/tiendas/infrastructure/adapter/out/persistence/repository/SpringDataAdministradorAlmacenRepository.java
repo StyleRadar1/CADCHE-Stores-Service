@@ -13,8 +13,11 @@ public interface SpringDataAdministradorAlmacenRepository extends JpaRepository<
 
     boolean existsByAlmacenNitAndUsuarioId(String almacenNit, Long usuarioId);
 
+    boolean existsByUsuarioId(Long usuarioId);
+
     Optional<AdministradorAlmacenEntity> findByAlmacenNitAndUsuarioId(String almacenNit, Long usuarioId);
+
+    Optional<AdministradorAlmacenEntity> findFirstByUsuarioIdOrderByFechaAsignacionAsc(Long usuarioId);
 
     List<AdministradorAlmacenEntity> findByAlmacenNit(String almacenNit);
 }
-

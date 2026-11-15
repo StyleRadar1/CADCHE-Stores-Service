@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.event.FundacionDesactivadaEvent;
+import edu.dosw.styleradar.tiendas.domain.event.FundacionReactivadaEvent;
 import edu.dosw.styleradar.tiendas.domain.port.out.FundacionEventPublisherPort;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,9 @@ public class RabbitMQFundacionEventPublisherAdapter implements FundacionEventPub
     @Value("${styleradar.rabbitmq.routingkey.fundacion-desactivada:" + RabbitMQConfig.DEFAULT_ROUTING_KEY_DESACTIVADA + "}")
     private String routingKey;
 
+    @Value("${styleradar.rabbitmq.routingkey.fundacion-reactivada:" + RabbitMQConfig.DEFAULT_ROUTING_KEY_REACTIVADA + "}")
+    private String routingKeyReactivada;
+
     @Override
     public void publicarFundacionDesactivada(FundacionDesactivadaEvent evento) {
         try {
@@ -36,5 +40,18 @@ public class RabbitMQFundacionEventPublisherAdapter implements FundacionEventPub
                     ex.getMessage());
         }
     }
-}
 
+    @Override
+    public void publicarFundacionReactivada(FundacionReactivadaEvent evento) {
+        String targetRoutingKey = routingKeyReactivada != null ? routingKeyReactivada : RabbitMQConfig.DEFAULT_ROUTING_KEY_REACTIVADA;
+        try {
+            log.info("Publicando evento FundacionReactivadaEvent a exchange='{}' con routingKey='{}': {}",
+                    exchangeName, targetRoutingKey, evento);
+            rabbitTemplate.convertAndSend(exchangeName, targetRoutingKey, evento);
+            log.info("Evento FundacionReactivadaEvent publicado exitosamente");
+        } catch (AmqpException ex) {
+            log.warn("No fue posible entregar el evento de reactivación a RabbitMQ (broker no disponible): {}. Se conserva la reactivación en base de datos.",
+                    ex.getMessage());
+        }
+    }
+}

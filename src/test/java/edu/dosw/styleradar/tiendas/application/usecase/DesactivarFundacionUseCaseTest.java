@@ -58,9 +58,11 @@ class DesactivarFundacionUseCaseTest {
     void setUp() {
         fundacionActiva = Fundacion.builder()
                 .id(5L)
+                .nit("900215884-1")
                 .nombre("Fundación Abrigo y Esperanza")
                 .descripcion("Recepción de vestuario y calzado")
                 .direccion("Avenida 68 # 45-12")
+                .barrio("Salitre")
                 .telefono("+57 601 555 4433")
                 .email("esperanza@fundacion.org")
                 .latitud(4.6800)
@@ -147,8 +149,8 @@ class DesactivarFundacionUseCaseTest {
     @Test
     @DisplayName("Criterio 5 (403 Forbidden): Dado que no soy administrador, cuando llamo al endpoint, recibo 403")
     void debeLanzar403CuandoUsuarioNoEsAdmin() {
-        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR"))
-                .when(adminValidator).validarEsAdministradorStyleRadar("ROLE_COMPRADOR");
+        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"))
+                .when(adminValidator).validarEsAdministradorParaFundaciones("ROLE_COMPRADOR");
 
         assertThrows(AccesoDenegadoAlmacenException.class,
                 () -> useCase.desactivar(5L, "ROLE_COMPRADOR"));
@@ -165,4 +167,3 @@ class DesactivarFundacionUseCaseTest {
                 () -> useCase.desactivar(null, ADMIN_ROLE));
     }
 }
-

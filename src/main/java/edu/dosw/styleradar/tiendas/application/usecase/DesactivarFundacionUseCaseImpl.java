@@ -37,7 +37,7 @@ public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCas
     @Override
     @Transactional
     public FundacionResponseDTO desactivar(Long id, String motivo, String rolUsuario) {
-        adminValidator.validarEsAdministradorStyleRadar(rolUsuario);
+        adminValidator.validarEsAdministradorParaFundaciones(rolUsuario);
 
         if (id == null) {
             throw new ReglaDeNegocioException("El identificador de la fundación es obligatorio");
@@ -46,14 +46,12 @@ public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCas
         Fundacion existente = repositoryPort.findById(id)
                 .orElseThrow(() -> new FundacionNoEncontradaException("No existe una fundación aliada con ID: " + id));
 
-        // Transición de dominio: si ya está inactiva, lanza FundacionYaDesactivadaException (409)
         existente.desactivar();
 
         Fundacion guardada = repositoryPort.save(existente);
         log.info("Fundación aliada ID={} ('{}') desactivada exitosamente en BD (historial conservado)",
                 guardada.getId(), guardada.getNombre());
 
-        // Notificación asíncrona mediante publicación de evento de dominio a RabbitMQ
         FundacionDesactivadaEvent evento = FundacionDesactivadaEvent.builder()
                 .fundacionId(guardada.getId())
                 .nombreFundacion(guardada.getNombre())
@@ -71,9 +69,11 @@ public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCas
     private FundacionResponseDTO mapearResponse(Fundacion f) {
         return FundacionResponseDTO.builder()
                 .id(f.getId())
+                .nit(f.getNit())
                 .nombre(f.getNombre())
                 .descripcion(f.getDescripcion())
                 .direccion(f.getDireccion())
+                .barrio(f.getBarrio())
                 .telefono(f.getTelefono())
                 .email(f.getEmail())
                 .latitud(f.getLatitud())
@@ -89,4 +89,3 @@ public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCas
                 .build();
     }
 }
-

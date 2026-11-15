@@ -14,10 +14,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Pruebas Unitarias de AutorizacionAlmacenValidator - Control de Acceso BOLA/IDOR")
+@DisplayName("Pruebas Unitarias de AutorizacionAlmacenValidator - Control de Acceso BOLA/IDOR y Rol Tienda")
 class AutorizacionAlmacenValidatorTest {
 
     private AutorizacionAlmacenValidator validator;
@@ -58,12 +59,28 @@ class AutorizacionAlmacenValidatorTest {
     }
 
     @Test
-    @DisplayName("Debe omitir la validación si el usuarioId es nulo (llamada interna sin contexto de usuario)")
-    void debeOmitirValidacionCuandoUsuarioIdEsNulo() {
-        assertThatCode(() -> validator.validarAcceso(NIT, null, repositoryPort))
-                .doesNotThrowAnyException();
+    @DisplayName("B-0.1: Debe lanzar FalloAutenticacionException (401) cuando el usuarioId es nulo")
+    void debeLanzar401CuandoUsuarioIdEsNulo() {
+        assertThatThrownBy(() -> validator.validarAcceso(NIT, null, repositoryPort))
+                .isInstanceOf(FalloAutenticacionException.class);
 
         verify(repositoryPort, never()).esAdministradorDeAlmacen(NIT, null);
     }
-}
 
+    @Test
+    @DisplayName("SR-RF-62-A FA-02: Debe validar que el usuario tenga rol de tienda o administrador de almacén")
+    void debeValidarRolTienda() {
+        assertThatCode(() -> validator.validarRolTienda("ROLE_TIENDA")).doesNotThrowAnyException();
+        assertThatCode(() -> validator.validarRolTienda("ROLE_ADMIN_ALMACEN")).doesNotThrowAnyException();
+        assertThatCode(() -> validator.validarRolTienda("TIENDA")).doesNotThrowAnyException();
+        assertThatCode(() -> validator.validarRolTienda("ADMIN_ALMACEN")).doesNotThrowAnyException();
+
+        assertThatThrownBy(() -> validator.validarRolTienda("ROLE_COMPRADOR"))
+                .isInstanceOf(AccesoDenegadoAlmacenException.class)
+                .hasMessage("Solo una cuenta con rol de tienda puede registrar un almacén");
+        assertThatThrownBy(() -> validator.validarRolTienda(null))
+                .isInstanceOf(AccesoDenegadoAlmacenException.class);
+        assertThatThrownBy(() -> validator.validarRolTienda("   "))
+                .isInstanceOf(AccesoDenegadoAlmacenException.class);
+    }
+}

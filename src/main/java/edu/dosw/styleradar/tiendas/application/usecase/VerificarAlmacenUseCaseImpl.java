@@ -15,7 +15,9 @@ import edu.dosw.styleradar.tiendas.application.dto.request.VerificacionConsultaR
 import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
+import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.port.in.VerificarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
@@ -35,9 +37,12 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
     @Transactional
     public VerificacionAlmacenResponseDTO decidir(
             String nit, DecisionVerificacionRequestDTO request, Long adminId, String rol) {
+        if (adminId == null) {
+            throw new FalloAutenticacionException("Token de autenticación ausente, inválido o expirado");
+        }
         adminValidator.validarEsAdministradorStyleRadar(rol);
 
-        if (request == null || request.getDecision() == null || !request.isMotivoValido()) {
+        if (request == null || request.getDecision() == null || !request.isMotivoValido() || !request.isMotivoLongitudValida()) {
             throw new ReglaDeNegocioException("La decisión de verificación o el motivo es inválido");
         }
 
@@ -102,6 +107,9 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
     @Override
     @Transactional
     public VerificacionAlmacenResponseDTO solicitarRevision(String nit, Long adminId, String rol) {
+        if (adminId == null) {
+            throw new FalloAutenticacionException("Token de autenticación ausente, inválido o expirado");
+        }
         adminValidator.validarEsAdministradorStyleRadar(rol);
 
         Almacen almacen = repositoryPort.findByNit(nit)
@@ -112,6 +120,14 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
         Almacen guardado = repositoryPort.save(almacen);
 
         return toResponseDTO(guardado);
+    }
+
+    private String resolverRepresentante(String nit) {
+        List<AdministradorAlmacen> admins = repositoryPort.listarAdministradoresPorNit(nit);
+        if (admins == null || admins.isEmpty() || admins.get(0).getUsuarioId() == null) {
+            return null;
+        }
+        return "Usuario #" + admins.get(0).getUsuarioId();
     }
 
     private VerificacionAlmacenResponseDTO toResponseDTO(Almacen a) {
@@ -130,7 +146,8 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
                 a.getFechaDecisionVerificacion(),
                 a.getAdministradorDecisionId(),
                 a.getMotivoVerificacion(),
-                a.getUrlRutPdf()
+                a.getUrlRutPdf(),
+                resolverRepresentante(a.getNit())
         );
     }
 }

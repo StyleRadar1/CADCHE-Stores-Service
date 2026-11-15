@@ -13,6 +13,10 @@ public interface FundacionRepositoryPort {
 
     Optional<Fundacion> findByNombre(String nombre);
 
+    boolean existsByNitIgnoreCase(String nit);
+
+    boolean existsByNitIgnoreCaseAndIdNot(String nit, Long id);
+
     boolean existsByNombreIgnoreCase(String nombre);
 
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);

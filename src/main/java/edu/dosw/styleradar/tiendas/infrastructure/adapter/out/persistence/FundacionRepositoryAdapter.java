@@ -37,6 +37,16 @@ public class FundacionRepositoryAdapter implements FundacionRepositoryPort {
     }
 
     @Override
+    public boolean existsByNitIgnoreCase(String nit) {
+        return repository.existsByNitIgnoreCase(nit);
+    }
+
+    @Override
+    public boolean existsByNitIgnoreCaseAndIdNot(String nit, Long id) {
+        return repository.existsByNitIgnoreCaseAndIdNot(nit, id);
+    }
+
+    @Override
     public boolean existsByNombreIgnoreCase(String nombre) {
         return repository.existsByNombreIgnoreCase(nombre);
     }

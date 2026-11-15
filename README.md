@@ -312,7 +312,7 @@ El diagrama de clases de `ms-tiendas` modela el núcleo de negocio actual bajo *
 
 ###### 4. Eventos de Dominio (Domain Events)
 - **`FundacionDesactivadaEvent` (`<<Domain Event>>`)**:
-  - Único evento de dominio implementado hoy: emitido al desactivar una fundación (`DesactivarFundacionUseCaseImpl`) y publicado por `RabbitMQFundacionEventPublisherAdapter` hacia el exchange `styleradar.fundaciones.exchange` con routing key `fundacion.desactivada` (consumidor proyectado en `ms-segunda-vida-donaciones :8520`). En QA, PROD y DEV la comprobación de salud AMQP (`management.health.rabbit.enabled=false`) está deshabilitada porque el servicio no conecta al broker compartido actualmente.
+  - Evento de dominio emitido al desactivar una fundación (`DesactivarFundacionUseCaseImpl`) y publicado por `RabbitMQFundacionEventPublisherAdapter` hacia el exchange corporativo `styleradar.exchange` con routing key `styleradar.tiendas.fundacion.desactivada` (con `eventoId` idempotente y fechas ISO-8601). Conecta por AMQPS TLS (`:5671`) en QA/PROD sin declarar beans de `Exchange` ni `Queue` (respetando los permisos `ms_tiendas` de solo escritura).
 
 ###### 5. Validadores de Dominio (`domain.validator`) y Puertos (`domain.port`)
 - **Validadores de Dominio**:
@@ -590,16 +590,16 @@ curl -X PUT "http://localhost:8140/api/v1/almacenes/900123456-1/configuracion-ca
 
 ## <img src="https://img.shields.io/badge/05-5600EF?style=for-the-badge" height="20" align="absmiddle" /> 5. EVENTOS QUE PUBLICA Y CONSUME
 
-El microservicio implementa el puerto de salida `FundacionEventPublisherPort` mediante `RabbitMQFundacionEventPublisherAdapter` (`Spring AMQP`). **Estado operativo actual:** `ms-tiendas` **no consume colas RabbitMQ** y el chequeo de salud/conexión al broker compartido está deshabilitado actualmente en los perfiles `qa`, `prod` y `dev` (`management.health.rabbit.enabled=false`).
+El microservicio implementa el puerto de salida `FundacionEventPublisherPort` mediante `RabbitMQFundacionEventPublisherAdapter` (`Spring AMQP`). **Estado operativo actual:** `ms-tiendas` **solo publica eventos** (no consume colas RabbitMQ ni declara beans de `Queue` o `Exchange`, cumpliendo los permisos del usuario `ms_tiendas` en el broker AMQPS `:5671`).
 
-* **Exchange de Fundaciones Aliadas (código implementado):** `styleradar.fundaciones.exchange` (`TopicExchange` durable configurado en `RabbitMQConfig`, parametrizable vía `styleradar.rabbitmq.exchange.fundaciones`)
-* **Routing Key:** `fundacion.desactivada` (parametrizable vía `styleradar.rabbitmq.routing-key.fundacion-desactivada`)
+* **Exchange Principal de Eventos:** `styleradar.exchange` (`TopicExchange` durable existente en el broker compartido, parametrizable vía `styleradar.rabbitmq.exchange.fundaciones`)
+* **Routing Key:** `styleradar.tiendas.fundacion.desactivada` (parametrizable vía `styleradar.rabbitmq.routing-key.fundacion-desactivada`)
 
 ### Matriz de Eventos AMQP
 
 | Tipo | Exchange | Routing Key | Cola (Queue) | Microservicio Emisor / Receptor | Estado y Disparo |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **PUBLICA** | `styleradar.fundaciones.exchange` | `fundacion.desactivada` | Consumidor desacoplado (`ms-segunda-vida-donaciones` :8520) | `ms-tiendas` (`:8140`) &rarr; `ms-segunda-vida-donaciones` | Implementado en `DesactivarFundacionUseCaseImpl` (`SR-RF-65`). Captura `AmqpException` si el broker no está activo; salud AMQP deshabilitada en QA/PROD actualmente. |
+| **PUBLICA** | `styleradar.exchange` | `styleradar.tiendas.fundacion.desactivada` | Consumidor desacoplado (`ms-segunda-vida-donaciones` :8520) | `ms-tiendas` (`:8140`) &rarr; `ms-segunda-vida-donaciones` | Implementado en `DesactivarFundacionUseCaseImpl` (`SR-RF-65`). Incluye `eventoId` idempotente, fechas ISO-8601 y captura `AmqpException` con resiliencia transaccional. |
 
 <details>
 <summary><b>Click para ver Esquema JSON de FundacionDesactivadaEvent (SR-RF-65)</b></summary>
@@ -610,6 +610,7 @@ Evento de integración disparado por el caso de uso `DesactivarFundacionUseCaseI
 
 ```json
 {
+  "eventoId": "9f8c7b6a-5d4e-3c2b-1a0f-123456789abc",
   "fundacionId": 105,
   "nombreFundacion": "Fundación Moda Sostenible Bogotá",
   "representanteId": 42,
