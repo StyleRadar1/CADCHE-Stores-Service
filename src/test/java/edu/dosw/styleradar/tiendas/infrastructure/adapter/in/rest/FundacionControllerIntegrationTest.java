@@ -1,11 +1,13 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -23,19 +25,23 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaActivaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.model.TipoPrenda;
 import edu.dosw.styleradar.tiendas.domain.port.in.DesactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ReactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
 
@@ -59,15 +65,20 @@ class FundacionControllerIntegrationTest {
     @MockBean
     private DesactivarFundacionUseCase desactivarFundacionUseCase;
 
+    @MockBean
+    private ReactivarFundacionUseCase reactivarFundacionUseCase;
+
     private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
 
     @Test
     @DisplayName("Criterio 1: Dado datos completos y certificado, cuando registro la fundación, entonces queda creada como aliada y recibo 201")
     void debeRegistrarFundacionCompletaRetornando201() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Abrigo Solidario")
                 .descripcion("Recolección de prendas")
                 .direccion("Calle 85 # 15-32, Chapinero")
+                .barrio("Chapinero")
                 .telefono("+57 601 742 8899")
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
@@ -80,9 +91,11 @@ class FundacionControllerIntegrationTest {
 
         FundacionResponseDTO response = FundacionResponseDTO.builder()
                 .id(1L)
+                .nit(request.getNit())
                 .nombre(request.getNombre())
                 .descripcion(request.getDescripcion())
                 .direccion(request.getDireccion())
+                .barrio(request.getBarrio())
                 .telefono(request.getTelefono())
                 .email(request.getEmail())
                 .latitud(request.getLatitud())
@@ -104,6 +117,8 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.nit").value("900215884-1"))
+                .andExpect(jsonPath("$.barrio").value("Chapinero"))
                 .andExpect(jsonPath("$.nombre").value("Fundación Abrigo Solidario"))
                 .andExpect(jsonPath("$.activa").value(true))
                 .andExpect(jsonPath("$.urlCertificadoPersoneriaJuridica").isNotEmpty());
@@ -113,8 +128,10 @@ class FundacionControllerIntegrationTest {
     @DisplayName("Criterio 2: Dado datos incompletos (sin nombre), cuando la registro, entonces recibo 400 y no se crea nada")
     void debeRetornar400CuandoDatosIncompletos() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("") // Nombre vacío
                 .direccion("Calle 85 # 15-32")
+                .barrio("Chapinero")
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
                 .longitud(-74.0531)
@@ -136,8 +153,10 @@ class FundacionControllerIntegrationTest {
     @DisplayName("Criterio 3: Dado una fundación ya registrada (nombre duplicado), cuando la registro otra vez, recibo 409")
     void debeRetornar409CuandoFundacionYaExiste() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Existente")
                 .direccion("Calle 10")
+                .barrio("Chapinero")
                 .email("existente@fundacion.org")
                 .latitud(4.0)
                 .longitud(-74.0)
@@ -155,15 +174,18 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.message").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"));
+                .andExpect(jsonPath("$.message").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
+                .andExpect(jsonPath("$.validationErrors.nombre").exists());
     }
 
     @Test
     @DisplayName("Criterio 4: Dado que no soy administrador, cuando llamo al endpoint, entonces recibo 403")
     void debeRetornar403CuandoNoEsAdministradorStyleRadar() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Intento")
                 .direccion("Calle 10")
+                .barrio("Chapinero")
                 .email("intento@fundacion.org")
                 .latitud(4.0)
                 .longitud(-74.0)
@@ -173,7 +195,7 @@ class FundacionControllerIntegrationTest {
                 .build();
 
         when(useCase.registrar(any(FundacionRequestDTO.class), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para registrar fundaciones aliadas"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
 
         mockMvc.perform(post("/api/v1/admin/fundaciones")
                         .header("X-User-Roles", "ROLE_COMPRADOR")
@@ -181,26 +203,47 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.message").value("Se requiere el rol ROLE_ADMIN_STYLERADAR para registrar fundaciones aliadas"));
+                .andExpect(jsonPath("$.message").value("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
     }
 
     @Test
-    @DisplayName("Debe listar todas las fundaciones retornando HTTP 200 con rol administrador")
-    void debeListarTodasLasFundacionesRetornando200() throws Exception {
-        when(useCase.listarTodas(ADMIN_ROLE)).thenReturn(List.of());
+    @DisplayName("Debe listar todas las fundaciones, obtener por ID y subir certificado PDF retornando 200 / 201")
+    void debeListarObtenerPorIdYSubirCertificado() throws Exception {
+        FundacionResponseDTO dto = FundacionResponseDTO.builder()
+                .id(1L).nit("900215884-1").nombre("Fundación Semillas").barrio("Chapinero").activa(true).build();
+        when(useCase.listarTodas(ADMIN_ROLE)).thenReturn(List.of(dto));
+        when(useCase.obtenerPorId(1L, ADMIN_ROLE)).thenReturn(dto);
+        when(useCase.subirCertificado(any(), any(), anyLong(), any(), eq(ADMIN_ROLE)))
+                .thenReturn(new DocumentoSubidoResponseDTO("https://blob/cert.pdf", "cert.pdf", "application/pdf", 120L, Instant.now()));
 
         mockMvc.perform(get("/api/v1/admin/fundaciones")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/fundaciones/1")
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nit").value("900215884-1"));
+
+        MockMultipartFile certFile = new MockMultipartFile(
+                "archivo", "cert.pdf", MediaType.APPLICATION_PDF_VALUE, "%PDF-1.4".getBytes());
+        mockMvc.perform(multipart("/api/v1/admin/fundaciones/certificados")
+                        .file(certFile)
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.url").value("https://blob/cert.pdf"));
     }
 
     @Test
     @DisplayName("SR-RF-64 API C1: Dado una fundación existente y datos válidos, cuando la edito, entonces retorna 200 y datos actualizados")
     void debeEditarFundacionRetornando200() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Manos Unidas Internacional")
                 .descripcion("Labor social expandida")
                 .direccion("Carrera 15 # 85-30, Bogotá")
+                .barrio("Chapinero")
                 .telefono("+57 311 555 6677")
                 .email("info@manosunidas.org")
                 .latitud(4.6710)
@@ -213,9 +256,11 @@ class FundacionControllerIntegrationTest {
 
         FundacionResponseDTO response = FundacionResponseDTO.builder()
                 .id(1L)
+                .nit(request.getNit())
                 .nombre(request.getNombre())
                 .descripcion(request.getDescripcion())
                 .direccion(request.getDireccion())
+                .barrio(request.getBarrio())
                 .telefono(request.getTelefono())
                 .email(request.getEmail())
                 .latitud(request.getLatitud())
@@ -248,8 +293,10 @@ class FundacionControllerIntegrationTest {
     @DisplayName("SR-RF-64 API C2: Dado una fundación inexistente, cuando la edito, entonces recibo 404")
     void debeRetornar404CuandoFundacionAEditarNoExiste() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Desconocida")
                 .direccion("Calle 1 # 2-3")
+                .barrio("Chapinero")
                 .email("noexiste@fundacion.org")
                 .latitud(4.0)
                 .longitud(-74.0)
@@ -273,8 +320,10 @@ class FundacionControllerIntegrationTest {
     @DisplayName("SR-RF-64 API C3: Dado datos inválidos (nombre vacío), cuando la edito, entonces recibo 400 y no cambia nada")
     void debeRetornar400CuandoDatosDeEdicionSonInvalidos() throws Exception {
         FundacionRequestDTO requestInvalido = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("")
                 .direccion("Calle 10")
+                .barrio("Chapinero")
                 .email("correo@valido.org")
                 .latitud(4.0)
                 .longitud(-74.0)
@@ -296,8 +345,10 @@ class FundacionControllerIntegrationTest {
     @DisplayName("SR-RF-64 API C4: Dado que no soy administrador, cuando llamo al endpoint de edición, entonces recibo 403")
     void debeRetornar403CuandoNoEsAdministradorAlEditar() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Manos")
                 .direccion("Calle 10")
+                .barrio("Chapinero")
                 .email("correo@valido.org")
                 .latitud(4.0)
                 .longitud(-74.0)
@@ -306,7 +357,7 @@ class FundacionControllerIntegrationTest {
                 .build();
 
         when(editarFundacionUseCase.editar(eq(1L), any(FundacionRequestDTO.class), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
 
         mockMvc.perform(put("/api/v1/admin/fundaciones/1")
                         .header("X-User-Roles", "ROLE_COMPRADOR")
@@ -320,8 +371,10 @@ class FundacionControllerIntegrationTest {
     @DisplayName("SR-RF-64 API Negativo: Dado conflicto de duplicidad al editar, recibe 409 Conflict")
     void debeRetornar409CuandoHayConflictoAlEditar() throws Exception {
         FundacionRequestDTO request = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Duplicada")
                 .direccion("Calle 10")
+                .barrio("Chapinero")
                 .email("correo@valido.org")
                 .latitud(4.0)
                 .longitud(-74.0)
@@ -342,16 +395,24 @@ class FundacionControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("SR-RF-65 API C1 y C2: Dado una fundación activa, cuando la desactivo, retorna 200 con activa=false")
-    void debeDesactivarFundacionRetornando200() throws Exception {
-        FundacionResponseDTO response = FundacionResponseDTO.builder()
+    @DisplayName("SR-RF-65 API C1 y C2: Dado una fundación activa, cuando la desactivo y luego la reactivo, retorna 200")
+    void debeDesactivarYReactivarFundacionRetornando200() throws Exception {
+        FundacionResponseDTO responseInactiva = FundacionResponseDTO.builder()
                 .id(3L)
                 .nombre("Fundación Receptora")
                 .activa(false)
                 .build();
+        FundacionResponseDTO responseActiva = FundacionResponseDTO.builder()
+                .id(3L)
+                .nombre("Fundación Receptora")
+                .activa(true)
+                .build();
 
         when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq(ADMIN_ROLE)))
-                .thenReturn(response);
+                .thenReturn(responseInactiva);
+        when(reactivarFundacionUseCase.reactivar(eq(3L), any(), eq(ADMIN_ROLE)))
+                .thenReturn(responseActiva)
+                .thenThrow(new FundacionYaActivaException("La fundación aliada ya se encuentra activa"));
 
         mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
                         .header("X-User-Roles", ADMIN_ROLE))
@@ -359,6 +420,18 @@ class FundacionControllerIntegrationTest {
                 .andExpect(jsonPath("$.id").value(3))
                 .andExpect(jsonPath("$.activa").value(false))
                 .andExpect(jsonPath("$.nombre").value("Fundación Receptora"));
+
+        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/activar")
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(3))
+                .andExpect(jsonPath("$.activa").value(true));
+
+        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/activar")
+                        .header("X-User-Roles", ADMIN_ROLE))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra activa"));
     }
 
     @Test
@@ -391,7 +464,7 @@ class FundacionControllerIntegrationTest {
     @DisplayName("SR-RF-65 API C5: Dado que no soy administrador, cuando llamo a desactivar, recibo 403 Forbidden")
     void debeRetornar403CuandoNoEsAdministradorAlDesactivar() throws Exception {
         when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
 
         mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
                         .header("X-User-Roles", "ROLE_COMPRADOR"))

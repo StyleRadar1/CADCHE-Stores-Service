@@ -23,6 +23,12 @@ public class FundacionResponseDTO {
     @Schema(description = "Nombre institucional de la fundación", example = "Fundación Abrigo Solidario")
     private String nombre;
 
+    @Schema(description = "NIT de la fundación aliada", example = "900215884-1")
+    private String nit;
+
+    @Schema(description = "Barrio de la sede de la fundación", example = "Chapinero")
+    private String barrio;
+
     @Schema(description = "Descripción de la fundación", example = "Recolección de prendas en buen estado para comunidades vulnerables de Bogotá")
     private String descripcion;
 

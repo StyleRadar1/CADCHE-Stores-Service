@@ -17,6 +17,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarNuevaLlegadaRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarUltimasUnidadesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DistintivoPrendaAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
@@ -69,6 +71,38 @@ class MarcarDistintivoPrendaUseCaseTest {
     }
 
     @Test
+    @DisplayName("SR-RF-59 B-1.2 y B-1.4: evaluarUltimasUnidades evalúa stock=umbral, stock=umbral+1, stock=0 y disponible=false")
+    void debeEvaluarUltimasUnidadesConBodyJson() {
+        Almacen almacen = Almacen.builder()
+                .nit(NIT)
+                .umbralUltimasUnidades(3)
+                .diasNuevaLlegada(7)
+                .build();
+
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacen));
+
+        DistintivoPrendaAlmacenResponseDTO enUmbral = useCase.evaluarUltimasUnidades(
+                NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(3, true), 10L);
+        assertThat(enUmbral.ultimasUnidades()).isTrue();
+        assertThat(enUmbral.distintivoActivo()).isEqualTo("ULTIMAS_UNIDADES");
+
+        DistintivoPrendaAlmacenResponseDTO sobreUmbral = useCase.evaluarUltimasUnidades(
+                NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(4, true), 10L);
+        assertThat(sobreUmbral.ultimasUnidades()).isFalse();
+        assertThat(sobreUmbral.distintivoActivo()).isEqualTo("NINGUNO");
+
+        DistintivoPrendaAlmacenResponseDTO agotada = useCase.evaluarUltimasUnidades(
+                NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(0, true), 10L);
+        assertThat(agotada.ultimasUnidades()).isFalse();
+        assertThat(agotada.distintivoActivo()).isEqualTo("NINGUNO");
+
+        DistintivoPrendaAlmacenResponseDTO noDisponible = useCase.evaluarUltimasUnidades(
+                NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(2, false), 10L);
+        assertThat(noDisponible.ultimasUnidades()).isFalse();
+        assertThat(noDisponible.distintivoActivo()).isEqualTo("NINGUNO");
+    }
+
+    @Test
     @DisplayName("SR-RF-60: Debe marcar prenda como NUEVA_PRENDA usando los días configurados y rechazar fecha expirada con 422")
     void debeMarcarNuevaLlegadaSegunPeriodoDelAlmacen() {
         Almacen almacen = Almacen.builder()
@@ -94,6 +128,39 @@ class MarcarDistintivoPrendaUseCaseTest {
     }
 
     @Test
+    @DisplayName("SR-RF-60 B-1.2 y B-1.4: evaluarNuevaLlegada evalúa último día, día + 1, fecha futura y retirada=true")
+    void debeEvaluarNuevaLlegadaConBodyJson() {
+        Almacen almacen = Almacen.builder()
+                .nit(NIT)
+                .umbralUltimasUnidades(3)
+                .diasNuevaLlegada(7)
+                .build();
+
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacen));
+
+        Instant ahora = Instant.now();
+        DistintivoPrendaAlmacenResponseDTO vigente = useCase.evaluarNuevaLlegada(
+                NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(7, ChronoUnit.DAYS).plusSeconds(60), false), 10L);
+        assertThat(vigente.nuevaLlegada()).isTrue();
+        assertThat(vigente.distintivoActivo()).isEqualTo("NUEVA_PRENDA");
+
+        DistintivoPrendaAlmacenResponseDTO expirada = useCase.evaluarNuevaLlegada(
+                NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(8, ChronoUnit.DAYS), false), 10L);
+        assertThat(expirada.nuevaLlegada()).isFalse();
+        assertThat(expirada.distintivoActivo()).isEqualTo("NINGUNO");
+
+        DistintivoPrendaAlmacenResponseDTO retirada = useCase.evaluarNuevaLlegada(
+                NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(1, ChronoUnit.DAYS), true), 10L);
+        assertThat(retirada.nuevaLlegada()).isFalse();
+        assertThat(retirada.distintivoActivo()).isEqualTo("NINGUNO");
+
+        assertThatThrownBy(() -> useCase.evaluarNuevaLlegada(
+                NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.plus(1, ChronoUnit.DAYS), false), 10L))
+                .isInstanceOf(ReglaDeNegocioException.class)
+                .hasMessage("La fecha de publicación no puede ser futura");
+    }
+
+    @Test
     @DisplayName("Debe lanzar 404 cuando el almacén no existe y 403 cuando el usuario no es propietario (BOLA)")
     void debeValidarExistenciaYAutorizacionBola() {
         Almacen almacen = Almacen.builder().nit(NIT).build();
@@ -110,4 +177,3 @@ class MarcarDistintivoPrendaUseCaseTest {
                 .isInstanceOf(AccesoDenegadoAlmacenException.class);
     }
 }
-

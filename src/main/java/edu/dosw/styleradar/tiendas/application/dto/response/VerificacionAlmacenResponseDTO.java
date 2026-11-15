@@ -7,7 +7,7 @@ import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Estado de verificación, personería jurídica (NIT y RUT en PDF) y datos de registro de un almacén aliado (SR-RF-62)")
+@Schema(description = "Estado de verificación, personería jurídica (NIT y RUT en PDF) y datos de registro de un almacén aliado (SR-RF-62 / SR-RF-62-A)")
 public record VerificacionAlmacenResponseDTO(
         @Schema(description = "NIT del almacén", example = "900123456-1")
         String nit,
@@ -53,8 +53,32 @@ public record VerificacionAlmacenResponseDTO(
 
         @Schema(description = "URL del documento RUT adjunto en PDF para validación de personería jurídica (SR-RF-62)",
                 example = "https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut-atelier-urbano.pdf")
-        String urlRutPdf
+        String urlRutPdf,
+
+        @Schema(description = "Identificador o referencia del usuario administrador representante del almacén", example = "10")
+        String representante
 ) {
+    public VerificacionAlmacenResponseDTO(
+            String nit,
+            String nombreComercial,
+            String descripcion,
+            String telefono,
+            String correoContacto,
+            Double latitud,
+            Double longitud,
+            Double reputacion,
+            Set<CategoriaAlmacen> categorias,
+            EstadoVerificacionAlmacen estadoVerificacion,
+            boolean legadoSinVerificacion,
+            Instant fechaDecisionVerificacion,
+            Long administradorDecisionId,
+            String motivoVerificacion,
+            String urlRutPdf) {
+        this(nit, nombreComercial, descripcion, telefono, correoContacto, latitud, longitud, reputacion, categorias,
+                estadoVerificacion, legadoSinVerificacion, fechaDecisionVerificacion, administradorDecisionId,
+                motivoVerificacion, urlRutPdf, null);
+    }
+
     public VerificacionAlmacenResponseDTO(
             String nit,
             String nombreComercial,
@@ -73,6 +97,7 @@ public record VerificacionAlmacenResponseDTO(
         this(nit, nombreComercial, descripcion, telefono, correoContacto, latitud, longitud, reputacion, categorias,
                 estadoVerificacion, legadoSinVerificacion, fechaDecisionVerificacion, administradorDecisionId,
                 motivoVerificacion,
-                "https://styleradarblob.blob.core.windows.net/documentos-rut/" + nit + "/rut.pdf");
+                "https://styleradarblob.blob.core.windows.net/documentos-rut/" + nit + "/rut.pdf",
+                null);
     }
 }

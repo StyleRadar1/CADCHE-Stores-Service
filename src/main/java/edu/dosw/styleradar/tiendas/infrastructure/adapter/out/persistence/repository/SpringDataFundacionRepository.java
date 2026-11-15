@@ -10,6 +10,10 @@ import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity
 @Repository
 public interface SpringDataFundacionRepository extends JpaRepository<FundacionEntity, Long> {
 
+    boolean existsByNitIgnoreCase(String nit);
+
+    boolean existsByNitIgnoreCaseAndIdNot(String nit, Long id);
+
     boolean existsByNombreIgnoreCase(String nombre);
 
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);

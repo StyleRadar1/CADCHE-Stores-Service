@@ -3,7 +3,9 @@ package edu.dosw.styleradar.tiendas.domain.model;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaActivaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import lombok.AllArgsConstructor;
@@ -17,8 +19,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Fundacion {
 
+    private static final Pattern PATRON_NIT = Pattern.compile("^[0-9]{8,12}(-[0-9])?$");
+
     private Long id;
     private String nombre;
+    private String nit;
+    private String barrio;
     private String descripcion;
     private String direccion;
     private String telefono;
@@ -44,35 +50,37 @@ public class Fundacion {
     private Double distanciaKm;
 
     public void validarDatosObligatoriosRegistro() {
-        if (nombre == null || nombre.isBlank()) {
-            throw new ReglaDeNegocioException("El nombre de la fundación es obligatorio");
-        }
-        if (direccion == null || direccion.isBlank()) {
-            throw new ReglaDeNegocioException("La dirección de la sede es obligatoria");
-        }
-        if (email == null || email.isBlank()) {
-            throw new ReglaDeNegocioException("El correo electrónico institucional es obligatorio");
-        }
-        if (latitud == null || latitud < -90.0 || latitud > 90.0) {
-            throw new ReglaDeNegocioException("La latitud geográfica debe ubicarse entre -90.0 y 90.0");
-        }
-        if (longitud == null || longitud < -180.0 || longitud > 180.0) {
-            throw new ReglaDeNegocioException("La longitud geográfica debe ubicarse entre -180.0 y 180.0");
-        }
-        if (categoriasAceptadas == null || categoriasAceptadas.isEmpty()) {
-            throw new ReglaDeNegocioException("Debe seleccionar al menos una categoría de prenda aceptada para donación");
-        }
-        if (representanteId == null) {
-            throw new ReglaDeNegocioException("El identificador del usuario representante es obligatorio");
-        }
+        validarCamposComunes();
         if (urlCertificadoPersoneriaJuridica == null || urlCertificadoPersoneriaJuridica.isBlank()) {
-            throw new ReglaDeNegocioException("El certificado de personería jurídica en PDF es obligatorio para registrar la fundación aliada");
+            throw new ReglaDeNegocioException(
+                    "El certificado de personería jurídica en PDF es obligatorio para registrar la fundación aliada");
         }
     }
 
     public void validarDatosEdicion() {
+        validarCamposComunes();
+    }
+
+    private void validarCamposComunes() {
         if (nombre == null || nombre.isBlank()) {
             throw new ReglaDeNegocioException("El nombre de la fundación es obligatorio");
+        }
+        int lenNombre = nombre.strip().length();
+        if (lenNombre < 4 || lenNombre > 120) {
+            throw new ReglaDeNegocioException("El nombre debe tener entre 4 y 120 caracteres");
+        }
+        if (nit != null) {
+            if (nit.isBlank() || !PATRON_NIT.matcher(nit.strip()).matches()) {
+                throw new ReglaDeNegocioException("El NIT debe tener un formato válido (ej. 900215884-1)");
+            }
+        }
+        if (barrio != null) {
+            if (barrio.isBlank()) {
+                throw new ReglaDeNegocioException("El barrio es obligatorio");
+            }
+            if (barrio.strip().length() > 80) {
+                throw new ReglaDeNegocioException("El barrio no puede superar 80 caracteres");
+            }
         }
         if (direccion == null || direccion.isBlank()) {
             throw new ReglaDeNegocioException("La dirección de la sede es obligatoria");
@@ -101,6 +109,12 @@ public class Fundacion {
         cambios.validarDatosEdicion();
 
         this.nombre = cambios.getNombre().trim();
+        if (cambios.getNit() != null && !cambios.getNit().isBlank()) {
+            this.nit = cambios.getNit().trim();
+        }
+        if (cambios.getBarrio() != null && !cambios.getBarrio().isBlank()) {
+            this.barrio = cambios.getBarrio().trim();
+        }
         this.descripcion = cambios.getDescripcion() != null ? cambios.getDescripcion().trim() : null;
         this.direccion = cambios.getDireccion() != null ? cambios.getDireccion().trim() : null;
         this.telefono = cambios.getTelefono() != null ? cambios.getTelefono().trim() : null;
@@ -124,5 +138,12 @@ public class Fundacion {
             throw new FundacionYaDesactivadaException("La fundación aliada ya se encuentra desactivada");
         }
         this.activa = false;
+    }
+
+    public void reactivar() {
+        if (this.activa) {
+            throw new FundacionYaActivaException("La fundación aliada ya se encuentra activa");
+        }
+        this.activa = true;
     }
 }

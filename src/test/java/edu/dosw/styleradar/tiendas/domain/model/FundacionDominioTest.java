@@ -1,6 +1,7 @@
 package edu.dosw.styleradar.tiendas.domain.model;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,10 +12,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaActivaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 
-@DisplayName("Pruebas de Dominio - Fundación Aliada (SR-RF-63)")
+@DisplayName("Pruebas de Dominio - Fundación Aliada (SR-RF-63 / SR-RF-64 / SR-RF-65)")
 class FundacionDominioTest {
 
     private Fundacion fundacionValida;
@@ -22,9 +24,11 @@ class FundacionDominioTest {
     @BeforeEach
     void setUp() {
         fundacionValida = Fundacion.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Abrigo Solidario")
                 .descripcion("Recolección y entrega de ropa a población vulnerable")
                 .direccion("Calle 85 # 15-32, Chapinero, Bogotá")
+                .barrio("Chapinero")
                 .telefono("+57 601 742 8899")
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
@@ -45,12 +49,16 @@ class FundacionDominioTest {
     }
 
     @Test
-    @DisplayName("Criterio 2: Debe lanzar ReglaDeNegocioException cuando el nombre es nulo o en blanco")
-    void debeFallarCuandoNombreEsInvalido() {
+    @DisplayName("Criterio 2: Debe lanzar ReglaDeNegocioException cuando el nombre o NIT es inválido")
+    void debeFallarCuandoNombreONitEsInvalido() {
         fundacionValida.setNombre(null);
         assertThrows(ReglaDeNegocioException.class, () -> fundacionValida.validarDatosObligatoriosRegistro());
 
-        fundacionValida.setNombre("   ");
+        fundacionValida.setNombre("ABC");
+        assertThrows(ReglaDeNegocioException.class, () -> fundacionValida.validarDatosObligatoriosRegistro());
+
+        fundacionValida.setNombre("Fundación Válida");
+        fundacionValida.setNit("NIT-INVALIDO");
         assertThrows(ReglaDeNegocioException.class, () -> fundacionValida.validarDatosObligatoriosRegistro());
     }
 
@@ -107,11 +115,16 @@ class FundacionDominioTest {
     }
 
     @Test
-    @DisplayName("SR-RF-65 Dominio: Debe marcar la fundación como inactiva (desactivación lógica)")
-    void debeDesactivarFundacion() {
+    @DisplayName("SR-RF-65 Dominio: Debe marcar la fundación como inactiva y permitir reactivarla")
+    void debeDesactivarYReactivarFundacion() {
         assertTrue(fundacionValida.isActiva());
         fundacionValida.desactivar();
         assertFalse(fundacionValida.isActiva());
+
+        fundacionValida.reactivar();
+        assertTrue(fundacionValida.isActiva());
+
+        assertThrows(FundacionYaActivaException.class, () -> fundacionValida.reactivar());
     }
 
     @Test
@@ -122,12 +135,14 @@ class FundacionDominioTest {
     }
 
     @Test
-    @DisplayName("SR-RF-64 Dominio: Debe actualizar los datos editables (representante, teléfono, horarios, políticas)")
+    @DisplayName("SR-RF-64 Dominio: Debe actualizar los datos editables (NIT, barrio, representante, teléfono, horarios, políticas)")
     void debeActualizarDatosEditablesExitosamente() {
         Fundacion cambios = Fundacion.builder()
+                .nit("900333444-2")
                 .nombre("Fundación Abrigo Solidario - Actualizada")
                 .descripcion("Nueva descripción ampliada")
                 .direccion("Carrera 7 # 72-10, Bogotá")
+                .barrio("Rosales")
                 .telefono("+57 310 999 8877")
                 .email("nuevo_contacto@abrigosolidario.org")
                 .latitud(4.6534)
@@ -142,13 +157,15 @@ class FundacionDominioTest {
 
         fundacionValida.actualizarDatosInstitucionales(cambios);
 
-        org.junit.jupiter.api.Assertions.assertEquals("Fundación Abrigo Solidario - Actualizada", fundacionValida.getNombre());
-        org.junit.jupiter.api.Assertions.assertEquals("+57 310 999 8877", fundacionValida.getTelefono());
-        org.junit.jupiter.api.Assertions.assertEquals(99L, fundacionValida.getRepresentanteId());
-        org.junit.jupiter.api.Assertions.assertEquals("Lunes a Viernes 08:00 - 18:00", fundacionValida.getHorarioAtencion());
-        org.junit.jupiter.api.Assertions.assertEquals("Prendas limpias y planchadas", fundacionValida.getPoliticasDonacion());
-        org.junit.jupiter.api.Assertions.assertEquals("Carrera 7 # 72-10, Bogotá", fundacionValida.getDireccion());
-        org.junit.jupiter.api.Assertions.assertEquals("nuevo_contacto@abrigosolidario.org", fundacionValida.getEmail());
+        assertEquals("900333444-2", fundacionValida.getNit());
+        assertEquals("Rosales", fundacionValida.getBarrio());
+        assertEquals("Fundación Abrigo Solidario - Actualizada", fundacionValida.getNombre());
+        assertEquals("+57 310 999 8877", fundacionValida.getTelefono());
+        assertEquals(99L, fundacionValida.getRepresentanteId());
+        assertEquals("Lunes a Viernes 08:00 - 18:00", fundacionValida.getHorarioAtencion());
+        assertEquals("Prendas limpias y planchadas", fundacionValida.getPoliticasDonacion());
+        assertEquals("Carrera 7 # 72-10, Bogotá", fundacionValida.getDireccion());
+        assertEquals("nuevo_contacto@abrigosolidario.org", fundacionValida.getEmail());
     }
 
     @Test

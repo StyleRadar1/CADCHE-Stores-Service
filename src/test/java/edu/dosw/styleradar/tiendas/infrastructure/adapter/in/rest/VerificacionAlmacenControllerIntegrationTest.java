@@ -203,6 +203,7 @@ class VerificacionAlmacenControllerIntegrationTest {
 
         mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", "000000000")
                         .header("X-User-Roles", ADMIN_ROLE)
+                        .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -211,18 +212,40 @@ class VerificacionAlmacenControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Negativo: Debe retornar HTTP 400 cuando el rechazo no tiene motivo")
-    void debeRetornar400CuandoRechazoCareceDeMotivo() throws Exception {
+    @DisplayName("Negativo y B-3.2: Debe retornar HTTP 400 cuando el rechazo no tiene motivo o el motivo tiene menos de 10 caracteres o campos no permitidos")
+    void debeRetornar400CuandoRechazoCareceDeMotivoOMotivoCortoOCampoExtra() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
         request.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
         request.setMotivo("");
 
         mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
+                        .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
+
+        DecisionVerificacionRequestDTO requestCorto = new DecisionVerificacionRequestDTO();
+        requestCorto.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
+        requestCorto.setMotivo("Corto");
+
+        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+                        .header("X-User-Roles", ADMIN_ROLE)
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestCorto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+                        .header("X-User-Roles", ADMIN_ROLE)
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"APROBADO\",\"campoExtra\":\"noPermitido\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Campo no permitido en la decisión de verificación"));
     }
 
     @Test
@@ -243,7 +266,8 @@ class VerificacionAlmacenControllerIntegrationTest {
                 null,
                 null,
                 null,
-                "https://styleradarblob.blob.core.windows.net/documentos-rut/" + NIT + "/rut.pdf"
+                "https://styleradarblob.blob.core.windows.net/documentos-rut/" + NIT + "/rut.pdf",
+                "Usuario #10"
         );
 
         when(useCase.consultarUno(NIT, ADMIN_ROLE)).thenReturn(response);
@@ -253,6 +277,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
                 .andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"))
+                .andExpect(jsonPath("$.representante").value("Usuario #10"))
                 .andExpect(jsonPath("$.urlRutPdf").isNotEmpty());
     }
 

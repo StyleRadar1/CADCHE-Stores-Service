@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,9 +25,19 @@ import lombok.NoArgsConstructor;
 public class FundacionRequestDTO {
 
     @NotBlank(message = "El nombre es obligatorio")
-    @Size(max = 120, message = "El nombre no puede superar 120 caracteres")
+    @Size(min = 4, max = 120, message = "El nombre debe tener entre 4 y 120 caracteres")
     @Schema(description = "Nombre institucional de la fundación", example = "Fundación Abrigo Solidario", requiredMode = Schema.RequiredMode.REQUIRED)
     private String nombre;
+
+    @NotBlank(message = "El NIT es obligatorio")
+    @Pattern(regexp = "^[0-9]{8,12}(-[0-9])?$", message = "El NIT debe tener un formato válido (ej. 900215884-1)")
+    @Schema(description = "NIT único de la fundación aliada", example = "900215884-1", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String nit;
+
+    @NotBlank(message = "El barrio es obligatorio")
+    @Size(max = 80, message = "El barrio no puede superar 80 caracteres")
+    @Schema(description = "Barrio de la sede principal de la fundación", example = "Chapinero", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String barrio;
 
     @Size(max = 500, message = "La descripción no puede superar 500 caracteres")
     @Schema(description = "Descripción de la labor social y alcance de la fundación", example = "Recolección de prendas en buen estado para comunidades vulnerables de Bogotá")

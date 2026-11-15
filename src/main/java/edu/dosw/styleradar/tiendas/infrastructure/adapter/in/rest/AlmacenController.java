@@ -12,16 +12,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaAlmacenRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarNuevaLlegadaRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarUltimasUnidadesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.RegistrarAlmacenRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.ReordenarFotografiasRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.AlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.ConfiguracionCatalogoAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DistintivoPrendaAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FotografiaTiendaResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
@@ -58,10 +64,48 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
+    public ResponseEntity<VerificacionAlmacenResponseDTO> obtenerMiAlmacen(
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
+        Long resolvedId = resolveUserId(usuarioId);
+        return ResponseEntity.ok(registrarAlmacenUseCase.obtenerMiAlmacen(resolvedId));
+    }
+
+    @Override
+    public ResponseEntity<DocumentoSubidoResponseDTO> subirDocumentoRut(
+            @RequestPart("archivo") MultipartFile archivo,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new ReglaDeNegocioException("El RUT debe ser un archivo PDF de máximo 5 MB");
+        }
+        try {
+            Long resolvedId = resolveUserId(usuarioId);
+            String rol = resolveRole(rolesHeader, roleHeader);
+            DocumentoSubidoResponseDTO response = registrarAlmacenUseCase.subirDocumentoRut(
+                    archivo.getOriginalFilename(),
+                    archivo.getContentType(),
+                    archivo.getSize(),
+                    archivo.getInputStream(),
+                    resolvedId,
+                    rol);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (java.io.IOException ex) {
+            throw new ReglaDeNegocioException("Error al leer el archivo PDF del RUT: " + ex.getMessage());
+        }
+    }
+
+    @Override
     public ResponseEntity<VerificacionAlmacenResponseDTO> registrarAlmacen(
             @Valid @RequestBody RegistrarAlmacenRequestDTO request,
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
-        VerificacionAlmacenResponseDTO response = registrarAlmacenUseCase.registrarAlmacen(request, usuarioId);
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        Long resolvedId = resolveUserId(usuarioId);
+        String rol = resolveRole(rolesHeader, roleHeader);
+        VerificacionAlmacenResponseDTO response = (rol != null && !rol.isBlank())
+                ? registrarAlmacenUseCase.registrarAlmacen(request, resolvedId, rol)
+                : registrarAlmacenUseCase.registrarAlmacen(request, resolvedId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -81,7 +125,8 @@ public class AlmacenController implements AlmacenApi {
             String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ConfiguracionCatalogoAlmacenRequestDTO request) {
-        ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarCatalogo(nit, request, usuarioId);
+        Long resolvedId = resolveUserId(usuarioId);
+        ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarCatalogo(nit, request, resolvedId);
         return ResponseEntity.ok(response);
     }
 
@@ -90,7 +135,9 @@ public class AlmacenController implements AlmacenApi {
             String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarUmbralRequestDTO request) {
-        ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarUmbral(nit, request.getUmbralUltimasUnidades(), usuarioId);
+        Long resolvedId = resolveUserId(usuarioId);
+        ConfiguracionCatalogoAlmacenResponseDTO response = configurarUmbralUseCase.configurarUmbral(
+                nit, request.getUmbralUltimasUnidades(), resolvedId);
         return ResponseEntity.ok(response);
     }
 
@@ -105,7 +152,9 @@ public class AlmacenController implements AlmacenApi {
             String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarPeriodoRequestDTO request) {
-        ConfiguracionCatalogoAlmacenResponseDTO response = configurarPeriodoUseCase.configurarPeriodo(nit, request.diasNuevaLlegada(), usuarioId);
+        Long resolvedId = resolveUserId(usuarioId);
+        ConfiguracionCatalogoAlmacenResponseDTO response = configurarPeriodoUseCase.configurarPeriodo(
+                nit, request.diasNuevaLlegada(), resolvedId);
         return ResponseEntity.ok(response);
     }
 
@@ -120,9 +169,12 @@ public class AlmacenController implements AlmacenApi {
             String nit,
             Long itemId,
             @RequestParam(value = "stockActual", required = false) Integer stockActual,
+            @Valid @RequestBody(required = false) EvaluarUltimasUnidadesRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
-        DistintivoPrendaAlmacenResponseDTO response = marcarDistintivoUseCase.marcarUltimasUnidades(
-                nit, itemId, stockActual, usuarioId);
+        Long resolvedId = resolveUserId(usuarioId);
+        DistintivoPrendaAlmacenResponseDTO response = (body != null && body.getStockActual() != null)
+                ? marcarDistintivoUseCase.evaluarUltimasUnidades(nit, itemId, body, resolvedId)
+                : marcarDistintivoUseCase.marcarUltimasUnidades(nit, itemId, stockActual, resolvedId);
         return ResponseEntity.ok(response);
     }
 
@@ -131,9 +183,12 @@ public class AlmacenController implements AlmacenApi {
             String nit,
             Long itemId,
             @RequestParam(value = "fechaIngreso", required = false) Instant fechaIngreso,
+            @Valid @RequestBody(required = false) EvaluarNuevaLlegadaRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
-        DistintivoPrendaAlmacenResponseDTO response = marcarDistintivoUseCase.marcarNuevaLlegada(
-                nit, itemId, fechaIngreso, usuarioId);
+        Long resolvedId = resolveUserId(usuarioId);
+        DistintivoPrendaAlmacenResponseDTO response = (body != null && body.getFechaPublicacion() != null)
+                ? marcarDistintivoUseCase.evaluarNuevaLlegada(nit, itemId, body, resolvedId)
+                : marcarDistintivoUseCase.marcarNuevaLlegada(nit, itemId, fechaIngreso, resolvedId);
         return ResponseEntity.ok(response);
     }
 
@@ -146,13 +201,14 @@ public class AlmacenController implements AlmacenApi {
             throw new ArchivoNoEsImagenException("Se requiere adjuntar un archivo de imagen válido");
         }
         try {
+            Long resolvedId = resolveUserId(usuarioId);
             FotografiaTiendaResponseDTO response = registrarFotografiaUseCase.registrarFotografia(
                     nit,
                     archivo.getOriginalFilename(),
                     archivo.getContentType(),
                     archivo.getSize(),
                     archivo.getInputStream(),
-                    usuarioId);
+                    resolvedId);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (java.io.IOException ex) {
             throw new ReglaDeNegocioException("Error al leer el contenido del archivo de imagen: " + ex.getMessage());
@@ -165,11 +221,54 @@ public class AlmacenController implements AlmacenApi {
     }
 
     @Override
+    public ResponseEntity<List<FotografiaTiendaResponseDTO>> reordenarFotografias(
+            String nit,
+            @Valid @RequestBody ReordenarFotografiasRequestDTO request,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
+        Long resolvedId = resolveUserId(usuarioId);
+        List<FotografiaTiendaResponseDTO> response = registrarFotografiaUseCase.reordenarFotografias(
+                nit, request.getFotoIds(), resolvedId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<Void> eliminarFotografia(
             String nit,
             Long fotoId,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
-        registrarFotografiaUseCase.eliminarFotografia(nit, fotoId, usuarioId);
+        Long resolvedId = resolveUserId(usuarioId);
+        registrarFotografiaUseCase.eliminarFotografia(nit, fotoId, resolvedId);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long resolveUserId(Long headerUserId) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes sra) {
+            Object attr = sra.getRequest().getAttribute("authenticatedUserId");
+            if (attr instanceof Long id) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    private String resolveRole(String rolesHeader, String roleHeader) {
+        if (rolesHeader != null && !rolesHeader.isBlank()) {
+            return rolesHeader;
+        }
+        if (roleHeader != null && !roleHeader.isBlank()) {
+            return roleHeader;
+        }
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes sra) {
+            Object attr = sra.getRequest().getAttribute("authenticatedRoles");
+            if (attr != null && !attr.toString().isBlank()) {
+                return attr.toString();
+            }
+        }
+        return null;
     }
 }

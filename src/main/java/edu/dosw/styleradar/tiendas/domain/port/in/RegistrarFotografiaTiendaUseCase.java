@@ -18,5 +18,8 @@ public interface RegistrarFotografiaTiendaUseCase {
     List<FotografiaTiendaResponseDTO> listarFotografias(String nit);
 
     void eliminarFotografia(String nit, Long fotoId, Long usuarioId);
-}
 
+    default List<FotografiaTiendaResponseDTO> reordenarFotografias(String nit, List<Long> fotoIds, Long usuarioId) {
+        throw new UnsupportedOperationException("No implementado");
+    }
+}

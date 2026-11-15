@@ -37,6 +37,16 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
     }
 
     @Override
+    public Optional<Almacen> findByAdministradorUsuarioId(Long usuarioId) {
+        if (usuarioId == null) {
+            return Optional.empty();
+        }
+        return administradorRepository.findFirstByUsuarioIdOrderByFechaAsignacionAsc(usuarioId)
+                .flatMap(vinculo -> almacenRepository.findByNit(vinculo.getAlmacenNit()))
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Almacen save(Almacen almacen) {
         AlmacenEntity entity = mapper.toEntity(almacen);
         AlmacenEntity saved = almacenRepository.save(entity);
@@ -49,9 +59,17 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
     }
 
     @Override
+    public boolean existeAlmacenParaUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            return false;
+        }
+        return administradorRepository.existsByUsuarioId(usuarioId);
+    }
+
+    @Override
     public boolean esAdministradorDeAlmacen(String nit, Long usuarioId) {
         if (usuarioId == null) {
-            return true;
+            return false;
         }
         return administradorRepository.existsByAlmacenNitAndUsuarioId(nit, usuarioId);
     }

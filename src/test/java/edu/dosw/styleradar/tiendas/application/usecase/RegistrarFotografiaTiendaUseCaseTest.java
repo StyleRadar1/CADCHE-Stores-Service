@@ -34,6 +34,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
+import edu.dosw.styleradar.tiendas.domain.exception.TamanoArchivoExcedidoException;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
@@ -160,16 +161,19 @@ class RegistrarFotografiaTiendaUseCaseTest {
     }
 
     @Test
-    @DisplayName("Criterio 3: Dado un archivo que no es imagen (ej. pdf o txt), cuando lo cargo, recibo ArchivoNoEsImagenException (400)")
-    void debeLanzar400CuandoArchivoNoEsImagen() {
+    @DisplayName("Criterio 3 y B-2.3 / B-2.4: Debe rechazar archivos que no son JPEG/PNG/WebP (400) o que superan 6 MB (413)")
+    void debeLanzar400CuandoArchivoNoEsImagenY413CuandoSupera6MB() {
         InputStream contenidoPdf = new ByteArrayInputStream("fake-pdf".getBytes());
-
         assertThrows(ArchivoNoEsImagenException.class, () ->
                 useCase.registrarFotografia(NIT, "documento.pdf", "application/pdf", 1024, contenidoPdf, ADMIN_ID));
 
-        InputStream contenidoTxt = new ByteArrayInputStream("fake-text".getBytes());
+        InputStream contenidoGif = new ByteArrayInputStream("fake-gif".getBytes());
         assertThrows(ArchivoNoEsImagenException.class, () ->
-                useCase.registrarFotografia(NIT, "notas.txt", "text/plain", 500, contenidoTxt, ADMIN_ID));
+                useCase.registrarFotografia(NIT, "animacion.gif", "image/gif", 1024, contenidoGif, ADMIN_ID));
+
+        InputStream contenidoGrande = new ByteArrayInputStream("fake-bytes".getBytes());
+        assertThrows(TamanoArchivoExcedidoException.class, () ->
+                useCase.registrarFotografia(NIT, "pesada.jpg", "image/jpeg", 7L * 1024L * 1024L, contenidoGrande, ADMIN_ID));
 
         verify(almacenamientoBlobPort, never()).subirArchivo(any(), any(), any(), any(), anyLong());
     }
@@ -218,8 +222,8 @@ class RegistrarFotografiaTiendaUseCaseTest {
     }
 
     @Test
-    @DisplayName("Eliminar: Elimina una fotografía y reordena la galería")
-    void debeEliminarFotografia() {
+    @DisplayName("Eliminar y Reordenar: Elimina fotografía en blob/BD y permite reordenar la galería")
+    void debeEliminarYReordenarFotografias() {
         FotografiaTienda f1 = FotografiaTienda.builder().id(10L).almacenNit(NIT).url("https://blob/1.jpg").orden(1).portada(true).build();
         FotografiaTienda f2 = FotografiaTienda.builder().id(20L).almacenNit(NIT).url("https://blob/2.jpg").orden(2).portada(false).build();
 
@@ -229,11 +233,16 @@ class RegistrarFotografiaTiendaUseCaseTest {
         when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenValido));
         when(repositoryPort.findFotosByAlmacenNit(NIT)).thenReturn(List.of(f1, f2));
 
-        useCase.eliminarFotografia(NIT, 10L, ADMIN_ID);
-
-        verify(repositoryPort).deleteFoto(10L, NIT);
-        verify(repositoryPort).save(almacenValido);
+        List<FotografiaTiendaResponseDTO> reordenadas = useCase.reordenarFotografias(NIT, List.of(20L, 10L), ADMIN_ID);
+        assertEquals(2, reordenadas.size());
+        assertEquals(20L, reordenadas.get(0).id());
+        assertTrue(reordenadas.get(0).portada());
         assertEquals("https://blob/2.jpg", almacenValido.getFotoPortadaUrl());
+
+        useCase.eliminarFotografia(NIT, 20L, ADMIN_ID);
+
+        verify(almacenamientoBlobPort).eliminarArchivo("https://blob/2.jpg");
+        verify(repositoryPort).deleteFoto(20L, NIT);
+        assertEquals("https://blob/1.jpg", almacenValido.getFotoPortadaUrl());
     }
 }
-

@@ -1,6 +1,8 @@
 package edu.dosw.styleradar.tiendas.application.usecase;
 
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +30,7 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
     @Override
     @Transactional
     public FundacionResponseDTO editar(Long id, FundacionRequestDTO request, String rolUsuario) {
-        adminValidator.validarEsAdministradorStyleRadar(rolUsuario);
+        adminValidator.validarEsAdministradorParaFundaciones(rolUsuario);
 
         if (id == null) {
             throw new ReglaDeNegocioException("El identificador de la fundación es obligatorio");
@@ -40,22 +42,35 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
         Fundacion existente = repositoryPort.findById(id)
                 .orElseThrow(() -> new FundacionNoEncontradaException("No existe una fundación aliada con ID: " + id));
 
+        String nitNormalizado = request.getNit() != null ? request.getNit().strip() : null;
+        if (nitNormalizado != null && repositoryPort.existsByNitIgnoreCaseAndIdNot(nitNormalizado, id)) {
+            throw new FundacionYaRegistradaException(
+                    "Ya existe otra fundación aliada registrada con el NIT: " + nitNormalizado,
+                    Map.of("nit", "Ya existe otra fundación aliada registrada con el NIT: " + nitNormalizado));
+        }
+
         String nombreNormalizado = request.getNombre() != null ? request.getNombre().strip() : null;
         if (nombreNormalizado != null && repositoryPort.existsByNombreIgnoreCaseAndIdNot(nombreNormalizado, id)) {
-            throw new FundacionYaRegistradaException("Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado);
+            throw new FundacionYaRegistradaException(
+                    "Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado,
+                    Map.of("nombre", "Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado));
         }
 
         if (request.getRepresentanteId() != null && repositoryPort.existsByRepresentanteIdAndIdNot(request.getRepresentanteId(), id)) {
-            throw new FundacionYaRegistradaException("El usuario con ID " + request.getRepresentanteId()
-                    + " ya se encuentra asignado como representante de otra fundación aliada");
+            throw new FundacionYaRegistradaException(
+                    "El usuario con ID " + request.getRepresentanteId()
+                            + " ya se encuentra asignado como representante de otra fundación aliada",
+                    Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
         Fundacion cambios = Fundacion.builder()
+                .nit(nitNormalizado)
                 .nombre(nombreNormalizado)
                 .descripcion(request.getDescripcion() != null ? request.getDescripcion().strip() : null)
                 .direccion(request.getDireccion() != null ? request.getDireccion().strip() : null)
+                .barrio(request.getBarrio() != null ? request.getBarrio().strip() : null)
                 .telefono(request.getTelefono() != null ? request.getTelefono().strip() : null)
-                .email(request.getEmail() != null ? request.getEmail().strip().toLowerCase() : null)
+                .email(request.getEmail() != null ? request.getEmail().strip().toLowerCase(Locale.ROOT) : null)
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .categoriasAceptadas(request.getCategoriasAceptadas() != null ? new HashSet<>(request.getCategoriasAceptadas()) : new HashSet<>())
@@ -78,9 +93,11 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
     private FundacionResponseDTO mapearResponse(Fundacion f) {
         return FundacionResponseDTO.builder()
                 .id(f.getId())
+                .nit(f.getNit())
                 .nombre(f.getNombre())
                 .descripcion(f.getDescripcion())
                 .direccion(f.getDireccion())
+                .barrio(f.getBarrio())
                 .telefono(f.getTelefono())
                 .email(f.getEmail())
                 .latitud(f.getLatitud())
@@ -96,4 +113,3 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
                 .build();
     }
 }
-

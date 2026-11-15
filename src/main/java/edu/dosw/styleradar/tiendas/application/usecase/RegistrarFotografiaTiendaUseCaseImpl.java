@@ -16,6 +16,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException
 import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
+import edu.dosw.styleradar.tiendas.domain.exception.TamanoArchivoExcedidoException;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFotografiaTiendaUseCase;
@@ -30,11 +31,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografiaTiendaUseCase {
 
+    public static final long MAX_BYTES_IMAGEN = 6L * 1024L * 1024L;
+
     private static final Set<String> MIMES_IMAGEN_PERMITIDOS = Set.of(
-            "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif");
+            "image/jpeg", "image/jpg", "image/png", "image/webp");
 
     private static final Set<String> EXTENSIONES_IMAGEN_PERMITIDAS = Set.of(
-            "jpg", "jpeg", "png", "webp", "gif");
+            "jpg", "jpeg", "png", "webp");
 
     private final AlmacenRepositoryPort repositoryPort;
     private final AlmacenamientoBlobPort almacenamientoBlobPort;
@@ -78,7 +81,6 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
         FotografiaTienda fotoDominio = almacen.agregarFotografia(urlBlob, Instant.now());
         FotografiaTienda fotoGuardada = repositoryPort.saveFoto(fotoDominio);
 
-        // Guardar la portada actualizada en la entidad almacenes
         repositoryPort.save(almacen);
 
         log.info("Fotografía ID={} registrada exitosamente para almacén NIT={} (portada={})",
@@ -107,12 +109,20 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
                 .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén con el NIT: " + nit));
 
         List<FotografiaTienda> fotosExistentes = new ArrayList<>(repositoryPort.findFotosByAlmacenNit(nit));
-        almacen.setFotos(fotosExistentes);
+        String urlEliminada = fotosExistentes.stream()
+                .filter(f -> fotoId != null && fotoId.equals(f.getId()))
+                .map(FotografiaTienda::getUrl)
+                .findFirst()
+                .orElse(null);
 
+        almacen.setFotos(fotosExistentes);
         almacen.eliminarFotografia(fotoId);
+
+        if (urlEliminada != null) {
+            almacenamientoBlobPort.eliminarArchivo(urlEliminada);
+        }
         repositoryPort.deleteFoto(fotoId, nit);
 
-        // Actualizar posiciones y portada
         for (FotografiaTienda foto : almacen.getFotos()) {
             repositoryPort.saveFoto(foto);
         }
@@ -120,9 +130,40 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
         log.info("Fotografía ID={} eliminada del almacén NIT={}", fotoId, nit);
     }
 
+    @Override
+    @Transactional
+    public List<FotografiaTiendaResponseDTO> reordenarFotografias(String nit, List<Long> fotoIds, Long usuarioId) {
+        if (nit == null || nit.isBlank()) {
+            throw new ReglaDeNegocioException("El NIT del almacén es obligatorio");
+        }
+
+        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
+
+        Almacen almacen = repositoryPort.findByNit(nit)
+                .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén con el NIT: " + nit));
+
+        List<FotografiaTienda> fotosExistentes = new ArrayList<>(repositoryPort.findFotosByAlmacenNit(nit));
+        almacen.setFotos(fotosExistentes);
+
+        almacen.reordenarFotografias(fotoIds);
+
+        List<FotografiaTiendaResponseDTO> resultado = new ArrayList<>();
+        for (FotografiaTienda foto : almacen.getFotos()) {
+            FotografiaTienda guardada = repositoryPort.saveFoto(foto);
+            resultado.add(mapearDTO(guardada != null ? guardada : foto));
+        }
+        repositoryPort.save(almacen);
+
+        log.info("Galería de fotografías reordenada exitosamente para almacén NIT={}", nit);
+        return resultado;
+    }
+
     private void validarArchivoImagen(String nombreOriginal, String contentType, long tamano) {
         if (tamano <= 0) {
             throw new ArchivoNoEsImagenException("El archivo de imagen no puede estar vacío");
+        }
+        if (tamano > MAX_BYTES_IMAGEN) {
+            throw new TamanoArchivoExcedidoException("La imagen supera el tamaño máximo de 6 MB");
         }
 
         boolean mimeValido = contentType != null && MIMES_IMAGEN_PERMITIDOS.contains(contentType.toLowerCase(Locale.ROOT));
@@ -152,4 +193,3 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
                 foto.getFechaRegistro());
     }
 }
-

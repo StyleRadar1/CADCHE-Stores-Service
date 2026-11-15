@@ -19,12 +19,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaAlmacenRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarNuevaLlegadaRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarUltimasUnidadesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.RegistrarAlmacenRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.ReordenarFotografiasRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.AlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.ConfiguracionCatalogoAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DistintivoPrendaAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FotografiaTiendaResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
@@ -32,7 +38,6 @@ import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenR
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -40,448 +45,167 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "Almacenes aliados", description = "Registro de almacenes con RUT en PDF (SR-RF-62), consulta pública, configuración y marcación de distintivos de catálogo (SR-RF-59, SR-RF-60) y fotografías de la tienda física (SR-RF-74)")
+@Tag(name = "Almacenes aliados", description = "Registro de almacenes con RUT en PDF (SR-RF-62-A / SR-RF-62), consulta de mi almacén, configuración y evaluación de distintivos de catálogo (SR-RF-59, SR-RF-60) y fotografías de la tienda física (SR-RF-74)")
 public interface AlmacenApi {
 
     @Operation(
             summary = "Consultar almacenes aliados verificados",
-            description = "Público. Retorna de forma paginada los almacenes con estado de verificación APROBADO y coordenadas válidas. "
-                    + "Permite filtrar opcionalmente por categoría comercial. Orden nombreComercial ASC, nit ASC.",
+            description = "Público. Retorna de forma paginada los almacenes con estado de verificación APROBADO.",
             security = {})
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Página de almacenes consultada exitosamente"),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Categoría o paginación inválida",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error inesperado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "400", description = "Categoría o paginación inválida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping
     ResponseEntity<PageResponseDTO<AlmacenResponseDTO>> consultar(
             @Valid @ParameterObject @ModelAttribute ConsultaAlmacenRequestDTO request);
 
     @Operation(
-            summary = "Registrar solicitud de vinculación de almacén aliado con NIT y RUT en PDF (SR-RF-62)",
-            description = "ROLE_ADMIN_ALMACEN o Público en proceso de vinculación. Registra la información comercial del almacén, NIT y URL del RUT adjunto en PDF "
-                    + "en estado PENDIENTE para posterior revisión y aprobación por el Administrador StyleRadar (SR-RF-62).",
-            security = {@SecurityRequirement(name = "bearerAuth")},
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = RegistrarAlmacenRequestDTO.class),
-                            examples = @ExampleObject(
-                                    name = "SolicitudVinculacionAlmacen",
-                                    value = "{\"nit\":\"900123456-1\",\"nombreComercial\":\"Atelier Urbano Chapinero\",\"descripcion\":\"Moda independiente y prendas urbanas en Chapinero\",\"telefono\":\"+57 601 312 4455\",\"correoContacto\":\"contacto@atelierurbano.co\",\"latitud\":4.6533,\"longitud\":-74.0602,\"categorias\":[\"CASUAL\",\"VINTAGE\"],\"urlRutPdf\":\"https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut-atelier-urbano.pdf\"}"))))
+            summary = "Consultar mi almacén asociado al usuario autenticado (SR-RF-59 / SR-RF-62-A)",
+            description = "ROLE_ADMIN_ALMACEN / TIENDA. Resuelve y retorna el almacén administrado por el usuario autenticado.",
+            security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Solicitud de vinculación del almacén registrada en estado PENDIENTE de verificación",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = VerificacionAlmacenResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Datos comerciales, NIT o URL del RUT inválidos",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "El NIT indicado ya se encuentra registrado en la plataforma",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "200", description = "Almacén del usuario autenticado consultado exitosamente"),
+            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "El usuario no administra ningún almacén", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @GetMapping("/mi-almacen")
+    ResponseEntity<VerificacionAlmacenResponseDTO> obtenerMiAlmacen(
+            @Parameter(description = "ID del usuario autenticado", example = "10")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
+
+    @Operation(
+            summary = "Subir documento RUT en PDF previo o asociado al registro de almacén (SR-RF-62-A)",
+            description = "ROLE_ADMIN_ALMACEN / TIENDA. Recibe un archivo PDF de máximo 5 MB, lo almacena en el repositorio de objetos y devuelve su URL pública.",
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Documento RUT en PDF almacenado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Archivo ausente, no es PDF o supera 5 MB", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Cuenta sin rol de tienda", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @PostMapping(value = "/documentos/rut", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ResponseEntity<DocumentoSubidoResponseDTO> subirDocumentoRut(
+            @Parameter(description = "Archivo PDF del RUT (máximo 5 MB)") @RequestPart("archivo") MultipartFile archivo,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
+
+    @Operation(
+            summary = "Registrar solicitud de vinculación de almacén aliado con NIT y RUT en PDF (SR-RF-62-A / SR-RF-62)",
+            description = "ROLE_ADMIN_ALMACEN / TIENDA. Registra la información comercial del almacén, NIT y URL del RUT adjunto en PDF en estado PENDIENTE.",
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Solicitud de vinculación registrada en estado PENDIENTE"),
+            @ApiResponse(responseCode = "400", description = "Datos comerciales, NIT o URL del RUT inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Solo una cuenta con rol de tienda puede registrar un almacén", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "El NIT ya está registrado o el usuario ya administra un almacén", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PostMapping
     ResponseEntity<VerificacionAlmacenResponseDTO> registrarAlmacen(
             @Valid @RequestBody RegistrarAlmacenRequestDTO request,
-            @Parameter(description = "ID del usuario autenticado (opcional para vinculación de administrador del almacén)", example = "10")
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
-    @Operation(
-            summary = "Consultar detalle de un almacén aliado por NIT",
-            description = "Público. Retorna la información comercial básica del almacén verificado identificado por su NIT.",
-            security = {})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Detalle del almacén consultado exitosamente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AlmacenResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén inexistente o no aprobado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
+    @Operation(summary = "Consultar detalle de un almacén aliado por NIT", security = {})
     @GetMapping("/{nit}")
     ResponseEntity<AlmacenResponseDTO> obtenerPorNit(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
-    @Operation(
-            summary = "Consultar configuración de catálogo y umbrales (SR-RF-59 / SR-RF-60)",
-            description = "Consulta la configuración vigente del almacén. Si el almacén no cuenta con un umbral propio configurado, aplica y retorna automáticamente el valor por defecto de 3 unidades (SR-RF-59).",
-            security = {})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Configuración del almacén consultada exitosamente",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class),
-                            examples = @ExampleObject(
-                                    name = "ConfiguracionConsultada",
-                                    value = "{\"nit\":\"900123456-1\",\"umbralUltimasUnidades\":3,\"diasNuevaLlegada\":7,\"fechaActualizacion\":\"2026-11-03T01:40:00Z\"}"))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
+    @Operation(summary = "Consultar configuración de catálogo y umbrales (SR-RF-59 / SR-RF-60)", security = {})
     @GetMapping("/{nit}/configuracion-catalogo")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
     @Operation(
             summary = "Configurar umbrales de últimas unidades y días de nueva llegada (SR-RF-59 / SR-RF-60)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Configura el umbral personalizado de stock bajo para marcar prendas como 'Últimas unidades' "
-                    + "(por defecto <= 3 unidades, SR-RF-59) y la ventana temporal en días para marcar publicaciones recientes como 'Nueva llegada' (por defecto 7 días, SR-RF-60).",
-            security = {@SecurityRequirement(name = "bearerAuth")},
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ConfiguracionCatalogoAlmacenRequestDTO.class),
-                            examples = @ExampleObject(
-                                    name = "ConfiguracionDistintivos",
-                                    value = "{\"umbralUltimasUnidades\":3,\"diasNuevaLlegada\":7}"))))
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Configuración del almacén actualizada correctamente",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class),
-                            examples = @ExampleObject(
-                                    name = "ConfiguracionActualizada",
-                                    value = "{\"nit\":\"900123456-1\",\"umbralUltimasUnidades\":3,\"diasNuevaLlegada\":7,\"fechaActualizacion\":\"2026-11-03T01:40:00Z\"}"))),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Umbral o ventana de días fuera del rango permitido (umbral negativo)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "JWT ausente, inválido o expirado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El usuario autenticado no tiene rol ADMIN_ALMACEN o no está asociado al NIT indicado (prevención BOLA/IDOR)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
+            security = {@SecurityRequirement(name = "bearerAuth")})
     @PutMapping("/{nit}/configuracion-catalogo")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> configurarCatalogo(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "ID del usuario autenticado (opcional vía gateway para BOLA/IDOR)", example = "10") @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @PathVariable String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ConfiguracionCatalogoAlmacenRequestDTO request);
 
     @Operation(
             summary = "Configurar exclusivamente el umbral de últimas unidades (SR-RF-59)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Configura el umbral de unidades para identificar una prenda como 'Últimas unidades' (por defecto <= 3).",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Umbral actualizado exitosamente para el almacén",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Umbral negativo o fuera de rango permitido",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El usuario no administra el almacén especificado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén no encontrado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
     @PutMapping("/{nit}/umbral-ultimas-unidades")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarUmbralUltimasUnidades(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "ID del usuario autenticado", example = "10") @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @Valid @RequestBody edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO request);
+            @PathVariable String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Valid @RequestBody ActualizarUmbralRequestDTO request);
 
-    @Operation(
-            summary = "Consultar el umbral de últimas unidades (SR-RF-59)",
-            description = "Público o interno para ms-inventario/ms-catalogo. Consulta el umbral configurado. Si no existe configuración previa, retorna el valor por defecto de 3.",
-            security = {})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Umbral consultado exitosamente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén no encontrado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
+    @Operation(summary = "Consultar el umbral de últimas unidades (SR-RF-59)", security = {})
     @GetMapping("/{nit}/umbral-ultimas-unidades")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
+            @PathVariable String nit);
 
     @Operation(
             summary = "Configurar exclusivamente los días de nueva llegada (SR-RF-60)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Configura la ventana temporal en días durante los cuales una prenda recién creada es marcada como 'Nueva llegada' (por defecto 7 días).",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Periodo de nueva llegada actualizado exitosamente para el almacén",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Periodo inválido (0 días o menos)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El usuario no administra el almacén especificado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén no encontrado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
     @PutMapping("/{nit}/dias-nueva-llegada")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarDiasNuevaLlegada(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "ID del usuario autenticado", example = "10") @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @Valid @RequestBody edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO request);
+            @PathVariable String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Valid @RequestBody ActualizarPeriodoRequestDTO request);
 
-    @Operation(
-            summary = "Consultar el periodo de días de nueva llegada (SR-RF-60)",
-            description = "Público o interno para ms-inventario/ms-catalogo. Consulta el periodo configurado. Si no existe configuración previa, retorna el valor por defecto de 7 días.",
-            security = {})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Periodo consultado exitosamente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ConfiguracionCatalogoAlmacenResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén no encontrado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
+    @Operation(summary = "Consultar el periodo de días de nueva llegada (SR-RF-60)", security = {})
     @GetMapping("/{nit}/dias-nueva-llegada")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
+            @PathVariable String nit);
 
     @Operation(
-            summary = "Marcar prenda como últimas unidades según el umbral del almacén (SR-RF-59)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Identifica y marca una prenda del almacén como 'Últimas unidades' (ULTIMAS_UNIDADES) "
-                    + "cuando su inventario alcanza el umbral personalizado definido para el almacén (por defecto <= 3 unidades).",
+            summary = "Evaluar y marcar prenda como últimas unidades según el umbral del almacén (SR-RF-59)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Prenda marcada como últimas unidades según el umbral del almacén",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = DistintivoPrendaAlmacenResponseDTO.class),
-                            examples = @ExampleObject(
-                                    name = "PrendaUltimasUnidades",
-                                    value = "{\"nit\":\"900123456-1\",\"itemId\":104,\"ultimasUnidades\":true,\"umbralUltimasUnidades\":3,\"nuevaLlegada\":false,\"diasNuevaLlegada\":7,\"distintivoActivo\":\"ULTIMAS_UNIDADES\",\"fechaActualizacion\":\"2026-11-03T01:45:00Z\"}"))),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "JWT ausente, inválido o expirado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El administrador autenticado no administra el almacén del NIT indicado (prevención BOLA/IDOR)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén o prenda inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "422",
-                    description = "El inventario actual de la prenda supera el umbral de últimas unidades configurado para el almacén",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
     @PatchMapping("/{nit}/prendas/{itemId}/ultimas-unidades")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarUltimasUnidades(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador de la prenda o ítem de catálogo", example = "104") @PathVariable Long itemId,
-            @Parameter(description = "Stock actual de la prenda para evaluar contra el umbral del almacén", example = "2")
+            @PathVariable String nit,
+            @PathVariable Long itemId,
             @RequestParam(value = "stockActual", required = false) Integer stockActual,
-            @Parameter(description = "ID del usuario administrador autenticado", example = "10")
+            @Valid @RequestBody(required = false) EvaluarUltimasUnidadesRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
-            summary = "Marcar prenda como nueva llegada durante el periodo configurado del almacén (SR-RF-60)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Identifica y marca una prenda del almacén como 'Nueva llegada' (NUEVA_PRENDA) "
-                    + "durante el periodo temporal configurado para ese distintivo en la tienda (por defecto 7 días).",
+            summary = "Evaluar y marcar prenda como nueva llegada durante el periodo configurado del almacén (SR-RF-60)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Prenda marcada como nueva llegada dentro del periodo configurado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = DistintivoPrendaAlmacenResponseDTO.class),
-                            examples = @ExampleObject(
-                                    name = "PrendaNuevaLlegada",
-                                    value = "{\"nit\":\"900123456-1\",\"itemId\":104,\"ultimasUnidades\":false,\"umbralUltimasUnidades\":3,\"nuevaLlegada\":true,\"diasNuevaLlegada\":7,\"distintivoActivo\":\"NUEVA_PRENDA\",\"fechaActualizacion\":\"2026-11-03T01:45:00Z\"}"))),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "JWT ausente, inválido o expirado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El administrador autenticado no administra el almacén del NIT indicado (prevención BOLA/IDOR)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén o prenda inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "422",
-                    description = "La fecha de publicación de la prenda supera el periodo de nueva llegada configurado para el almacén",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
     @PatchMapping("/{nit}/prendas/{itemId}/nueva-llegada")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarNuevaLlegada(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador de la prenda o ítem de catálogo", example = "104") @PathVariable Long itemId,
-            @Parameter(description = "Fecha y hora UTC de ingreso/publicación de la prenda (ISO-8601)", example = "2026-11-01T10:00:00Z")
+            @PathVariable String nit,
+            @PathVariable Long itemId,
             @RequestParam(value = "fechaIngreso", required = false) Instant fechaIngreso,
-            @Parameter(description = "ID del usuario administrador autenticado", example = "10")
+            @Valid @RequestBody(required = false) EvaluarNuevaLlegadaRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Registrar fotografía de la tienda física (SR-RF-74)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Permite cargar hasta 6 fotografías de la tienda física en formato multipart. "
-                    + "La primera fotografía registrada se asigna automáticamente como portada de la página del almacén.",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Fotografía de la tienda física registrada correctamente",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = FotografiaTiendaResponseDTO.class),
-                            examples = @ExampleObject(
-                                    name = "FotografiaCreada",
-                                    value = "{\"id\":1,\"almacenNit\":\"900123456-1\",\"url\":\"https://styleradar.blob.core.windows.net/tiendas/900123456-1/foto-1.webp\",\"orden\":1,\"portada\":true,\"fechaRegistro\":\"2026-11-03T01:45:00Z\"}"))),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Parte multipart ausente o inválida",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "JWT ausente, inválido o expirado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El administrador autenticado no es propietario del NIT indicado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "422",
-                    description = "Se alcanzó el límite máximo de 6 fotografías por tienda física o el tipo MIME no es válido",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponseDTO.class),
-                            examples = @ExampleObject(
-                                    name = "LimiteFotografias",
-                                    value = "{\"timestamp\":\"2026-11-03T01:45:00\",\"status\":422,\"error\":\"Unprocessable Entity\",\"message\":\"El almacén ya cuenta con el máximo permitido de 6 fotografías de tienda física\",\"path\":\"/api/v1/almacenes/900123456-1/fotografias\",\"validationErrors\":{}}"))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error al almacenar la fotografía",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
     @PostMapping(value = "/{nit}/fotografias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Archivo de imagen de la tienda física (JPEG, PNG o WebP)") @RequestPart("archivo") MultipartFile archivo,
-            @Parameter(in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER, description = "ID del usuario administrador autenticado", example = "5")
+            @PathVariable String nit,
+            @RequestPart("archivo") MultipartFile archivo,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
+
+    @Operation(summary = "Consultar fotografías de la tienda física (SR-RF-74)", security = {})
+    @GetMapping("/{nit}/fotografias")
+    ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(
+            @PathVariable String nit);
+
+    @Operation(
+            summary = "Reordenar fotografías de la tienda física y actualizar portada (SR-RF-74)",
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    @PutMapping("/{nit}/fotografias/orden")
+    ResponseEntity<List<FotografiaTiendaResponseDTO>> reordenarFotografias(
+            @PathVariable String nit,
+            @Valid @RequestBody ReordenarFotografiasRequestDTO request,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
-            summary = "Consultar fotografías de la tienda física (SR-RF-74)",
-            description = "Público. Retorna hasta 6 fotografías registradas de la tienda física ordenadas por posición, identificando la imagen de portada.",
-            security = {})
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Galería de fotografías del almacén consultada exitosamente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = FotografiaTiendaResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
-    @GetMapping("/{nit}/fotografias")
-    ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
-
-    @Operation(
             summary = "Eliminar fotografía de la tienda física (SR-RF-74)",
-            description = "ROLE_ADMIN_ALMACEN propietario del NIT. Elimina una fotografía de la tienda física y reasigna la portada si la primera imagen fue eliminada.",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Fotografía eliminada correctamente"),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "JWT ausente, inválido o expirado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "El administrador autenticado no es propietario del NIT indicado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Almacén o fotografía inexistente",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Error interno del servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
     @DeleteMapping("/{nit}/fotografias/{fotoId}")
     ResponseEntity<Void> eliminarFotografia(
-            @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador de la fotografía", example = "1") @PathVariable Long fotoId,
-            @Parameter(in = io.swagger.v3.oas.annotations.enums.ParameterIn.HEADER, description = "ID del usuario administrador autenticado", example = "5")
+            @PathVariable String nit,
+            @PathVariable Long fotoId,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 }

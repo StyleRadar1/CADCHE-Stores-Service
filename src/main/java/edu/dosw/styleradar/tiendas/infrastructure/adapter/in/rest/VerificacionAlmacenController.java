@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.DecisionVerificacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.VerificacionConsultaRequestDTO;
@@ -62,7 +64,7 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long adminId) {
         String rol = resolveRole(rolesHeader, roleHeader);
-        Long idAdmin = adminId != null ? adminId : 1L;
+        Long idAdmin = resolveUserId(adminId);
         return ResponseEntity.ok(verificarAlmacenUseCase.decidir(nit, request, idAdmin, rol));
     }
 
@@ -73,8 +75,22 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long adminId) {
         String rol = resolveRole(rolesHeader, roleHeader);
-        Long idAdmin = adminId != null ? adminId : 1L;
+        Long idAdmin = resolveUserId(adminId);
         return ResponseEntity.ok(verificarAlmacenUseCase.solicitarRevision(nit, idAdmin, rol));
+    }
+
+    private Long resolveUserId(Long headerUserId) {
+        if (headerUserId != null) {
+            return headerUserId;
+        }
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes sra) {
+            Object attr = sra.getRequest().getAttribute("authenticatedUserId");
+            if (attr instanceof Long id) {
+                return id;
+            }
+        }
+        return null;
     }
 
     private String resolveRole(String rolesHeader, String roleHeader) {
@@ -83,6 +99,13 @@ public class VerificacionAlmacenController implements VerificacionAlmacenApi {
         }
         if (roleHeader != null && !roleHeader.isBlank()) {
             return roleHeader;
+        }
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes sra) {
+            Object attr = sra.getRequest().getAttribute("authenticatedRoles");
+            if (attr != null && !attr.toString().isBlank()) {
+                return attr.toString();
+            }
         }
         return null;
     }

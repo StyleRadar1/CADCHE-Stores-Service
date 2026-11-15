@@ -1,59 +1,97 @@
 package edu.dosw.styleradar.tiendas.application.usecase;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.Fundacion;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.FundacionRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarValidator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase {
 
+    public static final long MAX_BYTES_CERTIFICADO_PDF = 5L * 1024L * 1024L;
+
     private final FundacionRepositoryPort repositoryPort;
     private final AutorizacionAdminStyleRadarValidator adminValidator;
+    private final AlmacenamientoBlobPort almacenamientoBlobPort;
+
+    public RegistrarFundacionUseCaseImpl(
+            FundacionRepositoryPort repositoryPort,
+            AutorizacionAdminStyleRadarValidator adminValidator) {
+        this(repositoryPort, adminValidator, null);
+    }
+
+    @Autowired
+    public RegistrarFundacionUseCaseImpl(
+            FundacionRepositoryPort repositoryPort,
+            AutorizacionAdminStyleRadarValidator adminValidator,
+            AlmacenamientoBlobPort almacenamientoBlobPort) {
+        this.repositoryPort = repositoryPort;
+        this.adminValidator = adminValidator;
+        this.almacenamientoBlobPort = almacenamientoBlobPort;
+    }
 
     @Override
     @Transactional
     public FundacionResponseDTO registrar(FundacionRequestDTO request, String rol) {
-        adminValidator.validarEsAdministradorStyleRadar(rol);
+        adminValidator.validarEsAdministradorParaFundaciones(rol);
 
         if (request == null) {
             throw new ReglaDeNegocioException("La información de registro de la fundación no puede ser nula");
         }
 
+        String nitNormalizado = request.getNit() != null ? request.getNit().strip() : null;
         String nombreNormalizado = request.getNombre() != null ? request.getNombre().strip() : null;
 
+        if (nitNormalizado != null && repositoryPort.existsByNitIgnoreCase(nitNormalizado)) {
+            throw new FundacionYaRegistradaException(
+                    "Ya existe una fundación aliada registrada con el NIT: " + nitNormalizado,
+                    Map.of("nit", "Ya existe una fundación aliada registrada con el NIT: " + nitNormalizado));
+        }
+
         if (nombreNormalizado != null && repositoryPort.existsByNombreIgnoreCase(nombreNormalizado)) {
-            throw new FundacionYaRegistradaException("Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado);
+            throw new FundacionYaRegistradaException(
+                    "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado,
+                    Map.of("nombre", "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado));
         }
 
         if (request.getRepresentanteId() != null && repositoryPort.existsByRepresentanteId(request.getRepresentanteId())) {
-            throw new FundacionYaRegistradaException("El usuario con ID " + request.getRepresentanteId()
-                    + " ya se encuentra asignado como representante de otra fundación aliada");
+            throw new FundacionYaRegistradaException(
+                    "El usuario con ID " + request.getRepresentanteId()
+                            + " ya se encuentra asignado como representante de otra fundación aliada",
+                    Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
         Fundacion fundacion = Fundacion.builder()
+                .nit(nitNormalizado)
                 .nombre(nombreNormalizado)
                 .descripcion(request.getDescripcion() != null ? request.getDescripcion().strip() : null)
                 .direccion(request.getDireccion() != null ? request.getDireccion().strip() : null)
+                .barrio(request.getBarrio() != null ? request.getBarrio().strip() : null)
                 .telefono(request.getTelefono() != null ? request.getTelefono().strip() : null)
-                .email(request.getEmail() != null ? request.getEmail().strip().toLowerCase() : null)
+                .email(request.getEmail() != null ? request.getEmail().strip().toLowerCase(Locale.ROOT) : null)
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .categoriasAceptadas(request.getCategoriasAceptadas() != null ? new HashSet<>(request.getCategoriasAceptadas()) : new HashSet<>())
@@ -81,8 +119,39 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
     @Override
     @Transactional(readOnly = true)
     public List<FundacionResponseDTO> listarTodas(String rol) {
-        adminValidator.validarEsAdministradorStyleRadar(rol);
+        adminValidator.validarEsAdministradorParaFundaciones(rol);
         return repositoryPort.findAll().stream().map(this::toResponseDTO).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FundacionResponseDTO obtenerPorId(Long id, String rol) {
+        adminValidator.validarEsAdministradorParaFundaciones(rol);
+        if (id == null) {
+            throw new ReglaDeNegocioException("El identificador de la fundación es obligatorio");
+        }
+        Fundacion fundacion = repositoryPort.findById(id)
+                .orElseThrow(() -> new FundacionNoEncontradaException("No existe una fundación aliada con ID: " + id));
+        return toResponseDTO(fundacion);
+    }
+
+    @Override
+    public DocumentoSubidoResponseDTO subirCertificado(
+            String nombreOriginal, String contentType, long tamano, InputStream contenido, String rol) {
+        adminValidator.validarEsAdministradorParaFundaciones(rol);
+
+        boolean esPdfMime = contentType != null && contentType.toLowerCase(Locale.ROOT).contains("pdf");
+        boolean esPdfExt = nombreOriginal != null && nombreOriginal.toLowerCase(Locale.ROOT).endsWith(".pdf");
+        if (tamano <= 0 || tamano > MAX_BYTES_CERTIFICADO_PDF || (!esPdfMime && !esPdfExt)) {
+            throw new ReglaDeNegocioException("El certificado debe ser un archivo PDF de máximo 5 MB");
+        }
+
+        String rutaDestino = "certificados/" + UUID.randomUUID() + ".pdf";
+        String url = almacenamientoBlobPort != null
+                ? almacenamientoBlobPort.subirArchivo("documentos-fundaciones", rutaDestino, contenido, "application/pdf", tamano)
+                : "https://styleradarblob.blob.core.windows.net/documentos-fundaciones/" + rutaDestino;
+
+        return new DocumentoSubidoResponseDTO(url, nombreOriginal, "application/pdf", tamano, Instant.now());
     }
 
     @Override
@@ -118,9 +187,11 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
     private FundacionResponseDTO toResponseDTO(Fundacion f) {
         return FundacionResponseDTO.builder()
                 .id(f.getId())
+                .nit(f.getNit())
                 .nombre(f.getNombre())
                 .descripcion(f.getDescripcion())
                 .direccion(f.getDireccion())
+                .barrio(f.getBarrio())
                 .telefono(f.getTelefono())
                 .email(f.getEmail())
                 .latitud(f.getLatitud())

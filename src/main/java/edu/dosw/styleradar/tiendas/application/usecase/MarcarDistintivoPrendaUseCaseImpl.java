@@ -5,6 +5,8 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarNuevaLlegadaRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarUltimasUnidadesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DistintivoPrendaAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
@@ -50,7 +52,42 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
                 almacen.getUmbralUltimasUnidadesEfectivo(),
                 false,
                 almacen.getDiasNuevaLlegadaEfectivo(),
-                "ULTIMAS_UNIDADES",
+                cumple ? "ULTIMAS_UNIDADES" : "NINGUNO",
+                Instant.now()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DistintivoPrendaAlmacenResponseDTO evaluarUltimasUnidades(
+            String nit, Long itemId, EvaluarUltimasUnidadesRequestDTO request, Long usuarioId) {
+        if (request == null || request.getStockActual() == null) {
+            return marcarUltimasUnidades(nit, itemId, null, usuarioId);
+        }
+        if (itemId == null || itemId <= 0) {
+            throw new ReglaDeNegocioException("El identificador de la prenda debe ser mayor a cero");
+        }
+
+        Almacen almacen = repositoryPort.findByNit(nit)
+                .orElseThrow(() -> new AlmacenNoEncontradoException(
+                        "No se encontró ningún almacén registrado con el NIT: " + nit));
+
+        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
+
+        boolean cumple = almacen.calcularUltimasUnidades(request.getStockActual(), request.getDisponible());
+        String distintivo = cumple ? "ULTIMAS_UNIDADES" : "NINGUNO";
+
+        log.info("Evaluación de últimas unidades itemId={} NIT={}: stock={}, disponible={}, cumple={}",
+                itemId, nit, request.getStockActual(), request.getDisponible(), cumple);
+
+        return new DistintivoPrendaAlmacenResponseDTO(
+                almacen.getNit(),
+                itemId,
+                cumple,
+                almacen.getUmbralUltimasUnidadesEfectivo(),
+                false,
+                almacen.getDiasNuevaLlegadaEfectivo(),
+                distintivo,
                 Instant.now()
         );
     }
@@ -83,9 +120,44 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
                 almacen.getUmbralUltimasUnidadesEfectivo(),
                 cumple,
                 almacen.getDiasNuevaLlegadaEfectivo(),
-                "NUEVA_PRENDA",
+                cumple ? "NUEVA_PRENDA" : "NINGUNO",
+                ahora
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DistintivoPrendaAlmacenResponseDTO evaluarNuevaLlegada(
+            String nit, Long itemId, EvaluarNuevaLlegadaRequestDTO request, Long usuarioId) {
+        if (request == null || request.getFechaPublicacion() == null) {
+            return marcarNuevaLlegada(nit, itemId, null, usuarioId);
+        }
+        if (itemId == null || itemId <= 0) {
+            throw new ReglaDeNegocioException("El identificador de la prenda debe ser mayor a cero");
+        }
+
+        Almacen almacen = repositoryPort.findByNit(nit)
+                .orElseThrow(() -> new AlmacenNoEncontradoException(
+                        "No se encontró ningún almacén registrado con el NIT: " + nit));
+
+        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
+
+        Instant ahora = Instant.now();
+        boolean cumple = almacen.calcularNuevaLlegada(request.getFechaPublicacion(), request.getRetirada(), ahora);
+        String distintivo = cumple ? "NUEVA_PRENDA" : "NINGUNO";
+
+        log.info("Evaluación de nueva llegada itemId={} NIT={}: fechaPublicacion={}, retirada={}, cumple={}",
+                itemId, nit, request.getFechaPublicacion(), request.getRetirada(), cumple);
+
+        return new DistintivoPrendaAlmacenResponseDTO(
+                almacen.getNit(),
+                itemId,
+                false,
+                almacen.getUmbralUltimasUnidadesEfectivo(),
+                cumple,
+                almacen.getDiasNuevaLlegadaEfectivo(),
+                distintivo,
                 ahora
         );
     }
 }
-

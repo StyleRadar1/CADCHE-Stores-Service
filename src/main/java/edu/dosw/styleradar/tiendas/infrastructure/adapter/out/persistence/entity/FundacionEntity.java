@@ -36,6 +36,9 @@ public class FundacionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "nit", nullable = false, unique = true, length = 20)
+    private String nit;
+
     @Column(name = "nombre", nullable = false, unique = true, length = 120)
     private String nombre;
 
@@ -44,6 +47,9 @@ public class FundacionEntity {
 
     @Column(name = "direccion", nullable = false, length = 200)
     private String direccion;
+
+    @Column(name = "barrio", nullable = false, length = 80)
+    private String barrio;
 
     @Column(name = "telefono", length = 30)
     private String telefono;

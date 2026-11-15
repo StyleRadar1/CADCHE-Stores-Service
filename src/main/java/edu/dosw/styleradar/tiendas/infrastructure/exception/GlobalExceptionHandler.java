@@ -14,23 +14,26 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
-import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
+import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaActivaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
 import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
+import edu.dosw.styleradar.tiendas.domain.exception.TamanoArchivoExcedidoException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -82,12 +85,30 @@ public class GlobalExceptionHandler {
             AlmacenYaDecididoException.class,
             AlmacenYaRegistradoException.class,
             FundacionYaRegistradaException.class,
-            FundacionYaDesactivadaException.class
+            FundacionYaDesactivadaException.class,
+            FundacionYaActivaException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleConflicto(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Conflicto al procesar recurso (409) en {}: {}", request.getRequestURI(), exception.getMessage());
+        Map<String, String> validationErrors = Map.of();
+        if (exception instanceof AlmacenYaRegistradoException ex) {
+            validationErrors = ex.getValidationErrors();
+        } else if (exception instanceof FundacionYaRegistradaException ex) {
+            validationErrors = ex.getValidationErrors();
+        }
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(),
+                request.getRequestURI(), validationErrors);
+    }
+
+    @ExceptionHandler({TamanoArchivoExcedidoException.class, MaxUploadSizeExceededException.class})
+    public ResponseEntity<ErrorResponseDTO> handlePayloadTooLarge(
+            Exception exception, HttpServletRequest request) {
+        String mensaje = exception instanceof TamanoArchivoExcedidoException
+                ? exception.getMessage()
+                : "La imagen supera el tamaño máximo de 6 MB";
+        log.warn("Tamaño de archivo excedido (413) en {}: {}", request.getRequestURI(), mensaje);
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, mensaje,
                 request.getRequestURI(), Map.of());
     }
 
@@ -132,6 +153,16 @@ public class GlobalExceptionHandler {
     })
     public ResponseEntity<ErrorResponseDTO> handleInvalidHttpRequest(
             Exception exception, HttpServletRequest request) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof IllegalArgumentException iae
+                    && iae.getMessage() != null
+                    && iae.getMessage().contains("Campo no permitido")) {
+                return buildResponse(HttpStatus.BAD_REQUEST, iae.getMessage(),
+                        request.getRequestURI(), Map.of());
+            }
+            cause = cause.getCause();
+        }
         return buildResponse(HttpStatus.BAD_REQUEST, "La solicitud contiene parámetros inválidos",
                 request.getRequestURI(), Map.of());
     }

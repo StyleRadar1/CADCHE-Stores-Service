@@ -2,6 +2,7 @@ package edu.dosw.styleradar.tiendas.application.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import edu.dosw.styleradar.tiendas.domain.model.DecisionVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
@@ -17,8 +18,8 @@ public class DecisionVerificacionRequestDTO {
     @Schema(description = "Decisión final sobre la solicitud pendiente", example = "APROBADO", requiredMode = Schema.RequiredMode.REQUIRED)
     private DecisionVerificacionAlmacen decision;
 
-    @Size(max = 1000)
-    @Schema(description = "Motivo de la decisión; obligatorio cuando la decisión es RECHAZADO (máximo 1000 caracteres)", example = "Datos y RUT verificados correctamente")
+    @Size(max = 1000, message = "El motivo debe tener entre 10 y 1000 caracteres")
+    @Schema(description = "Motivo de la decisión; obligatorio cuando la decisión es RECHAZADO (entre 10 y 1000 caracteres)", example = "Datos y RUT verificados correctamente")
     private String motivo;
 
     @JsonIgnore
@@ -28,9 +29,19 @@ public class DecisionVerificacionRequestDTO {
         return decision != DecisionVerificacionAlmacen.RECHAZADO || (motivo != null && !motivo.isBlank());
     }
 
+    @JsonIgnore
+    @Schema(hidden = true)
+    @AssertTrue(message = "El motivo debe tener entre 10 y 1000 caracteres")
+    public boolean isMotivoLongitudValida() {
+        if (decision != DecisionVerificacionAlmacen.RECHAZADO || motivo == null || motivo.isBlank()) {
+            return true;
+        }
+        int len = motivo.strip().length();
+        return len >= 10 && len <= 1000;
+    }
+
     @JsonAnySetter
     public void rechazarCampoDesconocido(String campo, Object valor) {
         throw new IllegalArgumentException("Campo no permitido en la decisión de verificación");
     }
 }
-

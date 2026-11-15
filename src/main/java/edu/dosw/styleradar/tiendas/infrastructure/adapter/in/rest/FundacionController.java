@@ -2,30 +2,80 @@ package edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.port.in.DesactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ReactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.FundacionApi;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequiredArgsConstructor
 public class FundacionController implements FundacionApi {
 
     private final RegistrarFundacionUseCase registrarFundacionUseCase;
     private final EditarFundacionUseCase editarFundacionUseCase;
     private final DesactivarFundacionUseCase desactivarFundacionUseCase;
+    private final ReactivarFundacionUseCase reactivarFundacionUseCase;
+
+    public FundacionController(
+            RegistrarFundacionUseCase registrarFundacionUseCase,
+            EditarFundacionUseCase editarFundacionUseCase,
+            DesactivarFundacionUseCase desactivarFundacionUseCase) {
+        this(registrarFundacionUseCase, editarFundacionUseCase, desactivarFundacionUseCase, null);
+    }
+
+    @Autowired
+    public FundacionController(
+            RegistrarFundacionUseCase registrarFundacionUseCase,
+            EditarFundacionUseCase editarFundacionUseCase,
+            DesactivarFundacionUseCase desactivarFundacionUseCase,
+            @Autowired(required = false) ReactivarFundacionUseCase reactivarFundacionUseCase) {
+        this.registrarFundacionUseCase = registrarFundacionUseCase;
+        this.editarFundacionUseCase = editarFundacionUseCase;
+        this.desactivarFundacionUseCase = desactivarFundacionUseCase;
+        this.reactivarFundacionUseCase = reactivarFundacionUseCase;
+    }
+
+    @Override
+    public ResponseEntity<DocumentoSubidoResponseDTO> subirCertificado(
+            @RequestPart("archivo") MultipartFile archivo,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new ReglaDeNegocioException("El certificado debe ser un archivo PDF de máximo 5 MB");
+        }
+        try {
+            String rol = resolveRole(rolesHeader, roleHeader);
+            DocumentoSubidoResponseDTO response = registrarFundacionUseCase.subirCertificado(
+                    archivo.getOriginalFilename(),
+                    archivo.getContentType(),
+                    archivo.getSize(),
+                    archivo.getInputStream(),
+                    rol);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (java.io.IOException ex) {
+            throw new ReglaDeNegocioException("Error al leer el archivo PDF del certificado: " + ex.getMessage());
+        }
+    }
 
     @Override
     public ResponseEntity<FundacionResponseDTO> registrar(
@@ -46,8 +96,17 @@ public class FundacionController implements FundacionApi {
     }
 
     @Override
+    public ResponseEntity<FundacionResponseDTO> obtenerPorId(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        String rol = resolveRole(rolesHeader, roleHeader);
+        return ResponseEntity.ok(registrarFundacionUseCase.obtenerPorId(id, rol));
+    }
+
+    @Override
     public ResponseEntity<FundacionResponseDTO> editar(
-            Long id,
+            @PathVariable Long id,
             @Valid @RequestBody FundacionRequestDTO request,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
@@ -58,13 +117,27 @@ public class FundacionController implements FundacionApi {
 
     @Override
     public ResponseEntity<FundacionResponseDTO> desactivar(
-            Long id,
-            @org.springframework.web.bind.annotation.RequestParam(value = "motivo", required = false) String motivo,
+            @PathVariable Long id,
+            @RequestParam(value = "motivo", required = false) String motivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         String rol = resolveRole(rolesHeader, roleHeader);
         FundacionResponseDTO desactivada = desactivarFundacionUseCase.desactivar(id, motivo, rol);
         return ResponseEntity.ok(desactivada);
+    }
+
+    @Override
+    public ResponseEntity<FundacionResponseDTO> activar(
+            @PathVariable Long id,
+            @RequestParam(value = "motivo", required = false) String motivo,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        if (reactivarFundacionUseCase == null) {
+            throw new IllegalStateException("ReactivarFundacionUseCase no configurado");
+        }
+        String rol = resolveRole(rolesHeader, roleHeader);
+        FundacionResponseDTO reactivada = reactivarFundacionUseCase.reactivar(id, motivo, rol);
+        return ResponseEntity.ok(reactivada);
     }
 
     @Override
@@ -79,6 +152,13 @@ public class FundacionController implements FundacionApi {
         }
         if (roleHeader != null && !roleHeader.isBlank()) {
             return roleHeader;
+        }
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes sra) {
+            Object attr = sra.getRequest().getAttribute("authenticatedRoles");
+            if (attr != null && !attr.toString().isBlank()) {
+                return attr.toString();
+            }
         }
         return null;
     }

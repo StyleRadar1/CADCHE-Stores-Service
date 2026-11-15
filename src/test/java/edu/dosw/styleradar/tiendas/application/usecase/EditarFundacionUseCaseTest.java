@@ -54,9 +54,11 @@ class EditarFundacionUseCaseTest {
     void setUp() {
         fundacionExistente = Fundacion.builder()
                 .id(1L)
+                .nit("900215884-1")
                 .nombre("Fundación Manos Unidas")
                 .descripcion("Apoyo social básico")
                 .direccion("Calle 10 # 5-20")
+                .barrio("La Candelaria")
                 .telefono("+57 601 222 3344")
                 .email("contacto@manosunidas.org")
                 .latitud(4.6097)
@@ -72,9 +74,11 @@ class EditarFundacionUseCaseTest {
                 .build();
 
         requestEdicionValido = FundacionRequestDTO.builder()
+                .nit("900215884-1")
                 .nombre("Fundación Manos Unidas Internacional")
                 .descripcion("Programa ampliado de donaciones")
                 .direccion("Carrera 15 # 85-30")
+                .barrio("Chapinero")
                 .telefono("+57 311 555 6677")
                 .email("nuevo@manosunidas.org")
                 .latitud(4.6710)
@@ -92,6 +96,7 @@ class EditarFundacionUseCaseTest {
     @DisplayName("Criterio 1: Dado una fundación existente y datos válidos, cuando la edito, entonces los cambios quedan guardados")
     void debeEditarFundacionExitosamente() {
         when(repositoryPort.findById(1L)).thenReturn(Optional.of(fundacionExistente));
+        when(repositoryPort.existsByNitIgnoreCaseAndIdNot("900215884-1", 1L)).thenReturn(false);
         when(repositoryPort.existsByNombreIgnoreCaseAndIdNot("Fundación Manos Unidas Internacional", 1L)).thenReturn(false);
         when(repositoryPort.existsByRepresentanteIdAndIdNot(25L, 1L)).thenReturn(false);
         when(repositoryPort.save(any(Fundacion.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -101,6 +106,7 @@ class EditarFundacionUseCaseTest {
         assertNotNull(response);
         assertEquals(1L, response.getId());
         assertEquals("Fundación Manos Unidas Internacional", response.getNombre());
+        assertEquals("Chapinero", response.getBarrio());
         assertEquals("+57 311 555 6677", response.getTelefono());
         assertEquals("Lunes a Sábado 07:00 - 18:00", response.getHorarioAtencion());
         assertEquals("Ropa en perfecto estado", response.getPoliticasDonacion());
@@ -146,8 +152,8 @@ class EditarFundacionUseCaseTest {
     @Test
     @DisplayName("Criterio 4: Dado que no soy administrador, cuando llamo al endpoint, entonces recibo 403 (AccesoDenegadoAlmacenException)")
     void debeLanzarExcepcionCuandoNoEsAdmin() {
-        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR"))
-                .when(adminValidator).validarEsAdministradorStyleRadar("ROLE_COMPRADOR");
+        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"))
+                .when(adminValidator).validarEsAdministradorParaFundaciones("ROLE_COMPRADOR");
 
         assertThrows(AccesoDenegadoAlmacenException.class,
                 () -> useCase.editar(1L, requestEdicionValido, "ROLE_COMPRADOR"));
@@ -157,9 +163,15 @@ class EditarFundacionUseCaseTest {
     }
 
     @Test
-    @DisplayName("Conflicto 409: Dado un nombre ya existente en otra fundación, debe lanzar FundacionYaRegistradaException")
-    void debeLanzarConflictoCuandoNombreYaExisteEnOtraFundacion() {
+    @DisplayName("Conflicto 409: Dado un NIT o nombre ya existente en otra fundación, debe lanzar FundacionYaRegistradaException")
+    void debeLanzarConflictoCuandoNombreONitYaExisteEnOtraFundacion() {
         when(repositoryPort.findById(1L)).thenReturn(Optional.of(fundacionExistente));
+        when(repositoryPort.existsByNitIgnoreCaseAndIdNot(eq("900215884-1"), eq(1L))).thenReturn(true);
+
+        assertThrows(FundacionYaRegistradaException.class,
+                () -> useCase.editar(1L, requestEdicionValido, ADMIN_ROLE));
+
+        when(repositoryPort.existsByNitIgnoreCaseAndIdNot(eq("900215884-1"), eq(1L))).thenReturn(false);
         when(repositoryPort.existsByNombreIgnoreCaseAndIdNot(eq("Fundación Manos Unidas Internacional"), eq(1L)))
                 .thenReturn(true);
 
@@ -173,6 +185,7 @@ class EditarFundacionUseCaseTest {
     @DisplayName("Conflicto 409: Dado un representante ya asignado a otra fundación, debe lanzar FundacionYaRegistradaException")
     void debeLanzarConflictoCuandoRepresentanteYaPerteneceAOtraFundacion() {
         when(repositoryPort.findById(1L)).thenReturn(Optional.of(fundacionExistente));
+        when(repositoryPort.existsByNitIgnoreCaseAndIdNot(any(), eq(1L))).thenReturn(false);
         when(repositoryPort.existsByNombreIgnoreCaseAndIdNot(any(), eq(1L))).thenReturn(false);
         when(repositoryPort.existsByRepresentanteIdAndIdNot(eq(25L), eq(1L))).thenReturn(true);
 
@@ -183,17 +196,11 @@ class EditarFundacionUseCaseTest {
     }
 
     @Test
-    @DisplayName("Validación: Debe lanzar ReglaDeNegocioException cuando el ID es nulo")
-    void debeLanzarExcepcionCuandoIdEsNulo() {
+    @DisplayName("Validación: Debe lanzar ReglaDeNegocioException cuando el ID o request es nulo")
+    void debeLanzarExcepcionCuandoIdORequestEsNulo() {
         assertThrows(ReglaDeNegocioException.class,
                 () -> useCase.editar(null, requestEdicionValido, ADMIN_ROLE));
-    }
-
-    @Test
-    @DisplayName("Validación: Debe lanzar ReglaDeNegocioException cuando el request es nulo")
-    void debeLanzarExcepcionCuandoRequestEsNulo() {
         assertThrows(ReglaDeNegocioException.class,
                 () -> useCase.editar(1L, null, ADMIN_ROLE));
     }
 }
-

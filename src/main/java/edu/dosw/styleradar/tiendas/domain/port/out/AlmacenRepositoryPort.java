@@ -15,9 +15,13 @@ public interface AlmacenRepositoryPort {
 
     Optional<Almacen> findByNit(String nit);
 
+    Optional<Almacen> findByAdministradorUsuarioId(Long usuarioId);
+
     Almacen save(Almacen almacen);
 
     boolean existsByNit(String nit);
+
+    boolean existeAlmacenParaUsuario(Long usuarioId);
 
     boolean esAdministradorDeAlmacen(String nit, Long usuarioId);
 
