@@ -189,6 +189,31 @@ class AlmacenRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("Debe guardar y retornar asociación de administrador cuando no existe y cuando ya existe")
+    void debeGuardarYListarAsociacionAdministrador() {
+        AdministradorAlmacenEntity entityGuardada = AdministradorAlmacenEntity.builder()
+                .id(10L)
+                .almacenNit(NIT)
+                .usuarioId(USUARIO_ID)
+                .fechaAsignacion(Instant.now())
+                .build();
+
+        when(administradorRepository.findByAlmacenNitAndUsuarioId(NIT, USUARIO_ID))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(entityGuardada));
+        when(administradorRepository.save(any(AdministradorAlmacenEntity.class))).thenReturn(entityGuardada);
+        when(administradorRepository.findByAlmacenNit(NIT)).thenReturn(List.of(entityGuardada));
+
+        var creado = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
+        var existente = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
+        var lista = adapter.listarAdministradoresPorNit(NIT);
+
+        assertThat(creado.getId()).isEqualTo(10L);
+        assertThat(existente.getUsuarioId()).isEqualTo(USUARIO_ID);
+        assertThat(lista).hasSize(1);
+    }
+
+    @Test
     @DisplayName("Debe consultar fotografías por NIT de almacén ordenadas")
     void debeConsultarFotografiasPorAlmacenNit() {
         FotografiaTiendaEntity entity = FotografiaTiendaEntity.builder()

@@ -20,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
@@ -136,5 +137,31 @@ class RegistrarFundacionUseCaseTest {
 
         assertEquals(1, lista.size());
         assertEquals("Fundación Semillas", lista.get(0).getNombre());
+    }
+
+    @Test
+    @DisplayName("SR-RF-43: Debe consultar fundaciones activas ordenadas por cercanía y filtradas por tipo de prenda")
+    void debeConsultarFundacionesCercanasActivas() {
+        Fundacion cercana = Fundacion.builder()
+                .id(1L).nombre("Cercana").activa(true).latitud(4.67).longitud(-74.05)
+                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR)).build();
+        Fundacion lejana = Fundacion.builder()
+                .id(2L).nombre("Lejana").activa(true).latitud(6.24).longitud(-75.58)
+                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR)).build();
+        Fundacion inactiva = Fundacion.builder()
+                .id(3L).nombre("Inactiva").activa(false).latitud(4.67).longitud(-74.05)
+                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR)).build();
+
+        when(repositoryPort.findAll()).thenReturn(List.of(lejana, inactiva, cercana));
+
+        ConsultaFundacionesRequestDTO req = ConsultaFundacionesRequestDTO.builder()
+                .latitud(4.6712).longitud(-74.0531).tipo(TipoPrenda.SUPERIOR).build();
+
+        List<FundacionResponseDTO> resultado = useCase.consultarCercanas(req);
+
+        assertEquals(2, resultado.size());
+        assertEquals("Cercana", resultado.get(0).getNombre());
+        assertEquals("Lejana", resultado.get(1).getNombre());
+        assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(null));
     }
 }

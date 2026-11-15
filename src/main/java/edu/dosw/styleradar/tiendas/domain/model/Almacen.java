@@ -1,14 +1,17 @@
 package edu.dosw.styleradar.tiendas.domain.model;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
+import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import lombok.AllArgsConstructor;
@@ -53,11 +56,67 @@ public class Almacen {
     private String motivoVerificacion;
 
     public static final int MAXIMO_FOTOGRAFIAS = 6;
+    private static final Pattern PATRON_NIT = Pattern.compile("^[0-9]{8,12}(-[0-9])?$");
 
     private String fotoPortadaUrl;
 
     @Builder.Default
     private List<FotografiaTienda> fotos = new ArrayList<>();
+
+    public void validarDatosObligatoriosRegistro() {
+        if (nit == null || nit.isBlank() || !PATRON_NIT.matcher(nit.strip()).matches()) {
+            throw new ReglaDeNegocioException(
+                    "El NIT del almacén debe tener un formato colombiano válido (ej. 900123456-1)");
+        }
+        if (nombreComercial == null || nombreComercial.strip().length() < 2) {
+            throw new ReglaDeNegocioException(
+                    "El nombre comercial del almacén es obligatorio y debe tener al menos 2 caracteres");
+        }
+        if (correoContacto == null || correoContacto.isBlank() || !correoContacto.contains("@")) {
+            throw new ReglaDeNegocioException("El correo electrónico de contacto del almacén es obligatorio");
+        }
+        if (latitud != null && (latitud < -90.0 || latitud > 90.0)) {
+            throw new ReglaDeNegocioException("La latitud geográfica debe ubicarse entre -90.0 y 90.0");
+        }
+        if (longitud != null && (longitud < -180.0 || longitud > 180.0)) {
+            throw new ReglaDeNegocioException("La longitud geográfica debe ubicarse entre -180.0 y 180.0");
+        }
+        if (categorias == null || categorias.isEmpty()) {
+            throw new ReglaDeNegocioException("Debe indicar al menos una categoría comercial para el almacén");
+        }
+        if (urlRutPdf == null || urlRutPdf.isBlank()) {
+            throw new ReglaDeNegocioException(
+                    "La URL del documento RUT en PDF es obligatoria para registrar el almacén aliado");
+        }
+    }
+
+    public boolean evaluarUltimasUnidades(int stockActual) {
+        if (stockActual < 0) {
+            throw new ReglaDeNegocioException("El stock actual de la prenda no puede ser negativo");
+        }
+        int umbral = getUmbralUltimasUnidadesEfectivo();
+        if (stockActual > umbral) {
+            throw new PrendaNoCumpleDistintivoException(
+                    "El inventario actual de la prenda (" + stockActual
+                            + ") supera el umbral de últimas unidades configurado para el almacén (" + umbral + ")");
+        }
+        return true;
+    }
+
+    public boolean evaluarNuevaLlegada(Instant fechaIngreso, Instant fechaReferencia) {
+        if (fechaIngreso == null) {
+            throw new ReglaDeNegocioException("La fecha de ingreso de la prenda es obligatoria");
+        }
+        Instant ref = fechaReferencia != null ? fechaReferencia : Instant.now();
+        int diasPermitidos = getDiasNuevaLlegadaEfectivo();
+        long diasTranscurridos = Duration.between(fechaIngreso, ref).toDays();
+        if (diasTranscurridos > diasPermitidos) {
+            throw new PrendaNoCumpleDistintivoException(
+                    "La fecha de publicación de la prenda supera el periodo de nueva llegada configurado para el almacén ("
+                            + diasPermitidos + " días)");
+        }
+        return true;
+    }
 
     public int getUmbralUltimasUnidadesEfectivo() {
         return umbralUltimasUnidades != null ? umbralUltimasUnidades : UmbralUltimasUnidades.VALOR_POR_DEFECTO;
@@ -120,7 +179,8 @@ public class Almacen {
         }
         if (this.fotos.size() >= MAXIMO_FOTOGRAFIAS) {
             throw new LimiteFotografiasSuperadoException(
-                    "El almacén ya cuenta con el máximo permitido de " + MAXIMO_FOTOGRAFIAS + " fotografías de tienda física");
+                    "El almacén ya cuenta con el máximo permitido de " + MAXIMO_FOTOGRAFIAS
+                            + " fotografías de tienda física");
         }
         int nuevoOrden = this.fotos.size() + 1;
         boolean esPortada = this.fotos.isEmpty() || this.fotoPortadaUrl == null;
@@ -163,9 +223,4 @@ public class Almacen {
                 FotografiaTienda nuevaPortada = this.fotos.get(0);
                 nuevaPortada.setPortada(true);
                 this.fotoPortadaUrl = nuevaPortada.getUrl();
-            } else {
-                this.fotoPortadaUrl = null;
-            }
-        }
-    }
-}
+        

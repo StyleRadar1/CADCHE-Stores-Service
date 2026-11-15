@@ -1,12 +1,14 @@
 package edu.dosw.styleradar.tiendas.application.usecase;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
@@ -81,6 +83,36 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
     public List<FundacionResponseDTO> listarTodas(String rol) {
         adminValidator.validarEsAdministradorStyleRadar(rol);
         return repositoryPort.findAll().stream().map(this::toResponseDTO).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FundacionResponseDTO> consultarCercanas(ConsultaFundacionesRequestDTO request) {
+        if (request == null || request.getLatitud() == null || request.getLongitud() == null) {
+            throw new ReglaDeNegocioException("Las coordenadas geográficas de latitud y longitud son obligatorias");
+        }
+        return repositoryPort.findAll().stream()
+                .filter(Fundacion::isActiva)
+                .filter(f -> request.getTipo() == null
+                        || (f.getCategoriasAceptadas() != null && f.getCategoriasAceptadas().contains(request.getTipo())))
+                .sorted(Comparator.comparingDouble(f -> calcularDistanciaKm(
+                        request.getLatitud(),
+                        request.getLongitud(),
+                        f.getLatitud() != null ? f.getLatitud() : 0.0,
+                        f.getLongitud() != null ? f.getLongitud() : 0.0)))
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
+    private double calcularDistanciaKm(double lat1, double lon1, double lat2, double lon2) {
+        final double radioTierraKm = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return radioTierraKm * c;
     }
 
     private FundacionResponseDTO toResponseDTO(Fundacion f) {

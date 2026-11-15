@@ -3,11 +3,16 @@ package edu.dosw.styleradar.tiendas.domain.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Set;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
 import edu.dosw.styleradar.tiendas.domain.exception.PeriodoInvalidoException;
+import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.UmbralInvalidoException;
 
@@ -184,6 +189,60 @@ class AlmacenTest {
 
         assertThatThrownBy(() -> almacen.agregarFotografia("   ", null))
                 .isInstanceOf(ReglaDeNegocioException.class);
+    }
+
+    @Test
+    @DisplayName("SR-RF-62 Dominio: validarDatosObligatoriosRegistro valida NIT, nombre, correo, coordenadas, categorías y RUT")
+    void debeValidarDatosObligatoriosRegistro() {
+        Almacen valido = Almacen.builder()
+                .nit("900123456-1")
+                .nombreComercial("Tienda Valida")
+                .correoContacto("tienda@correo.com")
+                .latitud(4.65)
+                .longitud(-74.06)
+                .categorias(Set.of(CategoriaAlmacen.CASUAL))
+                .urlRutPdf("https://blob/rut.pdf")
+                .build();
+        valido.validarDatosObligatoriosRegistro();
+
+        assertThatThrownBy(() -> Almacen.builder().nit("invalido").build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> Almacen.builder().nit("900123456-1").nombreComercial("A").build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> Almacen.builder().nit("900123456-1").nombreComercial("Tienda").correoContacto("invalido").build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> Almacen.builder().nit("900123456-1").nombreComercial("Tienda").correoContacto("a@b.c").latitud(95.0).build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> Almacen.builder().nit("900123456-1").nombreComercial("Tienda").correoContacto("a@b.c").longitud(195.0).build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> Almacen.builder().nit("900123456-1").nombreComercial("Tienda").correoContacto("a@b.c").categorias(Set.of()).build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> Almacen.builder().nit("900123456-1").nombreComercial("Tienda").correoContacto("a@b.c").categorias(Set.of(CategoriaAlmacen.CASUAL)).urlRutPdf(" ").build().validarDatosObligatoriosRegistro())
+                .isInstanceOf(ReglaDeNegocioException.class);
+    }
+
+    @Test
+    @DisplayName("SR-RF-59 / SR-RF-60 Dominio: evaluarUltimasUnidades y evaluarNuevaLlegada aplican umbrales y ventanas del almacén")
+    void debeEvaluarDistintivosDePrendaEnDominio() {
+        Almacen almacen = Almacen.builder()
+                .nit("900123456-1")
+                .umbralUltimasUnidades(3)
+                .diasNuevaLlegada(7)
+                .build();
+
+        assertThat(almacen.evaluarUltimasUnidades(3)).isTrue();
+        assertThat(almacen.evaluarUltimasUnidades(1)).isTrue();
+        assertThatThrownBy(() -> almacen.evaluarUltimasUnidades(-1))
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> almacen.evaluarUltimasUnidades(4))
+                .isInstanceOf(PrendaNoCumpleDistintivoException.class);
+
+        Instant ahora = Instant.now();
+        assertThat(almacen.evaluarNuevaLlegada(ahora.minus(3, ChronoUnit.DAYS), ahora)).isTrue();
+        assertThatThrownBy(() -> almacen.evaluarNuevaLlegada(null, ahora))
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> almacen.evaluarNuevaLlegada(ahora.minus(10, ChronoUnit.DAYS), ahora))
+                .isInstanceOf(PrendaNoCumpleDistintivoException.class);
     }
 }
 

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
@@ -65,6 +66,27 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
                     .build();
             administradorRepository.save(vinculo);
         }
+    }
+
+    @Override
+    public AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId) {
+        return administradorRepository.findByAlmacenNitAndUsuarioId(nit, usuarioId)
+                .map(mapper::toDomain)
+                .orElseGet(() -> {
+                    AdministradorAlmacenEntity vinculo = AdministradorAlmacenEntity.builder()
+                            .almacenNit(nit)
+                            .usuarioId(usuarioId)
+                            .fechaAsignacion(Instant.now())
+                            .build();
+                    return mapper.toDomain(administradorRepository.save(vinculo));
+                });
+    }
+
+    @Override
+    public List<AdministradorAlmacen> listarAdministradoresPorNit(String nit) {
+        return administradorRepository.findByAlmacenNit(nit).stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override

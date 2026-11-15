@@ -398,4 +398,18 @@ class FundacionControllerIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
     }
+
+    @Test
+    @DisplayName("SR-RF-43: GET /api/v1/fundaciones retorna fundaciones cercanas activas")
+    void debeConsultarFundacionesCercanasRetornando200() throws Exception {
+        FundacionResponseDTO dto = FundacionResponseDTO.builder()
+                .id(1L).nombre("Fundación Cercana").activa(true).build();
+        when(useCase.consultarCercanas(any())).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/api/v1/fundaciones")
+                        .param("latitud", "4.6712")
+                        .param("longitud", "-74.0531"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Fundación Cercana"));
+    }
 }

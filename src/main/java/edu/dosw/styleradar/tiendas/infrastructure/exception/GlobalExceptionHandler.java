@@ -22,11 +22,13 @@ import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaDesactivadaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
+import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,7 +78,12 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
-    @ExceptionHandler({AlmacenYaDecididoException.class, FundacionYaRegistradaException.class, FundacionYaDesactivadaException.class})
+    @ExceptionHandler({
+            AlmacenYaDecididoException.class,
+            AlmacenYaRegistradoException.class,
+            FundacionYaRegistradaException.class,
+            FundacionYaDesactivadaException.class
+    })
     public ResponseEntity<ErrorResponseDTO> handleConflicto(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Conflicto al procesar recurso (409) en {}: {}", request.getRequestURI(), exception.getMessage());
@@ -84,7 +91,12 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
-    @ExceptionHandler({RutRequeridoParaAprobacionException.class, AlmacenYaPendienteException.class, LimiteFotografiasSuperadoException.class})
+    @ExceptionHandler({
+            RutRequeridoParaAprobacionException.class,
+            AlmacenYaPendienteException.class,
+            LimiteFotografiasSuperadoException.class,
+            PrendaNoCumpleDistintivoException.class
+    })
     public ResponseEntity<ErrorResponseDTO> handleEntidadNoProcesable(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Operación no procesable (422) en {}: {}", request.getRequestURI(), exception.getMessage());

@@ -142,6 +142,10 @@ jobs:
                 DB_USERNAME="${{ secrets.DB_USERNAME_PROD }}" \
                 DB_PASSWORD="${{ secrets.DB_PASSWORD_PROD }}" \
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_PROD || 'https://styleradarblobprod.blob.core.windows.net' }}" \
+                RABBITMQ_HOST="${{ secrets.RABBITMQ_HOST_PROD || secrets.RABBITMQ_HOST || 'styleradar-rabbitmq-qa.northcentralus.cloudapp.azure.com' }}" \
+                RABBITMQ_PORT="${{ secrets.RABBITMQ_PORT_PROD || '5671' }}" \
+                RABBITMQ_USER="${{ secrets.RABBITMQ_USER_PROD || secrets.RABBITMQ_USER || 'ms_tiendas' }}" \
+                RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD_PROD || secrets.RABBITMQ_PASSWORD }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
             if [ -n "${{ secrets.JWT_SECRET_PROD }}" ]; then
               az webapp config appsettings set \

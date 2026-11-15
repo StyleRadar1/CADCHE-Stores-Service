@@ -70,7 +70,7 @@ public class FundacionController implements FundacionApi {
     @Override
     public ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(
             @Valid @ModelAttribute ConsultaFundacionesRequestDTO request) {
-        return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(registrarFundacionUseCase.consultarCercanas(request));
     }
 
     private String resolveRole(String rolesHeader, String roleHeader) {

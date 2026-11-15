@@ -1,38 +1,52 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest;
 
-import java.time.Instant;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.AdministradorAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.port.in.AsociarAdministradorAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.AsociacionAdministradorAlmacenApi;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/admin/almacenes")
+@RequiredArgsConstructor
 public class AsociacionAdministradorAlmacenController implements AsociacionAdministradorAlmacenApi {
+
+    private final AsociarAdministradorAlmacenUseCase asociarAdministradorUseCase;
 
     @Override
     public ResponseEntity<AdministradorAlmacenResponseDTO> asociar(
             String nit,
-            Long usuarioId) {
-        return ResponseEntity.ok(new AdministradorAlmacenResponseDTO(
-                10L,
-                usuarioId,
-                nit,
-                1L,
-                Instant.now()));
+            Long usuarioId,
+            @RequestHeader(value = "X-User-Id", required = false) Long adminId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        String rol = resolveRole(rolesHeader, roleHeader);
+        return ResponseEntity.ok(asociarAdministradorUseCase.asociar(nit, usuarioId, adminId, rol));
     }
 
     @Override
-    public ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(String nit) {
-        return ResponseEntity.ok(List.of(new AdministradorAlmacenResponseDTO(
-                10L,
-                15L,
-                nit,
-                1L,
-                Instant.now())));
+    public ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(
+            String nit,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        String rol = resolveRole(rolesHeader, roleHeader);
+        return ResponseEntity.ok(asociarAdministradorUseCase.listarAdministradores(nit, usuarioId, rol));
+    }
+
+    private String resolveRole(String rolesHeader, String roleHeader) {
+        if (rolesHeader != null && !rolesHeader.isBlank()) {
+            return rolesHeader;
+        }
+        if (roleHeader != null && !roleHeader.isBlank()) {
+            return roleHeader;
+        }
+        return null;
     }
 }

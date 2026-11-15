@@ -1,5 +1,6 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -93,7 +95,10 @@ public interface AlmacenApi {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PostMapping
-    ResponseEntity<VerificacionAlmacenResponseDTO> registrarAlmacen(@Valid @RequestBody RegistrarAlmacenRequestDTO request);
+    ResponseEntity<VerificacionAlmacenResponseDTO> registrarAlmacen(
+            @Valid @RequestBody RegistrarAlmacenRequestDTO request,
+            @Parameter(description = "ID del usuario autenticado (opcional para vinculación de administrador del almacén)", example = "10")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Consultar detalle de un almacén aliado por NIT",
@@ -325,7 +330,11 @@ public interface AlmacenApi {
     @PatchMapping("/{nit}/prendas/{itemId}/ultimas-unidades")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarUltimasUnidades(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador de la prenda o ítem de catálogo", example = "104") @PathVariable Long itemId);
+            @Parameter(description = "Identificador de la prenda o ítem de catálogo", example = "104") @PathVariable Long itemId,
+            @Parameter(description = "Stock actual de la prenda para evaluar contra el umbral del almacén", example = "2")
+            @RequestParam(value = "stockActual", required = false) Integer stockActual,
+            @Parameter(description = "ID del usuario administrador autenticado", example = "10")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Marcar prenda como nueva llegada durante el periodo configurado del almacén (SR-RF-60)",
@@ -366,7 +375,11 @@ public interface AlmacenApi {
     @PatchMapping("/{nit}/prendas/{itemId}/nueva-llegada")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarNuevaLlegada(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador de la prenda o ítem de catálogo", example = "104") @PathVariable Long itemId);
+            @Parameter(description = "Identificador de la prenda o ítem de catálogo", example = "104") @PathVariable Long itemId,
+            @Parameter(description = "Fecha y hora UTC de ingreso/publicación de la prenda (ISO-8601)", example = "2026-11-01T10:00:00Z")
+            @RequestParam(value = "fechaIngreso", required = false) Instant fechaIngreso,
+            @Parameter(description = "ID del usuario administrador autenticado", example = "10")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Registrar fotografía de la tienda física (SR-RF-74)",

@@ -6,11 +6,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.AdministradorAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,7 +41,13 @@ public interface AsociacionAdministradorAlmacenApi {
     @PutMapping("/{nit}/administradores/{usuarioId}")
     ResponseEntity<AdministradorAlmacenResponseDTO> asociar(
             @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador del usuario con rol ADMIN_ALMACEN", example = "15") @PathVariable Long usuarioId);
+            @Parameter(description = "Identificador del usuario con rol ADMIN_ALMACEN", example = "15") @PathVariable Long usuarioId,
+            @Parameter(in = ParameterIn.HEADER, description = "ID del administrador StyleRadar", example = "1")
+            @RequestHeader(value = "X-User-Id", required = false) Long adminId,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
             summary = "Consultar administradores autorizados de un almacén por NIT",
@@ -53,5 +61,11 @@ public interface AsociacionAdministradorAlmacenApi {
     })
     @GetMapping("/{nit}/administradores")
     ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(
-            @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit);
+            @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit,
+            @Parameter(in = ParameterIn.HEADER, description = "ID del usuario autenticado", example = "15")
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario", example = "ROLE_ADMIN_STYLERADAR")
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 }
