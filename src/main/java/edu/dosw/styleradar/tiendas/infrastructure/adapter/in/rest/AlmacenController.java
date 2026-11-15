@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
@@ -242,33 +240,10 @@ public class AlmacenController implements AlmacenApi {
     }
 
     private Long resolveUserId(Long headerUserId) {
-        if (headerUserId != null) {
-            return headerUserId;
-        }
-        var attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs instanceof ServletRequestAttributes sra) {
-            Object attr = sra.getRequest().getAttribute("authenticatedUserId");
-            if (attr instanceof Long id) {
-                return id;
-            }
-        }
-        return null;
+        return AuthRequestContextResolver.resolveUserId(headerUserId);
     }
 
     private String resolveRole(String rolesHeader, String roleHeader) {
-        if (rolesHeader != null && !rolesHeader.isBlank()) {
-            return rolesHeader;
-        }
-        if (roleHeader != null && !roleHeader.isBlank()) {
-            return roleHeader;
-        }
-        var attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs instanceof ServletRequestAttributes sra) {
-            Object attr = sra.getRequest().getAttribute("authenticatedRoles");
-            if (attr != null && !attr.toString().isBlank()) {
-                return attr.toString();
-            }
-        }
-        return null;
+        return AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
     }
 }

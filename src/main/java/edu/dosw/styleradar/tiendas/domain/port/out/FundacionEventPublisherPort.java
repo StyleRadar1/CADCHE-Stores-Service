@@ -7,7 +7,5 @@ public interface FundacionEventPublisherPort {
 
     void publicarFundacionDesactivada(FundacionDesactivadaEvent evento);
 
-    default void publicarFundacionReactivada(FundacionReactivadaEvent evento) {
-        // Implementación por defecto para compatibilidad hacia atrás
-    }
+    void publicarFundacionReactivada(FundacionReactivadaEvent evento);
 }

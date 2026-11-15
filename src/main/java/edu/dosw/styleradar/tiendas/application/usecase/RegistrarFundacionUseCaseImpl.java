@@ -62,8 +62,8 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
             throw new ReglaDeNegocioException("La información de registro de la fundación no puede ser nula");
         }
 
-        String nitNormalizado = request.getNit() != null ? request.getNit().strip() : null;
-        String nombreNormalizado = request.getNombre() != null ? request.getNombre().strip() : null;
+        String nitNormalizado = stripOrNull(request.getNit());
+        String nombreNormalizado = stripOrNull(request.getNombre());
 
         if (nitNormalizado != null && repositoryPort.existsByNitIgnoreCase(nitNormalizado)) {
             throw new FundacionYaRegistradaException(
@@ -84,23 +84,23 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
                     Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
+        String emailNorm = stripOrNull(request.getEmail());
         Fundacion fundacion = Fundacion.builder()
                 .nit(nitNormalizado)
                 .nombre(nombreNormalizado)
-                .descripcion(request.getDescripcion() != null ? request.getDescripcion().strip() : null)
-                .direccion(request.getDireccion() != null ? request.getDireccion().strip() : null)
-                .barrio(request.getBarrio() != null ? request.getBarrio().strip() : null)
-                .telefono(request.getTelefono() != null ? request.getTelefono().strip() : null)
-                .email(request.getEmail() != null ? request.getEmail().strip().toLowerCase(Locale.ROOT) : null)
+                .descripcion(stripOrNull(request.getDescripcion()))
+                .direccion(stripOrNull(request.getDireccion()))
+                .barrio(stripOrNull(request.getBarrio()))
+                .telefono(stripOrNull(request.getTelefono()))
+                .email(emailNorm != null ? emailNorm.toLowerCase(Locale.ROOT) : null)
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .categoriasAceptadas(request.getCategoriasAceptadas() != null ? new HashSet<>(request.getCategoriasAceptadas()) : new HashSet<>())
                 .representanteId(request.getRepresentanteId())
-                .urlCertificadoPersoneriaJuridica(request.getUrlCertificadoPersoneriaJuridica() != null
-                        ? request.getUrlCertificadoPersoneriaJuridica().strip() : null)
-                .causasApoyadas(request.getCausasApoyadas() != null ? request.getCausasApoyadas().strip() : null)
-                .horarioAtencion(request.getHorarioAtencion() != null ? request.getHorarioAtencion().strip() : null)
-                .politicasDonacion(request.getPoliticasDonacion() != null ? request.getPoliticasDonacion().strip() : null)
+                .urlCertificadoPersoneriaJuridica(stripOrNull(request.getUrlCertificadoPersoneriaJuridica()))
+                .causasApoyadas(stripOrNull(request.getCausasApoyadas()))
+                .horarioAtencion(stripOrNull(request.getHorarioAtencion()))
+                .politicasDonacion(stripOrNull(request.getPoliticasDonacion()))
                 .activa(true)
                 .fechaRegistro(Instant.now())
                 .build();
@@ -182,6 +182,10 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return radioTierraKm * c;
+    }
+
+    private static String stripOrNull(String val) {
+        return val != null ? val.strip() : null;
     }
 
     private FundacionResponseDTO toResponseDTO(Fundacion f) {

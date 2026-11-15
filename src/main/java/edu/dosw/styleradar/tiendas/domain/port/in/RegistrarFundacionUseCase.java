@@ -14,14 +14,10 @@ public interface RegistrarFundacionUseCase {
 
     List<FundacionResponseDTO> listarTodas(String rol);
 
-    default FundacionResponseDTO obtenerPorId(Long id, String rol) {
-        throw new UnsupportedOperationException("No implementado");
-    }
+    FundacionResponseDTO obtenerPorId(Long id, String rol);
 
-    default DocumentoSubidoResponseDTO subirCertificado(
-            String nombreOriginal, String contentType, long tamano, InputStream contenido, String rol) {
-        throw new UnsupportedOperationException("No implementado");
-    }
+    DocumentoSubidoResponseDTO subirCertificado(
+            String nombreOriginal, String contentType, long tamano, InputStream contenido, String rol);
 
     List<FundacionResponseDTO> consultarCercanas(ConsultaFundacionesRequestDTO request);
 }

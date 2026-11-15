@@ -26,7 +26,7 @@ public class AsociacionAdministradorAlmacenController implements AsociacionAdmin
             @RequestHeader(value = "X-User-Id", required = false) Long adminId,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         return ResponseEntity.ok(asociarAdministradorUseCase.asociar(nit, usuarioId, adminId, rol));
     }
 
@@ -36,17 +36,7 @@ public class AsociacionAdministradorAlmacenController implements AsociacionAdmin
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         return ResponseEntity.ok(asociarAdministradorUseCase.listarAdministradores(nit, usuarioId, rol));
-    }
-
-    private String resolveRole(String rolesHeader, String roleHeader) {
-        if (rolesHeader != null && !rolesHeader.isBlank()) {
-            return rolesHeader;
-        }
-        if (roleHeader != null && !roleHeader.isBlank()) {
-            return roleHeader;
-        }
-        return null;
     }
 }

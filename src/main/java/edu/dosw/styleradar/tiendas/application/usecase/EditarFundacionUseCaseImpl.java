@@ -42,14 +42,14 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
         Fundacion existente = repositoryPort.findById(id)
                 .orElseThrow(() -> new FundacionNoEncontradaException("No existe una fundación aliada con ID: " + id));
 
-        String nitNormalizado = request.getNit() != null ? request.getNit().strip() : null;
+        String nitNormalizado = stripOrNull(request.getNit());
         if (nitNormalizado != null && repositoryPort.existsByNitIgnoreCaseAndIdNot(nitNormalizado, id)) {
             throw new FundacionYaRegistradaException(
                     "Ya existe otra fundación aliada registrada con el NIT: " + nitNormalizado,
                     Map.of("nit", "Ya existe otra fundación aliada registrada con el NIT: " + nitNormalizado));
         }
 
-        String nombreNormalizado = request.getNombre() != null ? request.getNombre().strip() : null;
+        String nombreNormalizado = stripOrNull(request.getNombre());
         if (nombreNormalizado != null && repositoryPort.existsByNombreIgnoreCaseAndIdNot(nombreNormalizado, id)) {
             throw new FundacionYaRegistradaException(
                     "Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado,
@@ -63,23 +63,23 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
                     Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
+        String emailNorm = stripOrNull(request.getEmail());
         Fundacion cambios = Fundacion.builder()
                 .nit(nitNormalizado)
                 .nombre(nombreNormalizado)
-                .descripcion(request.getDescripcion() != null ? request.getDescripcion().strip() : null)
-                .direccion(request.getDireccion() != null ? request.getDireccion().strip() : null)
-                .barrio(request.getBarrio() != null ? request.getBarrio().strip() : null)
-                .telefono(request.getTelefono() != null ? request.getTelefono().strip() : null)
-                .email(request.getEmail() != null ? request.getEmail().strip().toLowerCase(Locale.ROOT) : null)
+                .descripcion(stripOrNull(request.getDescripcion()))
+                .direccion(stripOrNull(request.getDireccion()))
+                .barrio(stripOrNull(request.getBarrio()))
+                .telefono(stripOrNull(request.getTelefono()))
+                .email(emailNorm != null ? emailNorm.toLowerCase(Locale.ROOT) : null)
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .categoriasAceptadas(request.getCategoriasAceptadas() != null ? new HashSet<>(request.getCategoriasAceptadas()) : new HashSet<>())
                 .representanteId(request.getRepresentanteId())
-                .urlCertificadoPersoneriaJuridica(request.getUrlCertificadoPersoneriaJuridica() != null
-                        ? request.getUrlCertificadoPersoneriaJuridica().strip() : null)
-                .causasApoyadas(request.getCausasApoyadas() != null ? request.getCausasApoyadas().strip() : null)
-                .horarioAtencion(request.getHorarioAtencion() != null ? request.getHorarioAtencion().strip() : null)
-                .politicasDonacion(request.getPoliticasDonacion() != null ? request.getPoliticasDonacion().strip() : null)
+                .urlCertificadoPersoneriaJuridica(stripOrNull(request.getUrlCertificadoPersoneriaJuridica()))
+                .causasApoyadas(stripOrNull(request.getCausasApoyadas()))
+                .horarioAtencion(stripOrNull(request.getHorarioAtencion()))
+                .politicasDonacion(stripOrNull(request.getPoliticasDonacion()))
                 .build();
 
         existente.actualizarDatosInstitucionales(cambios);
@@ -88,6 +88,10 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
         log.info("Fundación aliada ID={} ('{}') actualizada exitosamente por admin", guardada.getId(), guardada.getNombre());
 
         return mapearResponse(guardada);
+    }
+
+    private static String stripOrNull(String val) {
+        return val != null ? val.strip() : null;
     }
 
     private FundacionResponseDTO mapearResponse(Fundacion f) {

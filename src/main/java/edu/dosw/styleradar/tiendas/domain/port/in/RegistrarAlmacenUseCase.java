@@ -13,18 +13,12 @@ public interface RegistrarAlmacenUseCase {
 
     VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId);
 
-    default VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId, String rol) {
-        return registrarAlmacen(request, usuarioId);
-    }
+    VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId, String rol);
 
-    default VerificacionAlmacenResponseDTO obtenerMiAlmacen(Long usuarioId) {
-        throw new UnsupportedOperationException("No implementado");
-    }
+    VerificacionAlmacenResponseDTO obtenerMiAlmacen(Long usuarioId);
 
-    default DocumentoSubidoResponseDTO subirDocumentoRut(
-            String nombreOriginal, String contentType, long tamano, InputStream contenido, Long usuarioId, String rol) {
-        throw new UnsupportedOperationException("No implementado");
-    }
+    DocumentoSubidoResponseDTO subirDocumentoRut(
+            String nombreOriginal, String contentType, long tamano, InputStream contenido, Long usuarioId, String rol);
 
     AlmacenResponseDTO obtenerPorNit(String nit);
 

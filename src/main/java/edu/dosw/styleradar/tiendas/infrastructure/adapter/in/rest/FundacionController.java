@@ -6,14 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
@@ -64,7 +61,7 @@ public class FundacionController implements FundacionApi {
             throw new ReglaDeNegocioException("El certificado debe ser un archivo PDF de máximo 5 MB");
         }
         try {
-            String rol = resolveRole(rolesHeader, roleHeader);
+            String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
             DocumentoSubidoResponseDTO response = registrarFundacionUseCase.subirCertificado(
                     archivo.getOriginalFilename(),
                     archivo.getContentType(),
@@ -82,7 +79,7 @@ public class FundacionController implements FundacionApi {
             @Valid @RequestBody FundacionRequestDTO request,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         FundacionResponseDTO creada = registrarFundacionUseCase.registrar(request, rol);
         return ResponseEntity.status(HttpStatus.CREATED).body(creada);
     }
@@ -91,51 +88,48 @@ public class FundacionController implements FundacionApi {
     public ResponseEntity<List<FundacionResponseDTO>> listarTodas(
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         return ResponseEntity.ok(registrarFundacionUseCase.listarTodas(rol));
     }
 
     @Override
     public ResponseEntity<FundacionResponseDTO> obtenerPorId(
-            @PathVariable Long id,
+            Long id,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         return ResponseEntity.ok(registrarFundacionUseCase.obtenerPorId(id, rol));
     }
 
     @Override
     public ResponseEntity<FundacionResponseDTO> editar(
-            @PathVariable Long id,
+            Long id,
             @Valid @RequestBody FundacionRequestDTO request,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         FundacionResponseDTO editada = editarFundacionUseCase.editar(id, request, rol);
         return ResponseEntity.ok(editada);
     }
 
     @Override
     public ResponseEntity<FundacionResponseDTO> desactivar(
-            @PathVariable Long id,
+            Long id,
             @RequestParam(value = "motivo", required = false) String motivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         FundacionResponseDTO desactivada = desactivarFundacionUseCase.desactivar(id, motivo, rol);
         return ResponseEntity.ok(desactivada);
     }
 
     @Override
     public ResponseEntity<FundacionResponseDTO> activar(
-            @PathVariable Long id,
+            Long id,
             @RequestParam(value = "motivo", required = false) String motivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        if (reactivarFundacionUseCase == null) {
-            throw new IllegalStateException("ReactivarFundacionUseCase no configurado");
-        }
-        String rol = resolveRole(rolesHeader, roleHeader);
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         FundacionResponseDTO reactivada = reactivarFundacionUseCase.reactivar(id, motivo, rol);
         return ResponseEntity.ok(reactivada);
     }
@@ -144,22 +138,5 @@ public class FundacionController implements FundacionApi {
     public ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(
             @Valid @ModelAttribute ConsultaFundacionesRequestDTO request) {
         return ResponseEntity.ok(registrarFundacionUseCase.consultarCercanas(request));
-    }
-
-    private String resolveRole(String rolesHeader, String roleHeader) {
-        if (rolesHeader != null && !rolesHeader.isBlank()) {
-            return rolesHeader;
-        }
-        if (roleHeader != null && !roleHeader.isBlank()) {
-            return roleHeader;
-        }
-        var attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs instanceof ServletRequestAttributes sra) {
-            Object attr = sra.getRequest().getAttribute("authenticatedRoles");
-            if (attr != null && !attr.toString().isBlank()) {
-                return attr.toString();
-            }
-        }
-        return null;
     }
 }

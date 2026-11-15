@@ -88,14 +88,15 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
                     Map.of("usuarioId", "El usuario ya administra un almacén"));
         }
 
-        String nitNormalizado = request.getNit() != null ? request.getNit().strip() : null;
+        String nitNormalizado = stripOrNull(request.getNit());
+        String correoNormalizado = stripOrNull(request.getCorreoContacto());
 
         Almacen almacen = Almacen.builder()
                 .nit(nitNormalizado)
-                .nombreComercial(request.getNombreComercial() != null ? request.getNombreComercial().strip() : null)
-                .descripcion(request.getDescripcion() != null ? request.getDescripcion().strip() : null)
-                .telefono(request.getTelefono() != null ? request.getTelefono().strip() : null)
-                .correoContacto(request.getCorreoContacto() != null ? request.getCorreoContacto().strip().toLowerCase(Locale.ROOT) : null)
+                .nombreComercial(stripOrNull(request.getNombreComercial()))
+                .descripcion(stripOrNull(request.getDescripcion()))
+                .telefono(stripOrNull(request.getTelefono()))
+                .correoContacto(correoNormalizado != null ? correoNormalizado.toLowerCase(Locale.ROOT) : null)
                 .latitud(request.getLatitud())
                 .longitud(request.getLongitud())
                 .reputacion(0.0)
@@ -103,7 +104,7 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
                 .umbralUltimasUnidades(UmbralUltimasUnidades.VALOR_POR_DEFECTO)
                 .diasNuevaLlegada(PeriodoNuevaLlegada.VALOR_POR_DEFECTO)
                 .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
-                .urlRutPdf(request.getUrlRutPdf() != null ? request.getUrlRutPdf().strip() : null)
+                .urlRutPdf(stripOrNull(request.getUrlRutPdf()))
                 .build();
 
         almacen.validarDatosObligatoriosRegistro();
@@ -217,6 +218,10 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
             return null;
         }
         return "Usuario #" + admins.get(0).getUsuarioId();
+    }
+
+    private static String stripOrNull(String val) {
+        return val != null ? val.strip() : null;
     }
 
     private AlmacenResponseDTO toAlmacenResponseDTO(Almacen a) {
