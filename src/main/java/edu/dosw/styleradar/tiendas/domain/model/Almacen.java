@@ -223,4 +223,9 @@ public class Almacen {
                 FotografiaTienda nuevaPortada = this.fotos.get(0);
                 nuevaPortada.setPortada(true);
                 this.fotoPortadaUrl = nuevaPortada.getUrl();
-        
+            } else {
+                this.fotoPortadaUrl = null;
+            }
+        }
+    }
+}
