@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
@@ -174,6 +175,13 @@ public class GlobalExceptionHandler {
             AlmacenamientoNoDisponibleException exception, HttpServletRequest request) {
         log.error("Almacenamiento de archivos no disponible en {}", request.getRequestURI());
         return buildResponse(CodigoError.SERVICIO_NO_DISPONIBLE, exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleRutaInexistente(
+            NoResourceFoundException exception, HttpServletRequest request) {
+        return buildResponse(CodigoError.RECURSO_NO_ENCONTRADO, "La ruta solicitada no existe",
                 request.getRequestURI(), Map.of());
     }
 

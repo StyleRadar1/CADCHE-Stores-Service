@@ -517,4 +517,12 @@ class FundacionControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nombre").value("Fundación Cercana"));
     }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("Una ruta inexistente responde 404 RECURSO_NO_ENCONTRADO, no 500")
+    void rutaInexistenteResponde404() throws Exception {
+        mockMvc.perform(get("/api/v1/no-existe"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.codigo").value("RECURSO_NO_ENCONTRADO"));
+    }
 }
