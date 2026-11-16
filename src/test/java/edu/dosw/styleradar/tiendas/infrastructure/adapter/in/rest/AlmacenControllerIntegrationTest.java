@@ -1,0 +1,671 @@
+package edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarNuevaLlegadaRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.EvaluarUltimasUnidadesRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.RegistrarAlmacenRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.request.ReordenarFotografiasRequestDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.AlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.ConfiguracionCatalogoAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DistintivoPrendaAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.FotografiaTiendaResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
+import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
+import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
+import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoException;
+import edu.dosw.styleradar.tiendas.domain.exception.TamanoArchivoExcedidoException;
+import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
+import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarPeriodoNuevaLlegadaUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarUmbralUltimasUnidadesUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.MarcarDistintivoPrendaUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarAlmacenUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFotografiaTiendaUseCase;
+import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+
+@WebMvcTest(AlmacenController.class)
+@Import(GlobalExceptionHandler.class)
+@DisplayName("Pruebas de Integración de API REST - Controlador AlmacenController (SR-RF-59 / SR-RF-60 / SR-RF-62-A / SR-RF-74)")
+class AlmacenControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
+    private RegistrarAlmacenUseCase registrarAlmacenUseCase;
+
+    @MockBean
+    private ConfigurarUmbralUltimasUnidadesUseCase configurarUmbralUseCase;
+
+    @MockBean
+    private ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
+
+    @MockBean
+    private ConfigurarPeriodoNuevaLlegadaUseCase configurarPeriodoUseCase;
+
+    @MockBean
+    private ConsultarPeriodoNuevaLlegadaUseCase consultarPeriodoUseCase;
+
+    @MockBean
+    private MarcarDistintivoPrendaUseCase marcarDistintivoUseCase;
+
+    @MockBean
+    private RegistrarFotografiaTiendaUseCase registrarFotografiaUseCase;
+
+    private static final String NIT = "900123456";
+
+    @Test
+    @DisplayName("Criterio: Dado un almacén sin umbral propio, cuando se consulta, entonces aplica el valor por defecto de 3 (HTTP 200)")
+    void debeConsultarConfiguracionConValorPorDefectoDe3() throws Exception {
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 3, 15, Instant.now());
+        when(consultarUmbralUseCase.consultarConfiguracion(NIT)).thenReturn(respuestaMock);
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value(NIT))
+                .andExpect(jsonPath("$.umbralUltimasUnidades").value(3))
+                .andExpect(jsonPath("$.diasNuevaLlegada").value(15));
+    }
+
+    @Test
+    @DisplayName("Criterio: Dado un umbral válido, cuando lo guardo, entonces queda configurado para mi almacén (HTTP 200)")
+    void debeGuardarUmbralValidoExitosamente() throws Exception {
+        ConfiguracionCatalogoAlmacenRequestDTO request = new ConfiguracionCatalogoAlmacenRequestDTO(5, 20);
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 5, 20, Instant.now());
+
+        when(configurarUmbralUseCase.configurarCatalogo(eq(NIT), any(ConfiguracionCatalogoAlmacenRequestDTO.class), eq(10L)))
+                .thenReturn(respuestaMock);
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value(NIT))
+                .andExpect(jsonPath("$.umbralUltimasUnidades").value(5))
+                .andExpect(jsonPath("$.diasNuevaLlegada").value(20));
+    }
+
+    @Test
+    @DisplayName("Criterio: Dado un umbral negativo, cuando lo guardo, entonces recibo 400 (Bad Request)")
+    void debeRechazarUmbralNegativoConHttp400() throws Exception {
+        String jsonPayload = """
+                {
+                    "umbralUltimasUnidades": -1,
+                    "diasNuevaLlegada": 15
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("Criterio: Dado un almacén que no es mío, cuando cambio su umbral, entonces recibo 403 (Forbidden)")
+    void debeRechazarModificacionDeAlmacenAjenoConHttp403() throws Exception {
+        ConfiguracionCatalogoAlmacenRequestDTO request = new ConfiguracionCatalogoAlmacenRequestDTO(4, 15);
+
+        when(configurarUmbralUseCase.configurarCatalogo(eq(NIT), any(ConfiguracionCatalogoAlmacenRequestDTO.class), eq(999L)))
+                .thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+                        .header("X-User-Id", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+    }
+
+    @Test
+    @DisplayName("Endpoint dedicado: PUT /api/v1/almacenes/{nit}/umbral-ultimas-unidades con umbral válido retorna 200")
+    void debeActualizarUmbralEnEndpointDedicado() throws Exception {
+        ActualizarUmbralRequestDTO request = new ActualizarUmbralRequestDTO(6);
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 6, 15, Instant.now());
+
+        when(configurarUmbralUseCase.configurarUmbral(eq(NIT), eq(6), eq(10L)))
+                .thenReturn(respuestaMock);
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/umbral-ultimas-unidades", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.umbralUltimasUnidades").value(6));
+    }
+
+    @Test
+    @DisplayName("Endpoint dedicado: PUT /api/v1/almacenes/{nit}/umbral-ultimas-unidades con umbral negativo retorna 400")
+    void debeRechazarUmbralNegativoEnEndpointDedicado() throws Exception {
+        String jsonPayload = """
+                {
+                    "umbralUltimasUnidades": -5
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/umbral-ultimas-unidades", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Endpoint dedicado: GET /api/v1/almacenes/{nit}/umbral-ultimas-unidades retorna 200")
+    void debeConsultarUmbralEnEndpointDedicado() throws Exception {
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 3, 15, Instant.now());
+        when(consultarUmbralUseCase.consultarConfiguracion(NIT)).thenReturn(respuestaMock);
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/umbral-ultimas-unidades", NIT)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.umbralUltimasUnidades").value(3));
+    }
+
+    @Test
+    @DisplayName("Debe retornar HTTP 404 cuando el almacén no existe")
+    void debeRetornar404CuandoAlmacenNoExiste() throws Exception {
+        when(consultarUmbralUseCase.consultarConfiguracion("000000000"))
+                .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/configuracion-catalogo", "000000000")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("No se encontró ningún almacén registrado con el NIT: 000000000"));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un almacén sin periodo propio, cuando se consulta, entonces aplica el valor por defecto de 7 días (HTTP 200)")
+    void debeConsultarPeriodoConValorPorDefectoDe7Dias() throws Exception {
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 3, 7, Instant.now());
+        when(consultarPeriodoUseCase.consultarPeriodo(NIT)).thenReturn(respuestaMock);
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value(NIT))
+                .andExpect(jsonPath("$.diasNuevaLlegada").value(7));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un periodo válido, cuando lo guardo, entonces queda configurado para mi almacén (HTTP 200)")
+    void debeActualizarPeriodoValidoExitosamente() throws Exception {
+        ActualizarPeriodoRequestDTO request = new ActualizarPeriodoRequestDTO(14);
+        ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
+                NIT, 3, 14, Instant.now());
+
+        when(configurarPeriodoUseCase.configurarPeriodo(eq(NIT), eq(14), eq(10L)))
+                .thenReturn(respuestaMock);
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.diasNuevaLlegada").value(14));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un periodo de 0 días o menos, cuando lo guardo, entonces recibo 400 (Bad Request)")
+    void debeRechazarPeriodoCeroONegativoEnEndpointDedicado() throws Exception {
+        String jsonPayload = """
+                {
+                    "diasNuevaLlegada": 0
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-60: Dado un almacén que no es mío, cuando cambio su periodo, entonces recibo 403 (Forbidden)")
+    void debeRechazarModificacionPeriodoAlmacenAjenoConHttp403() throws Exception {
+        ActualizarPeriodoRequestDTO request = new ActualizarPeriodoRequestDTO(10);
+
+        when(configurarPeriodoUseCase.configurarPeriodo(eq(NIT), eq(10), eq(999L)))
+                .thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+                        .header("X-User-Id", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+    }
+
+    @Test
+    @DisplayName("SR-RF-60: Debe retornar HTTP 404 cuando el almacén consultado en periodo no existe")
+    void debeRetornar404CuandoAlmacenNoExisteEnPeriodo() throws Exception {
+        when(consultarPeriodoUseCase.consultarPeriodo("000000000"))
+                .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/dias-nueva-llegada", "000000000")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-74: Dado hasta 6 fotos válidas, cuando las cargo, entonces quedan en mi almacén y la primera se usa como portada (HTTP 201)")
+    void debeCargarFotografiaExitosamenteConHttp201() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "archivo",
+                "fachada.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "fake image content".getBytes()
+        );
+
+        FotografiaTiendaResponseDTO respuestaMock = new FotografiaTiendaResponseDTO(
+                1L,
+                NIT,
+                "https://styleradar.blob.core.windows.net/tiendas/fachada.jpg",
+                1,
+                true,
+                Instant.now()
+        );
+
+        when(registrarFotografiaUseCase.registrarFotografia(
+                eq(NIT),
+                eq("fachada.jpg"),
+                eq(MediaType.IMAGE_JPEG_VALUE),
+                eq(file.getSize()),
+                any(InputStream.class),
+                eq(100L)
+        )).thenReturn(respuestaMock);
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .file(file)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.almacenNit").value(NIT))
+                .andExpect(jsonPath("$.url").value("https://styleradar.blob.core.windows.net/tiendas/fachada.jpg"))
+                .andExpect(jsonPath("$.portada").value(true))
+                .andExpect(jsonPath("$.orden").value(1));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-74: Dado que ya tengo 6 fotos, cuando cargo otra, entonces recibo 422 (Unprocessable Entity)")
+    void debeRechazarCargaCuandoSeSuperaLimiteDeFotosConHttp422() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "archivo",
+                "foto7.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "fake image png".getBytes()
+        );
+
+        when(registrarFotografiaUseCase.registrarFotografia(
+                eq(NIT),
+                anyString(),
+                anyString(),
+                anyLong(),
+                any(InputStream.class),
+                eq(100L)
+        )).thenThrow(new LimiteFotografiasSuperadoException("El almacén ya cuenta con el número máximo de 6 fotografías"));
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .file(file)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("El almacén ya cuenta con el número máximo de 6 fotografías"));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-74: Dado un archivo que no es imagen o vacío, cuando lo cargo, entonces recibo 400 (Bad Request)")
+    void debeRechazarArchivoVacioONoImagenConHttp400() throws Exception {
+        MockMultipartFile emptyFile = new MockMultipartFile(
+                "archivo",
+                "vacio.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[0]
+        );
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .file(emptyFile)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Se requiere adjuntar un archivo de imagen válido"));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-74: Dado formato no admitido validado por caso de uso, cuando lo cargo, entonces recibo 400 (Bad Request)")
+    void debeRechazarFormatoNoImagenConHttp400() throws Exception {
+        MockMultipartFile textFile = new MockMultipartFile(
+                "archivo",
+                "documento.pdf",
+                MediaType.APPLICATION_PDF_VALUE,
+                "%PDF-1.4 fake".getBytes()
+        );
+
+        when(registrarFotografiaUseCase.registrarFotografia(
+                eq(NIT),
+                anyString(),
+                anyString(),
+                anyLong(),
+                any(InputStream.class),
+                eq(100L)
+        )).thenThrow(new ArchivoNoEsImagenException("El archivo debe ser una imagen válida (JPEG, PNG o WEBP)"));
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .file(textFile)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("El archivo debe ser una imagen válida (JPEG, PNG o WEBP)"));
+    }
+
+    @Test
+    @DisplayName("SR-RF-74 B-2.3: Dado archivo que supera 6 MB, retorna 413 Payload Too Large")
+    void debeRetornar413CuandoArchivoSupera6MB() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "archivo",
+                "pesada.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "fake image".getBytes()
+        );
+
+        when(registrarFotografiaUseCase.registrarFotografia(
+                eq(NIT),
+                anyString(),
+                anyString(),
+                anyLong(),
+                any(InputStream.class),
+                eq(100L)
+        )).thenThrow(new TamanoArchivoExcedidoException("La imagen supera el tamaño máximo de 6 MB"));
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .file(file)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isPayloadTooLarge())
+                .andExpect(jsonPath("$.status").value(413))
+                .andExpect(jsonPath("$.message").value("La imagen supera el tamaño máximo de 6 MB"));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-74: Dado un almacén que no es mío, cuando cargo fotos, entonces recibo 403 (Forbidden)")
+    void debeRechazarCargaEnAlmacenAjenoConHttp403() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "archivo",
+                "tienda.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "fake image".getBytes()
+        );
+
+        when(registrarFotografiaUseCase.registrarFotografia(
+                eq(NIT),
+                anyString(),
+                anyString(),
+                anyLong(),
+                any(InputStream.class),
+                eq(999L)
+        )).thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .file(file)
+                        .header("X-User-Id", 999L))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
+    }
+
+    @Test
+    @DisplayName("Criterio SR-RF-74: Dado un almacén inexistente, cuando cargo fotos, entonces recibo 404 (Not Found)")
+    void debeRetornar404CuandoAlmacenNoExisteAlCargarFoto() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "archivo",
+                "tienda.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "fake image".getBytes()
+        );
+
+        when(registrarFotografiaUseCase.registrarFotografia(
+                eq("999999999"),
+                anyString(),
+                anyString(),
+                anyLong(),
+                any(InputStream.class),
+                eq(100L)
+        )).thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 999999999"));
+
+        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", "999999999")
+                        .file(file)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("SR-RF-74: Debe listar y reordenar fotografías de un almacén correctamente (HTTP 200)")
+    void debeListarYReordenarFotografiasDeAlmacenConHttp200() throws Exception {
+        List<FotografiaTiendaResponseDTO> fotos = List.of(
+                new FotografiaTiendaResponseDTO(1L, NIT, "https://blob/foto1.jpg", 1, true, Instant.now()),
+                new FotografiaTiendaResponseDTO(2L, NIT, "https://blob/foto2.jpg", 2, false, Instant.now())
+        );
+
+        when(registrarFotografiaUseCase.listarFotografias(NIT)).thenReturn(fotos);
+        when(registrarFotografiaUseCase.reordenarFotografias(eq(NIT), eq(List.of(2L, 1L)), eq(100L))).thenReturn(List.of(
+                new FotografiaTiendaResponseDTO(2L, NIT, "https://blob/foto2.jpg", 1, true, Instant.now()),
+                new FotografiaTiendaResponseDTO(1L, NIT, "https://blob/foto1.jpg", 2, false, Instant.now())
+        ));
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}/fotografias", NIT)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        ReordenarFotografiasRequestDTO reorderReq = new ReordenarFotografiasRequestDTO(List.of(2L, 1L));
+        mockMvc.perform(put("/api/v1/almacenes/{nit}/fotografias/orden", NIT)
+                        .header("X-User-Id", 100L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reorderReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(2L))
+                .andExpect(jsonPath("$[0].portada").value(true));
+    }
+
+    @Test
+    @DisplayName("SR-RF-74: Debe eliminar fotografía de un almacén correctamente (HTTP 204)")
+    void debeEliminarFotografiaConHttp204() throws Exception {
+        doNothing().when(registrarFotografiaUseCase).eliminarFotografia(NIT, 1L, 100L);
+
+        mockMvc.perform(delete("/api/v1/almacenes/{nit}/fotografias/{fotoId}", NIT, 1L)
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("SR-RF-62: POST /api/v1/almacenes, GET /mi-almacen y POST /documentos/rut funcionan y validan duplicados")
+    void debeRegistrarAlmacenMiAlmacenSubirRutYRechazarDuplicado() throws Exception {
+        RegistrarAlmacenRequestDTO req = RegistrarAlmacenRequestDTO.builder()
+                .nit("900123456-1")
+                .nombreComercial("Atelier Urbano Chapinero")
+                .descripcion("Moda independiente")
+                .telefono("+57 601 312 4455")
+                .correoContacto("contacto@atelierurbano.co")
+                .latitud(4.6533)
+                .longitud(-74.0602)
+                .categorias(Set.of(CategoriaAlmacen.CASUAL))
+                .urlRutPdf("https://blob/rut.pdf")
+                .build();
+
+        VerificacionAlmacenResponseDTO resp = new VerificacionAlmacenResponseDTO(
+                "900123456-1", "Atelier Urbano Chapinero", "Moda independiente", "+57 601 312 4455",
+                "contacto@atelierurbano.co", 4.6533, -74.0602, 0.0, Set.of(CategoriaAlmacen.CASUAL),
+                EstadoVerificacionAlmacen.PENDIENTE, false, null, null, null, "https://blob/rut.pdf", "Usuario #10");
+
+        when(registrarAlmacenUseCase.registrarAlmacen(any(RegistrarAlmacenRequestDTO.class), eq(10L)))
+                .thenReturn(resp)
+                .thenThrow(new AlmacenYaRegistradoException("Ya existe un almacén registrado con el NIT: 900123456-1"));
+        when(registrarAlmacenUseCase.obtenerMiAlmacen(10L)).thenReturn(resp);
+        when(registrarAlmacenUseCase.subirDocumentoRut(any(), any(), anyLong(), any(), eq(10L), any()))
+                .thenReturn(new DocumentoSubidoResponseDTO("https://blob/rut.pdf", "rut.pdf", "application/pdf", 100L, Instant.now()));
+
+        mockMvc.perform(post("/api/v1/almacenes")
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nit").value("900123456-1"))
+                .andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"));
+
+        mockMvc.perform(get("/api/v1/almacenes/mi-almacen")
+                        .header("X-User-Id", 10L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value("900123456-1"));
+
+        MockMultipartFile rutFile = new MockMultipartFile(
+                "archivo", "rut.pdf", MediaType.APPLICATION_PDF_VALUE, "%PDF-1.4".getBytes());
+        mockMvc.perform(multipart("/api/v1/almacenes/documentos/rut")
+                        .file(rutFile)
+                        .header("X-User-Id", 10L))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.url").value("https://blob/rut.pdf"));
+
+        mockMvc.perform(post("/api/v1/almacenes")
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.validationErrors.nit").exists());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/almacenes y GET /api/v1/almacenes/{nit} deben consultar almacenes reales")
+    void debeConsultarAlmacenesYDetallePorNit() throws Exception {
+        AlmacenResponseDTO item = new AlmacenResponseDTO(
+                NIT, "Atelier Urbano", "Moda", 4.65, -74.06, 4.8, Set.of(CategoriaAlmacen.CASUAL));
+        PageResponseDTO<AlmacenResponseDTO> page = new PageResponseDTO<>(
+                List.of(item), 0, 20, 1L, 1, true, true);
+
+        when(registrarAlmacenUseCase.consultarAlmacenes(any())).thenReturn(page);
+        when(registrarAlmacenUseCase.obtenerPorNit(NIT)).thenReturn(item);
+
+        mockMvc.perform(get("/api/v1/almacenes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].nit").value(NIT));
+
+        mockMvc.perform(get("/api/v1/almacenes/{nit}", NIT))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value(NIT));
+    }
+
+    @Test
+    @DisplayName("SR-RF-59 / SR-RF-60: PATCH ultimas-unidades y nueva-llegada deben responder 200 OK con body JSON o query param y 422 cuando no cumplen")
+    void debeMarcarDistintivosYRetornar422CuandoNoCumplen() throws Exception {
+        DistintivoPrendaAlmacenResponseDTO respUltimas = new DistintivoPrendaAlmacenResponseDTO(
+                NIT, 104L, true, 3, false, 7, "ULTIMAS_UNIDADES", Instant.now());
+        DistintivoPrendaAlmacenResponseDTO respNueva = new DistintivoPrendaAlmacenResponseDTO(
+                NIT, 104L, false, 3, true, 7, "NUEVA_PRENDA", Instant.now());
+
+        when(marcarDistintivoUseCase.marcarUltimasUnidades(eq(NIT), eq(104L), eq(2), eq(10L)))
+                .thenReturn(respUltimas);
+        when(marcarDistintivoUseCase.evaluarUltimasUnidades(eq(NIT), eq(104L), any(EvaluarUltimasUnidadesRequestDTO.class), eq(10L)))
+                .thenReturn(respUltimas);
+        when(marcarDistintivoUseCase.marcarUltimasUnidades(eq(NIT), eq(104L), eq(10), eq(10L)))
+                .thenThrow(new PrendaNoCumpleDistintivoException("Stock supera el umbral"));
+
+        when(marcarDistintivoUseCase.marcarNuevaLlegada(eq(NIT), eq(104L), any(), eq(10L)))
+                .thenReturn(respNueva)
+                .thenThrow(new PrendaNoCumpleDistintivoException("Fecha supera el periodo"));
+        when(marcarDistintivoUseCase.evaluarNuevaLlegada(eq(NIT), eq(104L), any(EvaluarNuevaLlegadaRequestDTO.class), eq(10L)))
+                .thenReturn(respNueva);
+
+        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades", NIT, 104L)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stockActual\":2,\"disponible\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ultimasUnidades").value(true))
+                .andExpect(jsonPath("$.distintivoActivo").value("ULTIMAS_UNIDADES"));
+
+        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades", NIT, 104L)
+                        .param("stockActual", "10")
+                        .header("X-User-Id", 10L))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
+
+        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada", NIT, 104L)
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fechaPublicacion\":\"2026-11-10T10:00:00Z\",\"retirada\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nuevaLlegada").value(true))
+                .andExpect(jsonPath("$.distintivoActivo").value("NUEVA_PRENDA"));
+
+        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada", NIT, 104L)
+                        .header("X-User-Id", 10L))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada", NIT, 104L)
+                        .header("X-User-Id", 10L))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
+    }
+}

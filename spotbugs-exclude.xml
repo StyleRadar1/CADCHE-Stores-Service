@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Excluir advertencias de exposicion de representacion mutable en DTOs y sus Builders -->
+    <Match>
+        <Package name="~.*\.application\.dto.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="~.*DTO.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <!-- Excluir advertencias de exposicion de colecciones mutables en entidades JPA y modelos de dominio -->
+    <Match>
+        <Package name="~.*\.infrastructure\.adapter\.out\.persistence\.entity.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Package name="~.*\.domain\.model.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <!-- Excluir advertencias de inyección de componentes Spring en adaptadores de infraestructura y casos de uso -->
+    <Match>
+        <Package name="~.*\.application\.usecase.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Package name="~.*\.infrastructure\.adapter.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Package name="~.*\.infrastructure\.security.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+</FindBugsFilter>

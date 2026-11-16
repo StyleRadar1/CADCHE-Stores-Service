@@ -1,0 +1,80 @@
+# ==============================================================================
+# STYLE RADAR - CONFIGURACIÓN MICROSERVICIO DOCKER CONTAINER (ESTÁNDARES DE INDUSTRIA)
+# Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
+# ==============================================================================
+
+server:
+  port: ${SERVER_PORT:8140}
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:tiendas-db}:${DB_PORT:5432}/${DB_NAME:styleradar_tiendas}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: TiendasHikariPool
+      maximum-pool-size: 5
+      minimum-idle: 2
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:tiendas-rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+azure:
+  storage:
+    blob-endpoint: ${AZURE_STORAGE_BLOB_ENDPOINT:http://tiendas-blob:10000/devstoreaccount1}
+
+swagger:
+  server-url: ${SWAGGER_SERVER_URL:http://localhost:8140}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
