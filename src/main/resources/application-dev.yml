@@ -21,3 +21,8 @@ styleradar:
     jwt:
       secret-base64: ${JWT_SECRET_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
     trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:true}
+
+azure:
+  storage:
+    # Sin Azure ni Azurite: archivos en memoria (CADCHE-117).
+    memoria-permitida: true

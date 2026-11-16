@@ -10,14 +10,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Pruebas Unitarias e Integración - AzureBlobStorageAdapter (SR-RF-74)")
-class AzureBlobStorageAdapterTest {
+@DisplayName("Pruebas Unitarias e Integración - MemoriaBlobStorageAdapter (SR-RF-74)")
+class MemoriaBlobStorageAdapterTest {
 
-    private AzureBlobStorageAdapter adapter;
+    private MemoriaBlobStorageAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new AzureBlobStorageAdapter("https://styleradarblob.blob.core.windows.net");
+        adapter = new MemoriaBlobStorageAdapter("https://styleradarblob.blob.core.windows.net");
     }
 
     @Test
@@ -40,8 +40,8 @@ class AzureBlobStorageAdapterTest {
     @Test
     @DisplayName("SR-RF-74: Debe usar endpoint por defecto si se provee null o cadena en blanco")
     void debeUsarEndpointPorDefectoConValoresNulosOVacios() {
-        AzureBlobStorageAdapter adapterNull = new AzureBlobStorageAdapter(null);
-        AzureBlobStorageAdapter adapterBlanco = new AzureBlobStorageAdapter("   ");
+        MemoriaBlobStorageAdapter adapterNull = new MemoriaBlobStorageAdapter(null);
+        MemoriaBlobStorageAdapter adapterBlanco = new MemoriaBlobStorageAdapter("   ");
 
         InputStream stream = new ByteArrayInputStream("datos".getBytes());
         String urlNull = adapterNull.subirArchivo("fotos", "1.webp", stream, "image/webp", 5);
@@ -54,7 +54,7 @@ class AzureBlobStorageAdapterTest {
     @Test
     @DisplayName("SR-RF-74: Debe eliminar slashes finales del endpoint configurado")
     void debeNormalizarSlashesFinales() {
-        AzureBlobStorageAdapter adapterConSlashes = new AzureBlobStorageAdapter("https://customblob.azure.com///");
+        MemoriaBlobStorageAdapter adapterConSlashes = new MemoriaBlobStorageAdapter("https://customblob.azure.com///");
         InputStream stream = new ByteArrayInputStream("datos".getBytes());
         String url = adapterConSlashes.subirArchivo("fotos", "1.webp", stream, "image/webp", 5);
 

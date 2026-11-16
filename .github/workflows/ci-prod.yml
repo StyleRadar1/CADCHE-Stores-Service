@@ -157,6 +157,14 @@ jobs:
               echo "::error::Falta RABBITMQ_HOST de PROD. Configure el secreto RABBITMQ_HOST_PROD."
               exit 1
             fi
+            # CADCHE-117: cadena de conexión de Azure Blob Storage; sin ella las subidas responden 503.
+            BLOB_CS="${{ secrets.AZURE_STORAGE_CONNECTION_STRING_PROD }}"
+            if [ -n "$BLOB_CS" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings AZURE_STORAGE_CONNECTION_STRING="$BLOB_CS"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='AZURE_STORAGE_CONNECTION_STRING'].name" -o tsv)" ]; then
+              echo "::warning::Falta AZURE_STORAGE_CONNECTION_STRING. Configure el secreto AZURE_STORAGE_CONNECTION_STRING_PROD; las subidas responderán 503."
+            fi
             JWT_SECRET="${{ secrets.JWT_SECRET_BASE64_PROD || secrets.JWT_SECRET_PROD }}"
             if [ -n "$JWT_SECRET" ]; then
               az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \

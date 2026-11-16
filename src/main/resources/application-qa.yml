@@ -42,7 +42,9 @@ spring:
 
 azure:
   storage:
-    blob-endpoint: ${AZURE_STORAGE_BLOB_ENDPOINT:https://styleradarblobqa.blob.core.windows.net}
+    # CADCHE-117: cadena de conexión de la cuenta de Storage (secreto). Sin ella las subidas responden 503.
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:}
+    contenedores-publicos: ${AZURE_STORAGE_CONTENEDORES_PUBLICOS:tiendas,documentos-almacenes,documentos-fundaciones}
 
 swagger:
   server-url: ${SWAGGER_SERVER_URL:https://styleradar-tiendas-qa.azurewebsites.net}

@@ -211,7 +211,7 @@ tiendas/
     ├── adapter/in/rest/         4 controladores + doc/ (Swagger) + AuthRequestContextResolver
     ├── adapter/out/persistence/ adaptadores, entidades JPA, mappers y repositorios Spring Data
     ├── adapter/out/messaging/   RabbitMQFundacionEventPublisherAdapter + config
-    ├── adapter/out/storage/     AzureBlobStorageAdapter
+    ├── adapter/out/storage/     AzureBlobStorageAdapter (SDK real) · MemoriaBlobStorageAdapter (dev/test) · BlobNoDisponibleAdapter (503)
     ├── config/                  BeanConfig, CorsConfig, SwaggerConfig
     ├── exception/               GlobalExceptionHandler
     └── security/                JwtAuthFilter, JwtSecurityValidator, IdentidadVerificadaRequest, SecurityHeadersFilter
@@ -308,7 +308,7 @@ Cada evento lleva un `eventoId` para que los consumidores sean idempotentes.
 | Migraciones | Flyway | `10.20.1` | V1..V6 con `ddl-auto=validate`. |
 | Mensajería | RabbitMQ (Spring AMQP) | `3.13` | Eventos de fundaciones. |
 | Seguridad | JJWT | `0.12.6` | Validación de los JWT de ms-auth (misma librería y versión). |
-| Almacenamiento | Azure Blob Storage SDK | — | RUT, fotos y certificados (Azurite en local). |
+| Almacenamiento | Azure Blob Storage SDK (`azure-storage-blob`) | `12.29.1` | Subida real de RUT, fotos y certificados (CADCHE-117); Azurite en `docker` y en `AzureBlobStorageAdapterIntegrationTest`. |
 | Documentación | springdoc-openapi | `2.3.0` | Swagger UI y OpenAPI 3. |
 | Pruebas | JUnit 5, Mockito, Testcontainers | `5.10 / 5.7 / 1.19.8` | Unitarias, WebMvc e integración con **PostgreSQL 16 real**. |
 | Calidad | JaCoCo, SpotBugs, SonarCloud | `0.8.12 / 4.8.6 / –` | Cobertura ≥ 85 % y análisis estático. |
@@ -354,7 +354,9 @@ Plantilla en [`.env.example`](.env.example). En Azure, los pipelines configuran 
 | `JWT_SECRET_BASE64` | **Mismo secreto Base64 de ms-auth** (≥ 256 bits). Obligatorio en QA y PROD; sin él, o con un secreto de ejemplo, el servicio no arranca. | Solo dev/docker tienen un valor de ejemplo |
 | `TRUST_GATEWAY_HEADERS` | Acepta `X-User-*` sin token. Solo `true` en local o con red restringida al Gateway | `false` (`true` en dev/docker) |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USER` / `RABBITMQ_PASSWORD` / `RABBITMQ_SSL_ENABLED` | Broker | `localhost` / `5672` |
-| `AZURE_STORAGE_BLOB_ENDPOINT` | Cuenta de Azure Blob (Azurite en local) | Ver YAML |
+| `AZURE_STORAGE_CONNECTION_STRING` | Cadena de conexión de Azure Blob Storage (secreto `AZURE_STORAGE_CONNECTION_STRING_QA/PROD`). Sin ella, en QA/PROD las subidas responden `503` | Azurite en `docker`; memoria en `dev`/`test` |
+| `AZURE_STORAGE_CONTENEDORES_PUBLICOS` | Contenedores con lectura anónima por blob (la URL devuelta abre; no se pueden listar) | `tiendas,documentos-almacenes,documentos-fundaciones` |
+| `RABBITMQ_HOST` (PROD) | Sin valor por defecto: PROD nunca apunta al broker de QA (CADCHE-131) | Secreto `RABBITMQ_HOST_PROD` |
 | `SWAGGER_SERVER_URL` | URL pública que muestra Swagger | Por ambiente |
 | `JPA_DDL_AUTO` / `FLYWAY_ENABLED` | Validación del esquema y migraciones | `validate` / según perfil |
 
@@ -680,7 +682,7 @@ El Technology Radar de StyleRadar categoriza las tecnologías según su nivel de
 
 #### Cuadrante 2: Almacenamiento & Datos
 * **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 10.20.1 (`V1..V6`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
-* **TRIAL:** Integración completa del SDK Azure Blob Storage v12 para subida directa de binarios desde `AzureBlobStorageAdapter`.
+* **ADOPT:** SDK Azure Blob Storage v12 para la subida directa de binarios desde `AzureBlobStorageAdapter` (CADCHE-117).
 * **ASSESS:** PostGIS y Redis en iteraciones futuras si aumenta la carga de lectura geoespacial.
 * **HOLD:** MongoDB para transacciones relacionales de NIT o binarios `BYTEA` dentro de PostgreSQL.
 
@@ -884,7 +886,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Acciones y Controles Técnicos Implementados**:
   1. **Mitigación BOLA/IDOR (`SR-RNF-01`)**: Se implementó `AutorizacionAlmacenValidator` (`domain/validator/`). Al recibir una mutación sobre `/api/v1/almacenes/{nit}/...` (configuración de catálogo o fotografías), el componente valida mediante `AlmacenRepositoryPort` (`SpringDataAdministradorAlmacenRepository`) que `usuarioId` esté asociado al NIT. Si no existe coincidencia, lanza `AccesoDenegadoAlmacenException` (`403 Forbidden`).
   2. **Control de Acceso Administrativo (RBAC en Dominio)**: Los endpoints administrativos bajo `/api/v1/admin/**` delegan en `AutorizacionAdminStyleRadarValidator`, exigiendo el rol `ROLE_ADMIN_STYLERADAR`.
-  3. **Prevención de SSRF**: Las URLs retornadas por `AzureBlobStorageAdapter` se construyen internamente sobre el `endpointBase` configurado (`https://{account}.blob.core.windows.net/` o Azurite en local).
+  3. **Prevención de SSRF**: Las URLs retornadas por `AzureBlobStorageAdapter` salen del cliente del SDK de la cuenta configurada (`https://{account}.blob.core.windows.net/` o Azurite en local), y `eliminarArchivo` ignora URLs de otras cuentas.
 
 #### A02:2025 – Security Misconfiguration (Configuración Errónea de Seguridad)
 * **¿Aplica?**: **SÍ (Alto)**. La exposición indebida de cabeceras o CORS permisivo facilita ataques cross-site y reconocimiento de infraestructura.
@@ -1088,9 +1090,9 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
     - Conexión a PostgreSQL 16 en Azure configurable con `sslmode=require` (`application-prod.yml` / `application-qa.yml`).
   * **En Local:** En desarrollo con `docker-compose.yml`, el tráfico viaja en HTTP plano (`localhost:8140`).
 * **Riesgos encontrados:**  
-  1. *Integración SDK Azure Blob y entorno local*: En desarrollo local los endpoints no usan TLS, y `AzureBlobStorageAdapter` actualmente construye la ruta HTTPS esperada sin carga binaria directa con SDK Azure Blob v12.
+  1. *Entorno local*: con `docker-compose.yml` Azurite se expone por HTTP plano. En QA/PROD `AzureBlobStorageAdapter` sube con el SDK `azure-storage-blob` sobre HTTPS (CADCHE-117).
 * **Qué se va a corregir:**  
-  1. Conectar `AzureBlobStorageAdapter` con `azure-storage-blob` sobre TLS hacia Azure Storage Account QA/PROD.
+  1. Hecho (CADCHE-117): `AzureBlobStorageAdapter` usa `azure-storage-blob` sobre TLS con la cuenta de QA/PROD; sin configuración responde `503` y nunca devuelve una URL falsa.
   2. Evaluar cifrado adicional a nivel de columna para datos fiscales sensibles en futuras iteraciones.
 
 ##### C. Integridad de datos y mensajes entre servicios

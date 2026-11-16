@@ -23,7 +23,6 @@ services:
       DB_NAME: ${POSTGRES_DB:-styleradar_tiendas}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      AZURE_STORAGE_BLOB_ENDPOINT: http://tiendas-blob:10000/devstoreaccount1
       RABBITMQ_HOST: tiendas-rabbitmq
       RABBITMQ_PORT: 5672
       SWAGGER_SERVER_URL: http://localhost:8140

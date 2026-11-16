@@ -1,78 +1,114 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
-import java.util.Optional;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import com.azure.core.util.Context;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobUrlParts;
+import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.models.PublicAccessType;
+import com.azure.storage.blob.options.BlobParallelUploadOptions;
 
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenamientoNoDisponibleException;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import lombok.extern.slf4j.Slf4j;
 
-@Component
+/**
+ * Adaptador real de Azure Blob Storage (CADCHE-117): sube fotos de la tienda, RUT del almacén y certificado de la
+ * fundación y devuelve la URL del blob guardado. Los contenedores se crean en el primer uso; los listados en
+ * {@code contenedoresPublicos} permiten lectura anónima por blob (no se pueden listar) para que la URL abra.
+ */
 @Slf4j
 public class AzureBlobStorageAdapter implements AlmacenamientoBlobPort {
 
-    private final String endpointBase;
-    private final Map<String, byte[]> blobsAlmacenados = new ConcurrentHashMap<>();
+    private static final String MENSAJE_NO_DISPONIBLE =
+            "El almacenamiento de archivos no está disponible. Intente nuevamente más tarde.";
 
-    public AzureBlobStorageAdapter(
-            @Value("${azure.storage.blob-endpoint:https://styleradarblob.blob.core.windows.net}") String endpointBase) {
-        if (endpointBase == null || endpointBase.isBlank()) {
-            this.endpointBase = "https://styleradarblob.blob.core.windows.net";
-        } else {
-            String trimmed = endpointBase.trim();
-            while (trimmed.endsWith("/")) {
-                trimmed = trimmed.substring(0, trimmed.length() - 1);
-            }
-            this.endpointBase = trimmed;
-        }
+    private final BlobServiceClient serviceClient;
+    private final Set<String> contenedoresPublicos;
+    private final Set<String> contenedoresListos = ConcurrentHashMap.newKeySet();
+
+    public AzureBlobStorageAdapter(BlobServiceClient serviceClient, Set<String> contenedoresPublicos) {
+        this.serviceClient = serviceClient;
+        this.contenedoresPublicos = Set.copyOf(contenedoresPublicos);
     }
 
     @Override
     public String subirArchivo(String contenedor, String rutaDestino, InputStream contenido, String contentType, long tamano) {
-        log.info("Subiendo archivo a Azure Blob Storage. Contenedor: '{}', Ruta: '{}', ContentType: '{}', Tamaño: {} bytes",
-                contenedor, rutaDestino, contentType, tamano);
-
-        byte[] payload = leerContenido(contenido);
-        String urlPublica = endpointBase + "/" + contenedor + "/" + rutaDestino;
-        blobsAlmacenados.put(urlPublica, payload);
-
-        log.info("Blob almacenado en Azure Blob ({} bytes leídos). URL resultante: {}", payload.length, urlPublica);
-        return urlPublica;
+        try {
+            BlobContainerClient cliente = contenedor(contenedor);
+            BlobClient blob = cliente.getBlobClient(rutaDestino);
+            BlobParallelUploadOptions opciones = new BlobParallelUploadOptions(contenido)
+                    .setHeaders(new BlobHttpHeaders().setContentType(contentType));
+            blob.uploadWithResponse(opciones, null, Context.NONE);
+            log.info("Archivo subido a Azure Blob. Contenedor: '{}', ruta: '{}', {} bytes", contenedor, rutaDestino, tamano);
+            return cliente.getBlobContainerUrl() + "/" + codificarRuta(rutaDestino);
+        } catch (RuntimeException ex) {
+            log.error("No fue posible subir el archivo al contenedor '{}' de Azure Blob", contenedor, ex);
+            throw new AlmacenamientoNoDisponibleException(MENSAJE_NO_DISPONIBLE, ex);
+        }
     }
 
     @Override
     public void eliminarArchivo(String urlArchivo) {
-        log.info("Eliminando blob de Azure Blob Storage: {}", urlArchivo);
-        if (urlArchivo != null && !urlArchivo.isBlank()) {
-            blobsAlmacenados.remove(urlArchivo);
-        }
-    }
-
-    public boolean existeBlob(String urlArchivo) {
-        return urlArchivo != null && blobsAlmacenados.containsKey(urlArchivo);
-    }
-
-    public Optional<byte[]> obtenerBlob(String urlArchivo) {
-        if (urlArchivo == null) {
-            return Optional.empty();
-        }
-        byte[] bytes = blobsAlmacenados.get(urlArchivo);
-        return bytes != null ? Optional.of(bytes.clone()) : Optional.empty();
-    }
-
-    private byte[] leerContenido(InputStream contenido) {
-        if (contenido == null) {
-            return new byte[0];
+        if (urlArchivo == null || urlArchivo.isBlank() || !urlArchivo.startsWith(serviceClient.getAccountUrl())) {
+            return;
         }
         try {
-            return contenido.readAllBytes();
-        } catch (IOException ex) {
-            throw new IllegalStateException("No fue posible almacenar el archivo en el repositorio de objetos", ex);
+            BlobUrlParts partes = BlobUrlParts.parse(urlArchivo);
+            serviceClient.getBlobContainerClient(partes.getBlobContainerName())
+                    .getBlobClient(partes.getBlobName())
+                    .deleteIfExists();
+            log.info("Blob eliminado de Azure Blob: {}/{}", partes.getBlobContainerName(), partes.getBlobName());
+        } catch (RuntimeException ex) {
+            // Limpieza de mejor esfuerzo: un blob huérfano no debe tumbar la operación del usuario.
+            log.warn("No fue posible eliminar el blob {} de Azure Blob", urlArchivo, ex);
+        }
+    }
+
+    private BlobContainerClient contenedor(String nombre) {
+        BlobContainerClient cliente = serviceClient.getBlobContainerClient(nombre);
+        if (!contenedoresListos.contains(nombre)) {
+            if (!cliente.exists()) {
+                crearContenedor(cliente, nombre);
+            }
+            contenedoresListos.add(nombre);
+        }
+        return cliente;
+    }
+
+    /**
+     * URL legible: codifica cada segmento pero conserva las barras (el SDK las devuelve como {@code %2F}).
+     */
+    private static String codificarRuta(String ruta) {
+        return Arrays.stream(ruta.split("/", -1))
+                .map(segmento -> URLEncoder.encode(segmento, StandardCharsets.UTF_8).replace("+", "%20"))
+                .collect(Collectors.joining("/"));
+    }
+
+    private void crearContenedor(BlobContainerClient cliente, String nombre) {
+        if (!contenedoresPublicos.contains(nombre)) {
+            cliente.createIfNotExists();
+            return;
+        }
+        try {
+            cliente.createWithResponse(null, PublicAccessType.BLOB, null, Context.NONE);
+        } catch (BlobStorageException ex) {
+            if (cliente.exists()) {
+                return;
+            }
+            // La cuenta puede tener deshabilitado el acceso público: se crea privado y se avisa.
+            log.warn("La cuenta no permite acceso público; el contenedor '{}' se crea privado", nombre);
+            cliente.createIfNotExists();
         }
     }
 }

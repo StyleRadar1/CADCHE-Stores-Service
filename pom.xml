@@ -22,6 +22,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <azure-storage-blob.version>12.29.1</azure-storage-blob.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <lombok.version>1.18.42</lombok.version>
         <flyway.version>10.20.1</flyway.version>
@@ -39,6 +40,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- CADCHE-117: subida real de fotos, RUT y certificados a Azure Blob Storage -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+            <version>${azure-storage-blob.version}</version>
         </dependency>
 
         <dependency>

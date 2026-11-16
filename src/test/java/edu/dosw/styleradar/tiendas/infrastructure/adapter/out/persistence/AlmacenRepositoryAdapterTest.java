@@ -349,11 +349,11 @@ class AlmacenRepositoryAdapterTest {
     }
 
     @Test
-    @DisplayName("B-2.3 / B-0.3: AzureBlobStorageAdapter, AuthRequestContextResolver y excepciones 409")
+    @DisplayName("B-2.3 / B-0.3: MemoriaBlobStorageAdapter, AuthRequestContextResolver y excepciones 409")
     void debeCubrirStorageResolverYExcepcionesConflicto() {
-        var blobAdapter = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.AzureBlobStorageAdapter(
+        var blobAdapter = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.MemoriaBlobStorageAdapter(
                 "https://styleradarblob.blob.core.windows.net///");
-        var blobDefault = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.AzureBlobStorageAdapter("  ");
+        var blobDefault = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.MemoriaBlobStorageAdapter("  ");
 
         String url = blobAdapter.subirArchivo("tiendas", "1/foto.jpg",
                 new java.io.ByteArrayInputStream(new byte[]{1, 2, 3}), "image/jpeg", 3L);

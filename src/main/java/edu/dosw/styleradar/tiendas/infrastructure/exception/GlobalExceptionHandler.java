@@ -19,6 +19,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.AlmacenamientoNoDisponibleException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
@@ -165,6 +166,14 @@ public class GlobalExceptionHandler {
             cause = cause.getCause();
         }
         return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene parámetros inválidos",
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(AlmacenamientoNoDisponibleException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAlmacenamientoNoDisponible(
+            AlmacenamientoNoDisponibleException exception, HttpServletRequest request) {
+        log.error("Almacenamiento de archivos no disponible en {}", request.getRequestURI());
+        return buildResponse(CodigoError.SERVICIO_NO_DISPONIBLE, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
