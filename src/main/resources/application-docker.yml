@@ -78,3 +78,9 @@ management:
       enabled: true
     readinessstate:
       enabled: true
+
+styleradar:
+  security:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:true}

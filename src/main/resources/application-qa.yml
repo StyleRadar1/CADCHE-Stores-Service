@@ -66,3 +66,9 @@ management:
     rabbit:
       enabled: false
 
+# JWT_SECRET_BASE64 es obligatorio (mismo valor que ms-auth en este ambiente); sin el, el servicio no arranca.
+styleradar:
+  security:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64}
+    trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:false}

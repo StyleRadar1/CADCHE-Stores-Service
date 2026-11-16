@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -37,9 +38,11 @@ import edu.dosw.styleradar.tiendas.domain.model.DecisionVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.in.VerificarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
 @WebMvcTest(VerificacionAlmacenController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
+@ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - VerificacionAlmacenController (SR-RF-62)")
 class VerificacionAlmacenControllerIntegrationTest {
 

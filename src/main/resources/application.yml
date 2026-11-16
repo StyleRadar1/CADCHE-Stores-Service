@@ -20,11 +20,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:validate}
-    show-sql: true
+    show-sql: false
     open-in-view: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   flyway:
     enabled: ${FLYWAY_ENABLED:false}
@@ -67,3 +67,11 @@ management:
       enabled: true
     readinessstate:
       enabled: true
+
+# Seguridad: el JWT lo emite ms-auth (HS256 con el mismo secreto Base64). Las cabeceras X-User-* solo se
+# aceptan sin token cuando el servicio esta restringido a la red del API Gateway (contrato B-0.1 / B-0.3).
+styleradar:
+  security:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64:}
+    trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:false}

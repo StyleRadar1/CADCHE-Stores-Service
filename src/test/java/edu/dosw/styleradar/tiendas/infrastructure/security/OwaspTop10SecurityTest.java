@@ -36,6 +36,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoExc
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.support.TokensDePrueba;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.DecisionVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
@@ -179,10 +180,8 @@ class OwaspTop10SecurityTest {
         @Test
         @DisplayName("A04.1: Entropía mínima de 256 bits requerida para firmas criptográficas HMAC-SHA256")
         void test_A04_CryptographicFailures_JwtKeyEntropyEnforced() {
-            JwtSecurityValidator jwtValidator = new JwtSecurityValidator(objectMapper, SECRET_256_BITS);
-
-            assertThatThrownBy(() -> jwtValidator.generarToken(1L, "ROLE_USER", 3600, "clave_corta_insegura"))
-                    .isInstanceOf(IllegalArgumentException.class)
+            assertThatThrownBy(() -> new JwtSecurityValidator("Y2xhdmVfY29ydGFfaW5zZWd1cmE=", null))
+                    .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("256 bits");
         }
 
@@ -302,16 +301,16 @@ class OwaspTop10SecurityTest {
         @Test
         @DisplayName("A07.1: Tokens expirados o con firma alterada son rechazados inmediatamente")
         void test_A07_AuthenticationFailures_ExpiredAndTamperedTokensRejected() {
-            JwtSecurityValidator jwtValidator = new JwtSecurityValidator(objectMapper, SECRET_256_BITS);
+            JwtSecurityValidator jwtValidator = new JwtSecurityValidator(TokensDePrueba.SECRETO_DEV, null);
 
-            String tokenExpirado = jwtValidator.generarToken(1L, "ROLE_ADMIN", -50, SECRET_256_BITS);
-            assertThatThrownBy(() -> jwtValidator.validarToken(tokenExpirado))
+            String tokenExpirado = TokensDePrueba.token(1L, java.util.List.of("ADMIN_STYLERADAR"), -50);
+            assertThatThrownBy(() -> jwtValidator.validar(tokenExpirado))
                     .isInstanceOf(FalloAutenticacionException.class)
                     .hasMessageContaining("ha expirado");
 
-            String tokenValido = jwtValidator.generarToken(1L, "ROLE_ADMIN", 3600, SECRET_256_BITS);
-            String tokenFirmaFalsa = tokenValido.substring(0, tokenValido.length() - 4) + "XXXX";
-            assertThatThrownBy(() -> jwtValidator.validarToken(tokenFirmaFalsa))
+            String tokenFirmaFalsa = TokensDePrueba.token(
+                    TokensDePrueba.SECRETO_AJENO, 1L, java.util.List.of("ADMIN_STYLERADAR"), 3600);
+            assertThatThrownBy(() -> jwtValidator.validar(tokenFirmaFalsa))
                     .isInstanceOf(FalloAutenticacionException.class)
                     .hasMessageContaining("inválida o ha sido alterada");
         }
@@ -357,8 +356,13 @@ class OwaspTop10SecurityTest {
         @Test
         @DisplayName("A08.2: Operaciones mutadoras de casos de uso anotadas con @Transactional")
         void test_A08_SoftwareOrDataIntegrity_TransactionalIntegrity() {
-            assertThat(ConfigurarUmbralUltimasUnidadesUseCaseImpl.class)
-                    .hasAnnotation(org.springframework.stereotype.Service.class);
+            // Regla de oro 4: el caso de uso no lleva estereotipos de Spring; se registra en BeanConfig
+            assertThat(ConfigurarUmbralUltimasUnidadesUseCaseImpl.class
+                    .isAnnotationPresent(org.springframework.stereotype.Service.class)).isFalse();
+            assertThat(java.util.Arrays.stream(
+                            edu.dosw.styleradar.tiendas.infrastructure.config.BeanConfig.class.getDeclaredMethods())
+                    .anyMatch(m -> m.getReturnType().getSimpleName().equals("ConfigurarUmbralUltimasUnidadesUseCase")))
+                    .isTrue();
 
             boolean hasTransactionalMethods = java.util.Arrays.stream(
                             ConfigurarUmbralUltimasUnidadesUseCaseImpl.class.getDeclaredMethods())

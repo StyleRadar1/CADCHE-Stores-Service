@@ -16,14 +16,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.AdministradorAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.port.in.AsociarAdministradorAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
 @WebMvcTest(AsociacionAdministradorAlmacenController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
+@ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - AsociacionAdministradorAlmacenController (SR-RF-62 / BOLA)")
 class AsociacionAdministradorAlmacenControllerIntegrationTest {
 

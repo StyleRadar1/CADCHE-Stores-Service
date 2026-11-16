@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,9 +45,11 @@ import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ReactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
 @WebMvcTest(FundacionController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
+@ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - FundacionController (SR-RF-63 / SR-RF-64 / SR-RF-65)")
 class FundacionControllerIntegrationTest {
 

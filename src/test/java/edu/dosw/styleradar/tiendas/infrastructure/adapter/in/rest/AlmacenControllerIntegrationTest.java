@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,9 +64,11 @@ import edu.dosw.styleradar.tiendas.domain.port.in.MarcarDistintivoPrendaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFotografiaTiendaUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
 @WebMvcTest(AlmacenController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
+@ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - Controlador AlmacenController (SR-RF-59 / SR-RF-60 / SR-RF-62-A / SR-RF-74)")
 class AlmacenControllerIntegrationTest {
 
