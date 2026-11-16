@@ -179,11 +179,19 @@ jobs:
           API_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           HEALTH_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/actuator/health"
           echo "Ejecutando Smoke Test contra: $API_URL y $HEALTH_URL"
-          for i in $(seq 1 25); do
+          # Espera a que App Service reemplace el contenedor anterior para no validar la versión vieja.
+          sleep 90
+          SEGUIDOS=0
+          for i in $(seq 1 30); do
             STATUS_API=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" || true)
             STATUS_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
             echo "Intento $i: OpenAPI=$STATUS_API Health=$STATUS_HEALTH"
             if [ "$STATUS_API" = "200" ] && [ "$STATUS_HEALTH" = "200" ]; then
+              SEGUIDOS=$((SEGUIDOS + 1))
+            else
+              SEGUIDOS=0
+            fi
+            if [ "$SEGUIDOS" -ge 3 ]; then
               echo "Microservicio QA desplegado y respondiendo 200 OK (OpenAPI y Actuator Health)"
               exit 0
             fi

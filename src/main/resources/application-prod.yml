@@ -31,7 +31,8 @@ spring:
     locations: classpath:db/migration
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:styleradar-rabbitmq-qa.northcentralus.cloudapp.azure.com}
+    # CADCHE-131: sin valor por defecto; PROD nunca debe publicar en el broker de QA.
+    host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT:5671}
     username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:}}
     password: ${RABBITMQ_PASSWORD:}

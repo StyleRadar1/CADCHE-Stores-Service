@@ -144,11 +144,19 @@ jobs:
                 DB_USERNAME="${{ secrets.DB_USERNAME_PROD }}" \
                 DB_PASSWORD="${{ secrets.DB_PASSWORD_PROD }}" \
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_PROD || 'https://styleradarblobprod.blob.core.windows.net' }}" \
-                RABBITMQ_HOST="${{ secrets.RABBITMQ_HOST_PROD || secrets.RABBITMQ_HOST || 'styleradar-rabbitmq-qa.northcentralus.cloudapp.azure.com' }}" \
                 RABBITMQ_PORT="${{ secrets.RABBITMQ_PORT_PROD || '5671' }}" \
                 RABBITMQ_USER="${{ secrets.RABBITMQ_USER_PROD || secrets.RABBITMQ_USER || 'ms_tiendas' }}" \
                 RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD_PROD || secrets.RABBITMQ_PASSWORD }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+            # CADCHE-131: PROD nunca usa el broker de QA como valor por defecto.
+            RABBIT_HOST="${{ secrets.RABBITMQ_HOST_PROD }}"
+            if [ -n "$RABBIT_HOST" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings RABBITMQ_HOST="$RABBIT_HOST"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='RABBITMQ_HOST'].name" -o tsv)" ]; then
+              echo "::error::Falta RABBITMQ_HOST de PROD. Configure el secreto RABBITMQ_HOST_PROD."
+              exit 1
+            fi
             JWT_SECRET="${{ secrets.JWT_SECRET_BASE64_PROD || secrets.JWT_SECRET_PROD }}"
             if [ -n "$JWT_SECRET" ]; then
               az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
@@ -173,11 +181,19 @@ jobs:
           API_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           HEALTH_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/actuator/health"
           echo "Ejecutando Smoke Test contra: $API_URL y $HEALTH_URL"
-          for i in $(seq 1 25); do
+          # Espera a que App Service reemplace el contenedor anterior para no validar la versión vieja.
+          sleep 90
+          SEGUIDOS=0
+          for i in $(seq 1 30); do
             STATUS_API=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" || true)
             STATUS_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
             echo "Intento $i: OpenAPI=$STATUS_API Health=$STATUS_HEALTH"
             if [ "$STATUS_API" = "200" ] && [ "$STATUS_HEALTH" = "200" ]; then
+              SEGUIDOS=$((SEGUIDOS + 1))
+            else
+              SEGUIDOS=0
+            fi
+            if [ "$SEGUIDOS" -ge 3 ]; then
               echo "Microservicio Produccion desplegado y respondiendo 200 OK (OpenAPI y Actuator Health)"
               exit 0
             fi
