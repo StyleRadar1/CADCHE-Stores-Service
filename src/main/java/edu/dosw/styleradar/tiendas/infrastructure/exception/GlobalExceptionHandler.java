@@ -1,10 +1,10 @@
 package edu.dosw.styleradar.tiendas.infrastructure.exception;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -34,6 +34,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoExce
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.exception.RutRequeridoParaAprobacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.TamanoArchivoExcedidoException;
+import edu.dosw.styleradar.tiendas.domain.model.CodigoError;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +46,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleReglaDeNegocio(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Regla de negocio no satisfecha en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+        return buildResponse(CodigoError.REGLA_DE_NEGOCIO, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -53,7 +54,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(
             IllegalArgumentException exception, HttpServletRequest request) {
         log.warn("Argumento inválido en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(),
+        return buildResponse(CodigoError.DATOS_INVALIDOS, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -61,7 +62,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleFalloAutenticacion(
             FalloAutenticacionException exception, HttpServletRequest request) {
         log.warn("Falla de autenticación (401) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(),
+        return buildResponse(CodigoError.NO_AUTENTICADO, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -69,7 +70,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleAccesoDenegado(
             AccesoDenegadoAlmacenException exception, HttpServletRequest request) {
         log.warn("Acceso denegado (403 BOLA/IDOR) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(),
+        return buildResponse(CodigoError.ACCESO_DENEGADO, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -77,7 +78,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleRecursoNoEncontrado(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Recurso no encontrado (404) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(),
+        return buildResponse(CodigoError.RECURSO_NO_ENCONTRADO, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -97,7 +98,7 @@ public class GlobalExceptionHandler {
         } else if (exception instanceof FundacionYaRegistradaException ex) {
             validationErrors = ex.getValidationErrors();
         }
-        return buildResponse(HttpStatus.CONFLICT, exception.getMessage(),
+        return buildResponse(CodigoError.CONFLICTO, exception.getMessage(),
                 request.getRequestURI(), validationErrors);
     }
 
@@ -108,7 +109,7 @@ public class GlobalExceptionHandler {
                 ? exception.getMessage()
                 : "La imagen supera el tamaño máximo de 6 MB";
         log.warn("Tamaño de archivo excedido (413) en {}: {}", request.getRequestURI(), mensaje);
-        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, mensaje,
+        return buildResponse(CodigoError.ARCHIVO_DEMASIADO_GRANDE, mensaje,
                 request.getRequestURI(), Map.of());
     }
 
@@ -121,7 +122,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleEntidadNoProcesable(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Operación no procesable (422) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(),
+        return buildResponse(CodigoError.OPERACION_NO_PROCESABLE, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -131,7 +132,7 @@ public class GlobalExceptionHandler {
         Map<String, String> validationErrors = new LinkedHashMap<>();
         exception.getBindingResult().getFieldErrors().forEach(error ->
                 validationErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        return buildResponse(HttpStatus.BAD_REQUEST, "La solicitud contiene datos inválidos",
+        return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene datos inválidos",
                 request.getRequestURI(), validationErrors);
     }
 
@@ -141,7 +142,7 @@ public class GlobalExceptionHandler {
         Map<String, String> validationErrors = new LinkedHashMap<>();
         exception.getBindingResult().getFieldErrors().forEach(error ->
                 validationErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        return buildResponse(HttpStatus.BAD_REQUEST, "La solicitud contiene datos inválidos",
+        return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene datos inválidos",
                 request.getRequestURI(), validationErrors);
     }
 
@@ -158,19 +159,19 @@ public class GlobalExceptionHandler {
             if (cause instanceof IllegalArgumentException iae
                     && iae.getMessage() != null
                     && iae.getMessage().contains("Campo no permitido")) {
-                return buildResponse(HttpStatus.BAD_REQUEST, iae.getMessage(),
+                return buildResponse(CodigoError.DATOS_INVALIDOS, iae.getMessage(),
                         request.getRequestURI(), Map.of());
             }
             cause = cause.getCause();
         }
-        return buildResponse(HttpStatus.BAD_REQUEST, "La solicitud contiene parámetros inválidos",
+        return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene parámetros inválidos",
                 request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponseDTO> handleMethodNotSupported(
             HttpRequestMethodNotSupportedException exception, HttpServletRequest request) {
-        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "El método HTTP no está permitido para esta ruta",
+        return buildResponse(CodigoError.METODO_NO_PERMITIDO, "El método HTTP no está permitido para esta ruta",
                 request.getRequestURI(), Map.of());
     }
 
@@ -178,21 +179,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleUnexpected(
             Exception exception, HttpServletRequest request) {
         log.error("Error no controlado al procesar la ruta {}", request.getRequestURI(), exception);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+        return buildResponse(CodigoError.ERROR_INTERNO,
                 "Ocurrió un error interno. Intente nuevamente más tarde.",
                 request.getRequestURI(), Map.of());
     }
 
     private ResponseEntity<ErrorResponseDTO> buildResponse(
-            HttpStatus status, String message, String path, Map<String, String> validationErrors) {
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
-                .timestamp(LocalDateTime.now())
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .path(path)
-                .validationErrors(validationErrors)
-                .build();
-        return ResponseEntity.status(status).body(errorResponse);
+            CodigoError codigo, String message, String path, Map<String, String> validationErrors) {
+        HttpStatus status = HttpStatus.valueOf(codigo.estadoHttp());
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.problema(codigo, status.getReasonPhrase(), message,
+                path, validationErrors);
+        return ResponseEntity.status(status)
+                .contentType(MediaType.valueOf(ErrorResponseDTO.MEDIA_TYPE))
+                .body(errorResponse);
     }
 }

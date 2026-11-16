@@ -265,10 +265,12 @@ tiendas/
 | `PATCH` | `/api/v1/admin/fundaciones/{id}/activar` | SR-RF-65 · Reactivar (publica evento) | Admin |
 | `GET` | `/api/v1/fundaciones` | Fundaciones cercanas activas | Público |
 
-Formato de error (todas las respuestas 4xx y 5xx):
+Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `codigo`, `timestamp` y `validationErrors`; `error`, `message` y `path` quedan como alias de compatibilidad. Catálogo de `codigo`: `DATOS_INVALIDOS`, `REGLA_DE_NEGOCIO` (400), `NO_AUTENTICADO` (401), `ACCESO_DENEGADO` (403), `RECURSO_NO_ENCONTRADO` (404), `METODO_NO_PERMITIDO` (405), `CONFLICTO` (409), `ARCHIVO_DEMASIADO_GRANDE` (413), `OPERACION_NO_PROCESABLE` (422), `ERROR_INTERNO` (500) y `SERVICIO_NO_DISPONIBLE` (503).
 
 ```json
-{ "timestamp": "2026-11-13T15:04:05", "status": 409, "error": "Conflict",
+{ "type": "https://api.styleradar.com/errores/conflicto", "title": "Conflict", "status": 409,
+  "detail": "Ya existe una fundación con ese nombre", "instance": "/api/v1/admin/fundaciones",
+  "codigo": "CONFLICTO", "timestamp": "2026-11-13T15:04:05", "error": "Conflict",
   "message": "Ya existe una fundación con ese nombre", "path": "/api/v1/admin/fundaciones",
   "validationErrors": { "nombre": "Ya existe una fundación con ese nombre" } }
 ```
@@ -829,7 +831,7 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **09** | **08 · Ambientes** | Aislamiento estricto de infraestructura entre QA, Producción y Local (PostgreSQL SSL, puertos y salud AMQP deshabilitada). |
 | **10** | **09 · Eventos** | Integración AMQP con RabbitMQ: `FundacionDesactivadaEvent` (`styleradar.fundaciones.exchange`) y estado actual en QA/PROD. |
 | **11** | **10 · Roles** | Matriz RBAC por endpoint y mitigación de vulnerabilidades BOLA/IDOR (`SR-RNF-01` vía `AutorizacionAlmacenValidator`). |
-| **12** | **11 · Errores** | Catálogo de códigos HTTP con `ErrorResponseDTO` (`GlobalExceptionHandler`) y `401` (`JwtAuthFilter`). |
+| **12** | **11 · Errores** | Catálogo `CodigoError` con `ErrorResponseDTO` ProblemDetail (`GlobalExceptionHandler`) y `401` (`JwtAuthFilter`). |
 | **13** | **12 · Integraciones** | Mapeo de dependencias Upstream (síncronas vía API Gateway) y Downstream (`ms-segunda-vida-donaciones :8520`). |
 | **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`89.41%` instr. / `91.05%` líneas), `289` pruebas y pipeline CI/CD GitHub Actions. |
 | **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Azure App Service, BDs y Jira). |
@@ -961,7 +963,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
 * **Acciones y Controles Técnicos Implementados**:
   1. **Manejador Centralizado `GlobalExceptionHandler`**: Intercepta todas las excepciones de dominio (`AlmacenNoEncontradoException`, `AlmacenYaDecididoException`, `LimiteFotografiasSuperadoException`, `AccesoDenegadoAlmacenException`, etc.) y de validación Bean Validation.
-  2. **Respuesta Estructurada (`ErrorResponseDTO`)**: Cada fallo HTTP (`400`, `401`, `403`, `404`, `409`, `422`, `405`, `500`) retorna JSON uniforme con `timestamp`, `status`, `error`, `message`, `path` y `validationErrors` (y `application/problem+json` en `JwtAuthFilter`).
+  2. **Respuesta Estructurada (`ErrorResponseDTO`)**: Cada fallo HTTP (`400`, `401`, `403`, `404`, `409`, `422`, `405`, `500`) retorna ProblemDetail RFC 9457 (`application/problem+json`) con `type`, `title`, `status`, `detail`, `instance`, `codigo`, `timestamp` y `validationErrors`, también desde `JwtAuthFilter`.
   3. **Supresión Absoluta de Stack Traces**: En errores `500 Internal Server Error`, la traza técnica solo queda en el log del servidor; el cliente recibe únicamente un mensaje genérico seguro.
   4. **Aislamiento ante Indisponibilidad AMQP**: `RabbitMQFundacionEventPublisherAdapter` captura `AmqpException` para que un broker apagado o desconectado no interrumpa la transacción SQL ni genere errores `500`.
 

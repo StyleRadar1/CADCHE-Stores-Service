@@ -1,21 +1,20 @@
 package edu.dosw.styleradar.tiendas.infrastructure.security;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import edu.dosw.styleradar.tiendas.application.dto.response.ErrorResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
+import edu.dosw.styleradar.tiendas.domain.model.CodigoError;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -85,17 +84,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private void escribirRespuestaUnauthorized(HttpServletResponse response, String path, String mensaje)
             throws IOException {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.setContentType(ErrorResponseDTO.MEDIA_TYPE);
         response.setCharacterEncoding("UTF-8");
 
-        Map<String, Object> errorResponse = new LinkedHashMap<>();
-        errorResponse.put("timestamp", Instant.now().toString());
-        errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
-        errorResponse.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        errorResponse.put("message", mensaje);
-        errorResponse.put("path", path);
-        errorResponse.put("validationErrors", Map.of());
-
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.problema(CodigoError.NO_AUTENTICADO,
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(), mensaje, path, Map.of());
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

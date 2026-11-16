@@ -54,7 +54,7 @@ public interface AlmacenApi {
             security = {})
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Página de almacenes consultada exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Categoría o paginación inválida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "400", description = "Categoría o paginación inválida", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping
     ResponseEntity<PageResponseDTO<AlmacenResponseDTO>> consultar(
@@ -66,8 +66,8 @@ public interface AlmacenApi {
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Almacén del usuario autenticado consultado exitosamente"),
-            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "El usuario no administra ningún almacén", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "El usuario no administra ningún almacén", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping("/mi-almacen")
     ResponseEntity<VerificacionAlmacenResponseDTO> obtenerMiAlmacen(
@@ -80,9 +80,9 @@ public interface AlmacenApi {
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Documento RUT en PDF almacenado exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Archivo ausente, no es PDF o supera 5 MB", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Cuenta sin rol de tienda", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "400", description = "Archivo ausente, no es PDF o supera 5 MB", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Cuenta sin rol de tienda", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PostMapping(value = "/documentos/rut", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<DocumentoSubidoResponseDTO> subirDocumentoRut(
@@ -97,9 +97,9 @@ public interface AlmacenApi {
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Solicitud de vinculación registrada en estado PENDIENTE"),
-            @ApiResponse(responseCode = "400", description = "Datos comerciales, NIT o URL del RUT inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Solo una cuenta con rol de tienda puede registrar un almacén", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "409", description = "El NIT ya está registrado o el usuario ya administra un almacén", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "400", description = "Datos comerciales, NIT o URL del RUT inválidos", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Solo una cuenta con rol de tienda puede registrar un almacén", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "El NIT ya está registrado o el usuario ya administra un almacén", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PostMapping
     ResponseEntity<VerificacionAlmacenResponseDTO> registrarAlmacen(

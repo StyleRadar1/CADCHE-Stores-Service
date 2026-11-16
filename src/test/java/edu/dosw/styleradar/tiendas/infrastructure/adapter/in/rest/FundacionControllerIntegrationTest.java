@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -176,6 +177,12 @@ class FundacionControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
                 .andExpect(jsonPath("$.validationErrors.nombre").exists());
@@ -393,6 +400,12 @@ class FundacionControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe otra fundación aliada registrada con el nombre: Fundación Duplicada"));
     }
@@ -433,6 +446,12 @@ class FundacionControllerIntegrationTest {
         mockMvc.perform(patch("/api/v1/admin/fundaciones/3/activar")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra activa"));
     }
@@ -446,6 +465,12 @@ class FundacionControllerIntegrationTest {
         mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra desactivada"));
     }

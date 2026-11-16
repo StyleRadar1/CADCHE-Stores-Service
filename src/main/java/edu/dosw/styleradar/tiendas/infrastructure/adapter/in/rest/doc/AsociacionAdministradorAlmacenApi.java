@@ -30,13 +30,13 @@ public interface AsociacionAdministradorAlmacenApi {
                     + "a un almacén existente identificado por su NIT.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Asociación persistida o ya existente"),
-            @ApiResponse(responseCode = "400", description = "Identificador inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "401", description = "JWT inválido o cuenta suspendida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Usuario o almacén inexistente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "409", description = "Conflicto concurrente o de integridad", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Usuario objetivo sin rol ADMIN_ALMACEN", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Fallo técnico", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "400", description = "Identificador inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "JWT inválido o cuenta suspendida", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Usuario o almacén inexistente", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "Conflicto concurrente o de integridad", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "422", description = "Usuario objetivo sin rol ADMIN_ALMACEN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Fallo técnico", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PutMapping("/{nit}/administradores/{usuarioId}")
     ResponseEntity<AdministradorAlmacenResponseDTO> asociar(
@@ -54,10 +54,10 @@ public interface AsociacionAdministradorAlmacenApi {
             description = "ROLE_ADMIN_STYLERADAR o ROLE_ADMIN_ALMACEN propietario. Retorna la lista de administradores autorizados vinculados al NIT para validación de propiedad (prevención BOLA/IDOR).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista de administradores autorizados del NIT"),
-            @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o expirado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Sin permisos sobre el NIT consultado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Almacén inexistente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o expirado", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Sin permisos sobre el NIT consultado", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Almacén inexistente", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping("/{nit}/administradores")
     ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(
