@@ -175,6 +175,10 @@ jobs:
             fi
             az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
               --output none --settings TRUST_GATEWAY_HEADERS="${{ vars.TRUST_GATEWAY_HEADERS_PROD || 'false' }}"
+            # Guarda los logs del contenedor para poder diagnosticar un arranque fallido.
+            az webapp log config --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+              --docker-container-logging filesystem --output none
+            echo "RG=$RG" >> "$GITHUB_ENV"
             az webapp start --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG"
 
       - name: Desplegar Contenedor Docker en Azure Web App (PROD)
@@ -209,6 +213,21 @@ jobs:
           done
           echo "Advertencia: La API tardo en iniciar o no respondio HTTP 200 (OpenAPI=$STATUS_API, Health=$STATUS_HEALTH)"
           exit 1
+
+      - name: Diagnostico - Logs del contenedor si el arranque falla
+        if: failure()
+        uses: azure/cli@3c87847598b988e406a2c25e657114d760fd035c # v2.1.0
+        with:
+          inlineScript: |
+            az webapp show --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "${{ env.RG }}" \
+              --query "{estado:state, plan:appServicePlanId, disponible:availabilityState}" -o json || true
+            az webapp log download --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "${{ env.RG }}" \
+              --log-file /tmp/logs.zip || exit 0
+            cd /tmp && unzip -oq logs.zip -d logs || exit 0
+            for f in $(ls -t logs/LogFiles/*default_docker.log logs/LogFiles/*_docker.log 2>/dev/null | head -2); do
+              echo "===== $f"
+              tail -n 120 "$f"
+            done
 
   notify:
     name: 4. Resumen del Despliegue
