@@ -4,6 +4,7 @@ import java.util.HashSet;
 
 import org.springframework.stereotype.Component;
 
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.PrecisionBaseDatos;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
@@ -55,10 +56,10 @@ public class AlmacenPersistenceMapper {
                 .reputacion(domain.getReputacion())
                 .umbralUltimasUnidades(domain.getUmbralUltimasUnidades())
                 .diasNuevaLlegada(domain.getDiasNuevaLlegada())
-                .fechaActualizacionCatalogo(domain.getFechaActualizacionCatalogo())
+                .fechaActualizacionCatalogo(PrecisionBaseDatos.aMicros(domain.getFechaActualizacionCatalogo()))
                 .estadoVerificacion(domain.getEstadoVerificacion())
                 .urlRutPdf(domain.getUrlRutPdf())
-                .fechaDecisionVerificacion(domain.getFechaDecisionVerificacion())
+                .fechaDecisionVerificacion(PrecisionBaseDatos.aMicros(domain.getFechaDecisionVerificacion()))
                 .administradorDecisionId(domain.getAdministradorDecisionId())
                 .motivoVerificacion(domain.getMotivoVerificacion())
                 .fotoPortadaUrl(domain.getFotoPortadaUrl())
@@ -90,7 +91,7 @@ public class AlmacenPersistenceMapper {
                 .urlFoto(domain.getUrl())
                 .orden(domain.getOrden())
                 .esPortada(domain.isPortada())
-                .fechaSubida(domain.getFechaRegistro())
+                .fechaSubida(PrecisionBaseDatos.aMicros(domain.getFechaRegistro()))
                 .build();
     }
 

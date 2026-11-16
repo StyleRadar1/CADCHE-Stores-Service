@@ -4,6 +4,7 @@ import java.util.HashSet;
 
 import org.springframework.stereotype.Component;
 
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.PrecisionBaseDatos;
 import edu.dosw.styleradar.tiendas.domain.model.Fundacion;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.FundacionEntity;
 
@@ -57,7 +58,7 @@ public class FundacionPersistenceMapper {
                 .horarioAtencion(domain.getHorarioAtencion())
                 .politicasDonacion(domain.getPoliticasDonacion())
                 .activa(domain.isActiva())
-                .fechaRegistro(domain.getFechaRegistro())
+                .fechaRegistro(PrecisionBaseDatos.aMicros(domain.getFechaRegistro()))
                 .categoriasAceptadas(domain.getCategoriasAceptadas() != null ? new HashSet<>(domain.getCategoriasAceptadas()) : new HashSet<>())
                 .build();
     }

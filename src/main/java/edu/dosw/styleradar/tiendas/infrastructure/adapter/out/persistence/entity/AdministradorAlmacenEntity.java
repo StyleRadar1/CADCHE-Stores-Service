@@ -2,6 +2,8 @@ package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entit
 
 import java.time.Instant;
 
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.PrecisionBaseDatos;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -43,6 +45,6 @@ public class AdministradorAlmacenEntity {
 
     @Column(name = "fecha_asignacion")
     @Builder.Default
-    private Instant fechaAsignacion = Instant.now();
+    private Instant fechaAsignacion = PrecisionBaseDatos.ahora();
 }
 

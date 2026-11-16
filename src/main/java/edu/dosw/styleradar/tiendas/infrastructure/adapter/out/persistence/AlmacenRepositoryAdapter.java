@@ -1,6 +1,5 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -84,7 +83,7 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
             AdministradorAlmacenEntity vinculo = AdministradorAlmacenEntity.builder()
                     .almacenNit(nit)
                     .usuarioId(usuarioId)
-                    .fechaAsignacion(Instant.now())
+                    .fechaAsignacion(PrecisionBaseDatos.ahora())
                     .build();
             administradorRepository.save(vinculo);
         }
@@ -99,7 +98,7 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
                             .almacenNit(nit)
                             .usuarioId(usuarioId)
                             .asignadoPorId(asignadoPorId)
-                            .fechaAsignacion(Instant.now())
+                            .fechaAsignacion(PrecisionBaseDatos.ahora())
                             .build();
                     return mapper.toDomain(administradorRepository.save(vinculo));
                 });
