@@ -48,7 +48,8 @@ spring:
 
 azure:
   storage:
-    blob-endpoint: ${AZURE_STORAGE_BLOB_ENDPOINT:http://tiendas-blob:10000/devstoreaccount1}
+    # Azurite local con la cuenta de desarrollo pública y documentada por Microsoft (no es un secreto).
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://tiendas-blob:10000/devstoreaccount1;}
 
 swagger:
   server-url: ${SWAGGER_SERVER_URL:http://localhost:8140}
@@ -78,3 +79,9 @@ management:
       enabled: true
     readinessstate:
       enabled: true
+
+styleradar:
+  security:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:true}

@@ -15,7 +15,7 @@ public record AdministradorAlmacenResponseDTO(
         @Schema(description = "NIT del almacén asociado", example = "900123456-1")
         String almacenNit,
 
-        @Schema(description = "Identificador del administrador StyleRadar que realizó la asignación", example = "1")
+        @Schema(description = "Administrador StyleRadar que hizo la asignación (tomado del JWT); null si el vínculo nació del registro del almacén", example = "1", nullable = true)
         Long asignadoPorId,
 
         @Schema(description = "Fecha y hora UTC de la primera asignación", example = "2026-11-02T20:00:00Z")

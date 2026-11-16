@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.FotografiaTiendaResponseDTO;
@@ -26,7 +25,6 @@ import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografiaTiendaUseCase {

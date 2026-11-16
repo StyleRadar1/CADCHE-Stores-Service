@@ -1,32 +1,30 @@
 package edu.dosw.styleradar.tiendas.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import edu.dosw.styleradar.tiendas.support.TokensDePrueba;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 
-@DisplayName("Pruebas Unitarias de JwtAuthFilter y JwtSecurityValidator - OWASP A04 y A07:2025")
+@DisplayName("JwtAuthFilter · identidad no falsificable (contrato B-0.1/B-0.3, OWASP A01/A07:2025)")
 class JwtAuthFilterTest {
 
-    private static final String SECRET_256_BITS = "styleradar_super_secret_jwt_key_2025_at_least_32_bytes_long";
-    private static final String WEAK_SECRET = "short_secret";
-
-    private ObjectMapper objectMapper;
-    private JwtSecurityValidator jwtSecurityValidator;
-    private JwtAuthFilter jwtAuthFilter;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final JwtSecurityValidator validator = new JwtSecurityValidator(TokensDePrueba.SECRETO_DEV, null);
 
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
@@ -34,158 +32,119 @@ class JwtAuthFilterTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper().findAndRegisterModules();
-        jwtSecurityValidator = new JwtSecurityValidator(objectMapper, SECRET_256_BITS);
-        jwtAuthFilter = new JwtAuthFilter(jwtSecurityValidator, objectMapper);
-
         request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/almacenes/900123456/umbral-ultimas-unidades");
         response = new MockHttpServletResponse();
         filterChain = new MockFilterChain();
     }
 
-    @Test
-    @DisplayName("A07: Debe permitir acceso cuando el token JWT es válido y extraer claims")
-    void debePermitirAccesoConTokenValido() throws ServletException, IOException {
-        String token = jwtSecurityValidator.generarToken(10L, "ROLE_ADMIN_ALMACEN", 3600, SECRET_256_BITS);
-        request.addHeader("Authorization", "Bearer " + token);
-        request.setRequestURI("/api/v1/almacenes/900123456");
+    private JwtAuthFilter filtro(boolean confiarEnGateway) {
+        return new JwtAuthFilter(validator, objectMapper, confiarEnGateway);
+    }
 
-        jwtAuthFilter.doFilter(request, response, filterChain);
-
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        assertThat(request.getAttribute("authenticatedUserId")).isEqualTo(10L);
-        assertThat(request.getAttribute("authenticatedRoles")).isEqualTo("ROLE_ADMIN_ALMACEN");
+    private HttpServletRequest peticionQueLlegoAlControlador() {
+        return (HttpServletRequest) filterChain.getRequest();
     }
 
     @Test
-    @DisplayName("A07: Debe retornar 401 Unauthorized ante un token JWT expirado")
-    void debeRetornar401AnteTokenExpirado() throws ServletException, IOException {
-        // Token expirado con vigencia negativa (-100 segundos)
-        String tokenExpirado = jwtSecurityValidator.generarToken(10L, "ROLE_ADMIN_ALMACEN", -100, SECRET_256_BITS);
-        request.addHeader("Authorization", "Bearer " + tokenExpirado);
-        request.setRequestURI("/api/v1/almacenes/900123456/catalogo");
+    @DisplayName("Con JWT válido la identidad sale del token aunque el cliente envíe otras cabeceras X-User-*")
+    void conTokenValido_identidadDelTokenIgnoraCabecerasFalsas() throws ServletException, IOException {
+        request.addHeader("Authorization", "Bearer " + TokensDePrueba.token(10L, List.of("ADMIN_ALMACEN"), 3600));
+        request.addHeader("X-User-Id", "999");
+        request.addHeader("X-User-Roles", "ADMIN_STYLERADAR");
 
-        jwtAuthFilter.doFilter(request, response, filterChain);
+        filtro(true).doFilter(request, response, filterChain);
+
+        HttpServletRequest llegada = peticionQueLlegoAlControlador();
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(llegada.getHeader("X-User-Id")).isEqualTo("10");
+        assertThat(llegada.getHeader("x-user-roles")).isEqualTo("ADMIN_ALMACEN");
+        assertThat(llegada.getHeader("X-User-Role")).isEqualTo("ADMIN_ALMACEN");
+        assertThat(Collections.list(llegada.getHeaders("X-User-Roles"))).containsExactly("ADMIN_ALMACEN");
+        assertThat(llegada.getAttribute(JwtAuthFilter.ATRIBUTO_USUARIO)).isEqualTo(10L);
+        assertThat(llegada.getAttribute(JwtAuthFilter.ATRIBUTO_ROLES)).isEqualTo("ADMIN_ALMACEN");
+        assertThat(Collections.list(llegada.getHeaderNames())).contains("x-user-id", "Authorization");
+    }
+
+    @Test
+    @DisplayName("Sin token y sin confianza en el Gateway (QA/PROD) las cabeceras X-User-* se ocultan")
+    void sinTokenNiConfianza_ocultaCabecerasDeIdentidad() throws ServletException, IOException {
+        request.addHeader("X-User-Id", "1");
+        request.addHeader("X-User-Roles", "ADMIN_STYLERADAR");
+        request.addHeader("Accept", "application/json");
+
+        filtro(false).doFilter(request, response, filterChain);
+
+        HttpServletRequest llegada = peticionQueLlegoAlControlador();
+        assertThat(llegada.getHeader("X-User-Id")).isNull();
+        assertThat(llegada.getHeader("X-User-Roles")).isNull();
+        assertThat(Collections.list(llegada.getHeaders("X-User-Roles"))).isEmpty();
+        assertThat(llegada.getHeader("Accept")).isEqualTo("application/json");
+        assertThat(Collections.list(llegada.getHeaders("Accept"))).containsExactly("application/json");
+        assertThat(Collections.list(llegada.getHeaderNames())).doesNotContain("X-User-Id", "X-User-Roles");
+    }
+
+    @Test
+    @DisplayName("Sin token y con confianza en el Gateway (dev/test o red restringida) las cabeceras pasan tal cual")
+    void sinTokenConConfianza_respetaCabecerasDelGateway() throws ServletException, IOException {
+        request.addHeader("X-User-Id", "7");
+        request.addHeader("Authorization", "Basic abc");
+
+        filtro(true).doFilter(request, response, filterChain);
+
+        assertThat(peticionQueLlegoAlControlador().getHeader("X-User-Id")).isEqualTo("7");
+    }
+
+    @Test
+    @DisplayName("Token vencido o firmado con otro secreto responde 401 con el formato de error del contrato")
+    void conTokenInvalido_responde401() throws ServletException, IOException {
+        request.addHeader("Authorization", "Bearer " + TokensDePrueba.token(
+                TokensDePrueba.SECRETO_AJENO, 1L, List.of("ADMIN_STYLERADAR"), 3600));
+
+        filtro(true).doFilter(request, response, filterChain);
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
-        assertThat(response.getContentType()).contains(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-        assertThat(response.getContentAsString()).contains("El token de autenticación ha expirado");
+        assertThat(response.getContentAsString())
+                .contains("\"status\":401")
+                .contains("inválida o ha sido alterada")
+                .contains("\"validationErrors\":{}");
+        assertThat(filterChain.getRequest()).isNull();
+
+        MockHttpServletResponse respuestaVencido = new MockHttpServletResponse();
+        MockHttpServletRequest vencido = new MockHttpServletRequest();
+        vencido.addHeader("Authorization", "Bearer " + TokensDePrueba.token(1L, List.of("COMPRADOR"), -60));
+        filtro(false).doFilter(vencido, respuestaVencido, new MockFilterChain());
+        assertThat(respuestaVencido.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(respuestaVencido.getContentAsString()).contains("ha expirado");
     }
 
     @Test
-    @DisplayName("A07: Debe retornar 401 Unauthorized ante un token con firma adulterada")
-    void debeRetornar401AnteFirmaAdulterada() throws ServletException, IOException {
-        String tokenValido = jwtSecurityValidator.generarToken(10L, "ROLE_ADMIN_ALMACEN", 3600, SECRET_256_BITS);
-        // Alterar un carácter de la firma
-        String tokenAlterado = tokenValido.substring(0, tokenValido.length() - 2) + "ZZ";
-        request.addHeader("Authorization", "Bearer " + tokenAlterado);
-        request.setRequestURI("/api/v1/almacenes/900123456/catalogo");
-
-        jwtAuthFilter.doFilter(request, response, filterChain);
-
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
-        assertThat(response.getContentType()).contains(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-        assertThat(response.getContentAsString()).contains("La firma criptográfica del token es inválida");
-    }
-
-    @Test
-    @DisplayName("A07: Debe continuar la cadena cuando no se proporciona cabecera Authorization")
-    void debeContinuarCadenaSinCabeceraAuthorization() throws ServletException, IOException {
+    @DisplayName("B-0.1: una escritura sin token responde 401 antes de validar el cuerpo")
+    void escrituraSinToken_responde401() throws ServletException, IOException {
+        request.setMethod("POST");
         request.setRequestURI("/api/v1/almacenes");
+        request.addHeader("X-User-Id", "1");
 
-        jwtAuthFilter.doFilter(request, response, filterChain);
+        filtro(false).doFilter(request, response, filterChain);
 
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        assertThat(request.getAttribute("authenticatedUserId")).isNull();
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getContentType()).startsWith("application/problem+json");
+        assertThat(response.getContentAsString()).contains("Se requiere un token de acceso válido para esta operación");
+        assertThat(filterChain.getRequest()).isNull();
     }
 
     @Test
-    @DisplayName("A07: Debe continuar la cadena cuando la cabecera Authorization no comienza con Bearer")
-    void debeContinuarCadenaConCabeceraNoBearer() throws ServletException, IOException {
-        request.addHeader("Authorization", "Basic dXNlcjpwYXNz");
-        request.setRequestURI("/api/v1/almacenes");
+    @DisplayName("Las lecturas sin token siguen pasando (rutas públicas) y el Gateway de confianza puede escribir")
+    void lecturaSinTokenYGatewayDeConfianza_pasan() throws ServletException, IOException {
+        request.setMethod("GET");
+        request.setRequestURI("/api/v1/fundaciones");
+        filtro(false).doFilter(request, response, filterChain);
+        assertThat(filterChain.getRequest()).isNotNull();
 
-        jwtAuthFilter.doFilter(request, response, filterChain);
-
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        assertThat(request.getAttribute("authenticatedUserId")).isNull();
-    }
-
-    @Test
-    @DisplayName("A07: Debe procesar token con userId como String y sin campo roles")
-    void debeProcesarTokenConUserIdComoStringYSinRoles() throws ServletException, IOException {
-        long futuro = java.time.Instant.now().getEpochSecond() + 3600;
-        String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-        String payloadJson = String.format("{\"sub\":\"99\",\"userId\":\"99\",\"exp\":%d}", futuro);
-
-        String headerB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(headerJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        String payloadB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(payloadJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        
-        // Firmar
-        javax.crypto.Mac mac;
-        try {
-            mac = javax.crypto.Mac.getInstance("HmacSHA256");
-            mac.init(new javax.crypto.spec.SecretKeySpec(SECRET_256_BITS.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] firma = mac.doFinal((headerB64 + "." + payloadB64).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            String signatureB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(firma);
-            String token = headerB64 + "." + payloadB64 + "." + signatureB64;
-
-            request.addHeader("Authorization", "Bearer " + token);
-            request.setRequestURI("/api/v1/almacenes/123");
-
-            jwtAuthFilter.doFilter(request, response, filterChain);
-
-            assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-            assertThat(request.getAttribute("authenticatedUserId")).isEqualTo(99L);
-            assertThat(request.getAttribute("authenticatedRoles")).isNull();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Test
-    @DisplayName("A07: Debe procesar token sin claim userId pero con claim roles")
-    void debeProcesarTokenSinUserId() throws ServletException, IOException {
-        long futuro = java.time.Instant.now().getEpochSecond() + 3600;
-        String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-        String payloadJson = String.format("{\"sub\":\"invitado\",\"roles\":\"ROLE_GUEST\",\"exp\":%d}", futuro);
-
-        String headerB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(headerJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        String payloadB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(payloadJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-        try {
-            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
-            mac.init(new javax.crypto.spec.SecretKeySpec(SECRET_256_BITS.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] firma = mac.doFinal((headerB64 + "." + payloadB64).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            String signatureB64 = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(firma);
-            String token = headerB64 + "." + payloadB64 + "." + signatureB64;
-
-            request.addHeader("Authorization", "Bearer " + token);
-            request.setRequestURI("/api/v1/almacenes/publico");
-
-            jwtAuthFilter.doFilter(request, response, filterChain);
-
-            assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-            assertThat(request.getAttribute("authenticatedUserId")).isNull();
-            assertThat(request.getAttribute("authenticatedRoles")).isEqualTo("ROLE_GUEST");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Test
-    @DisplayName("A07: Constructor por defecto sin argumentos nulos se inicializa correctamente")
-    void debeInstanciarConConstructorDefaultYArgumentosNulos() {
-        JwtAuthFilter filterConNulls = new JwtAuthFilter(null, null);
-        assertThat(filterConNulls).isNotNull();
-    }
-
-    @Test
-    @DisplayName("A04: Debe rechazar claves secretas con entropía menor a 256 bits (32 bytes)")
-    void debeRechazarClavesSecretasDebiles() {
-        assertThatThrownBy(() -> jwtSecurityValidator.generarToken(10L, "ROLE_USER", 3600, WEAK_SECRET))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("OWASP A04:2025")
-                .hasMessageContaining("256 bits");
+        MockHttpServletRequest escritura = new MockHttpServletRequest("PUT", "/api/v1/almacenes/900123456-1/configuracion-catalogo");
+        escritura.addHeader("X-User-Id", "7");
+        MockFilterChain cadena = new MockFilterChain();
+        filtro(true).doFilter(escritura, new MockHttpServletResponse(), cadena);
+        assertThat(cadena.getRequest()).isNotNull();
     }
 }

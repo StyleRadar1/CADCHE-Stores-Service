@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 
 @DisplayName("Pruebas de Validador - Autorización Administrador StyleRadar (SR-RF-62 / SR-RF-63 / SR-RNF-02)")
 class AutorizacionAdminStyleRadarValidatorTest {
@@ -50,11 +51,11 @@ class AutorizacionAdminStyleRadarValidatorTest {
     }
 
     @Test
-    @DisplayName("Criterio 4c: Debe denegar acceso cuando el header de roles es nulo o vacío")
+    @DisplayName("Criterio 4c (B-0.1): sin identidad (roles nulos o vacíos) responde 401, no 403")
     void debeDenegarAccesoConRolesNulosOVacios() {
-        assertThrows(AccesoDenegadoAlmacenException.class, () ->
+        assertThrows(FalloAutenticacionException.class, () ->
                 validator.validarEsAdministradorStyleRadar(null));
-        assertThrows(AccesoDenegadoAlmacenException.class, () ->
+        assertThrows(FalloAutenticacionException.class, () ->
                 validator.validarEsAdministradorStyleRadar("   "));
     }
 
@@ -65,7 +66,7 @@ class AutorizacionAdminStyleRadarValidatorTest {
                 validator.validarEsAdministradorParaFundaciones("ROLE_COMPRADOR"));
         assertEquals("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas", ex.getMessage());
 
-        assertThrows(AccesoDenegadoAlmacenException.class, () ->
+        assertThrows(FalloAutenticacionException.class, () ->
                 validator.validarEsAdministradorParaFundaciones(null));
     }
 }

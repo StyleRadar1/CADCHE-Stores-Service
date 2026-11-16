@@ -4,8 +4,6 @@
 # Estándares de Arquitectura Hexagonal: DB (PostgreSQL), Storage (Azurite), Broker (RabbitMQ)
 # ==============================================================================
 
-version: '3.9'
-
 services:
 
   # ─── 1. Microservicio Tiendas (Spring Boot Hexagonal Core) ───────────────────
@@ -25,10 +23,11 @@ services:
       DB_NAME: ${POSTGRES_DB:-styleradar_tiendas}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      AZURE_STORAGE_BLOB_ENDPOINT: http://tiendas-blob:10000/devstoreaccount1
       RABBITMQ_HOST: tiendas-rabbitmq
       RABBITMQ_PORT: 5672
       SWAGGER_SERVER_URL: http://localhost:8140
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+      TRUST_GATEWAY_HEADERS: ${TRUST_GATEWAY_HEADERS:-true}
     depends_on:
       tiendas-db:
         condition: service_healthy
@@ -62,7 +61,7 @@ services:
 
   # ─── 3. Adaptador de Almacenamiento: Azurite (Emulador Azure Blob) ────────────
   tiendas-blob:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
     container_name: tiendas-blob
     restart: unless-stopped
     command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
@@ -75,7 +74,7 @@ services:
 
   # ─── 4. Adaptador de Eventos: RabbitMQ (Broker Guatoque Jiraguas :5672) ───────
   tiendas-rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3.13-management-alpine
     container_name: tiendas-rabbitmq
     restart: unless-stopped
     environment:

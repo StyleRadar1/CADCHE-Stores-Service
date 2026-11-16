@@ -2,6 +2,10 @@ package edu.dosw.styleradar.tiendas.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,7 +20,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.AdministradorAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
@@ -40,6 +46,7 @@ class AsociarAdministradorAlmacenUseCaseTest {
     private AsociarAdministradorAlmacenUseCaseImpl useCase;
 
     private static final String NIT = "900123456-1";
+    private static final String ADMIN = "ROLE_ADMIN_STYLERADAR";
 
     @Test
     @DisplayName("Debe asociar administrador de forma idempotente y listar administradores vinculados al NIT")
@@ -48,12 +55,12 @@ class AsociarAdministradorAlmacenUseCaseTest {
                 .id(10L)
                 .usuarioId(15L)
                 .almacenNit(NIT)
-                .asignadoPorId(1L)
+                .asignadoPorId(2L)
                 .fechaAsignacion(Instant.now())
                 .build();
 
         when(repositoryPort.existsByNit(NIT)).thenReturn(true);
-        when(repositoryPort.guardarAsociacionAdministrador(NIT, 15L)).thenReturn(vinculo);
+        when(repositoryPort.guardarAsociacionAdministrador(NIT, 15L, 2L)).thenReturn(vinculo);
         when(repositoryPort.listarAdministradoresPorNit(NIT)).thenReturn(List.of(vinculo));
 
         AdministradorAlmacenResponseDTO creado = useCase.asociar(NIT, 15L, 2L, "ROLE_ADMIN_STYLERADAR");
@@ -72,12 +79,34 @@ class AsociarAdministradorAlmacenUseCaseTest {
     void debeValidarUsuarioYExistenciaDeAlmacen() {
         when(repositoryPort.existsByNit("000000000")).thenReturn(false);
 
-        assertThatThrownBy(() -> useCase.asociar(NIT, 0L, null, null))
+        assertThatThrownBy(() -> useCase.asociar(NIT, 0L, 2L, ADMIN))
                 .isInstanceOf(ReglaDeNegocioException.class);
-        assertThatThrownBy(() -> useCase.asociar("000000000", 15L, null, null))
+        assertThatThrownBy(() -> useCase.asociar("000000000", 15L, 2L, ADMIN))
                 .isInstanceOf(AlmacenNoEncontradoException.class);
         assertThatThrownBy(() -> useCase.listarAdministradores("000000000", 15L, "ROLE_ADMIN_STYLERADAR"))
                 .isInstanceOf(AlmacenNoEncontradoException.class);
     }
-}
 
+    @Test
+    @DisplayName("CADCHE-130: sin identidad responde 401 aunque el rol sea válido y nunca guarda la asociación")
+    void sinIdentidadDelAdministradorRespondeNoAutenticado() {
+        assertThatThrownBy(() -> useCase.asociar(NIT, 15L, null, ADMIN))
+                .isInstanceOf(FalloAutenticacionException.class);
+        verify(repositoryPort, never()).guardarAsociacionAdministrador(anyString(), anyLong(), anyLong());
+    }
+
+    @Test
+    @DisplayName("CADCHE-130: el rol se valida siempre, también cuando no llega (antes se omitía)")
+    void validaElRolAunqueNoLlegue() {
+        doThrow(new FalloAutenticacionException("sin token"))
+                .when(adminValidator).validarEsAdministradorStyleRadar(null);
+        doThrow(new AccesoDenegadoAlmacenException("rol"))
+                .when(adminValidator).validarEsAdministradorStyleRadar("ROLE_COMPRADOR");
+
+        assertThatThrownBy(() -> useCase.asociar(NIT, 15L, 2L, null))
+                .isInstanceOf(FalloAutenticacionException.class);
+        assertThatThrownBy(() -> useCase.asociar(NIT, 15L, 2L, "ROLE_COMPRADOR"))
+                .isInstanceOf(AccesoDenegadoAlmacenException.class);
+        verify(repositoryPort, never()).guardarAsociacionAdministrador(anyString(), anyLong(), anyLong());
+    }
+}

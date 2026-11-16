@@ -2,7 +2,6 @@ package edu.dosw.styleradar.tiendas.application.usecase;
 
 import java.time.Instant;
 
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
@@ -17,7 +16,6 @@ import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarV
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class ReactivarFundacionUseCaseImpl implements ReactivarFundacionUseCase {
@@ -38,6 +36,7 @@ public class ReactivarFundacionUseCaseImpl implements ReactivarFundacionUseCase 
     @Transactional
     public FundacionResponseDTO reactivar(Long id, String motivo, String rolUsuario) {
         adminValidator.validarEsAdministradorParaFundaciones(rolUsuario);
+        Fundacion.validarMotivoCambioEstado(motivo);
 
         if (id == null) {
             throw new ReglaDeNegocioException("El identificador de la fundación es obligatorio");

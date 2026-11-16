@@ -101,9 +101,7 @@ public class AlmacenController implements AlmacenApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         Long resolvedId = resolveUserId(usuarioId);
         String rol = resolveRole(rolesHeader, roleHeader);
-        VerificacionAlmacenResponseDTO response = (rol != null && !rol.isBlank())
-                ? registrarAlmacenUseCase.registrarAlmacen(request, resolvedId, rol)
-                : registrarAlmacenUseCase.registrarAlmacen(request, resolvedId);
+        VerificacionAlmacenResponseDTO response = registrarAlmacenUseCase.registrarAlmacen(request, resolvedId, rol);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

@@ -1,17 +1,20 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AdministradorAlmacenEntity;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AlmacenEntity;
@@ -80,21 +83,22 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
             AdministradorAlmacenEntity vinculo = AdministradorAlmacenEntity.builder()
                     .almacenNit(nit)
                     .usuarioId(usuarioId)
-                    .fechaAsignacion(Instant.now())
+                    .fechaAsignacion(PrecisionBaseDatos.ahora())
                     .build();
             administradorRepository.save(vinculo);
         }
     }
 
     @Override
-    public AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId) {
+    public AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId, Long asignadoPorId) {
         return administradorRepository.findByAlmacenNitAndUsuarioId(nit, usuarioId)
                 .map(mapper::toDomain)
                 .orElseGet(() -> {
                     AdministradorAlmacenEntity vinculo = AdministradorAlmacenEntity.builder()
                             .almacenNit(nit)
                             .usuarioId(usuarioId)
-                            .fechaAsignacion(Instant.now())
+                            .asignadoPorId(asignadoPorId)
+                            .fechaAsignacion(PrecisionBaseDatos.ahora())
                             .build();
                     return mapper.toDomain(administradorRepository.save(vinculo));
                 });
@@ -108,13 +112,26 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
     }
 
     @Override
-    public Page<Almacen> findByEstadoVerificacion(EstadoVerificacionAlmacen estado, Pageable pageable) {
-        return almacenRepository.findByEstadoVerificacion(estado, pageable).map(mapper::toDomain);
+    public Pagina<Almacen> findByEstadoVerificacion(EstadoVerificacionAlmacen estado, SolicitudPagina solicitud) {
+        return aPagina(almacenRepository.findByEstadoVerificacion(estado, aPageable(solicitud)));
     }
 
     @Override
-    public Page<Almacen> findAllVerificacion(Pageable pageable) {
-        return almacenRepository.findAll(pageable).map(mapper::toDomain);
+    public Pagina<Almacen> findAllVerificacion(SolicitudPagina solicitud) {
+        return aPagina(almacenRepository.findAll(aPageable(solicitud)));
+    }
+
+    /**
+     * Orden estable para la paginación: nombre comercial y NIT ascendentes.
+     */
+    private static Pageable aPageable(SolicitudPagina solicitud) {
+        return PageRequest.of(solicitud.numero(), solicitud.tamano(),
+                Sort.by("nombreComercial").ascending().and(Sort.by("nit").ascending()));
+    }
+
+    private Pagina<Almacen> aPagina(Page<AlmacenEntity> pagina) {
+        return new Pagina<>(pagina.getContent().stream().map(mapper::toDomain).toList(),
+                pagina.getNumber(), pagina.getSize(), pagina.getTotalElements(), pagina.getTotalPages());
     }
 
     @Override

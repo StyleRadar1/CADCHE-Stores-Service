@@ -8,12 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaAlmacenRequestDTO;
@@ -28,6 +22,8 @@ import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.PeriodoNuevaLlegada;
 import edu.dosw.styleradar.tiendas.domain.model.UmbralUltimasUnidades;
@@ -37,7 +33,6 @@ import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @Slf4j
 public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
 
@@ -51,7 +46,6 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
         this(repositoryPort, null, new AutorizacionAlmacenValidator());
     }
 
-    @Autowired
     public RegistrarAlmacenUseCaseImpl(
             AlmacenRepositoryPort repositoryPort,
             AlmacenamientoBlobPort almacenamientoBlobPort,
@@ -61,28 +55,19 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
         this.autorizacionValidator = autorizacionValidator != null ? autorizacionValidator : new AutorizacionAlmacenValidator();
     }
 
-    @Override
-    @Transactional
-    public VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId) {
-        return registrarAlmacenInterno(request, usuarioId, null, false);
-    }
-
+    /**
+     * SR-RF-62-A: solo una Tienda autenticada registra su almacén. Sin identidad responde 401 y con otro rol 403;
+     * el almacén nace PENDIENTE y queda asociado a quien lo registra.
+     */
     @Override
     @Transactional
     public VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId, String rol) {
-        return registrarAlmacenInterno(request, usuarioId, rol, rol != null && !rol.isBlank());
-    }
-
-    private VerificacionAlmacenResponseDTO registrarAlmacenInterno(
-            RegistrarAlmacenRequestDTO request, Long usuarioId, String rol, boolean validarRol) {
-        if (validarRol) {
-            autorizacionValidator.validarRolTienda(rol);
-        }
+        exigirTiendaAutenticada(usuarioId, rol);
         if (request == null) {
             throw new ReglaDeNegocioException("La solicitud de registro del almacén no puede ser nula");
         }
 
-        if (usuarioId != null && repositoryPort.existeAlmacenParaUsuario(usuarioId)) {
+        if (repositoryPort.existeAlmacenParaUsuario(usuarioId)) {
             throw new AlmacenYaRegistradoException(
                     "El usuario ya administra un almacén",
                     Map.of("usuarioId", "El usuario ya administra un almacén"));
@@ -144,20 +129,21 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
     @Override
     public DocumentoSubidoResponseDTO subirDocumentoRut(
             String nombreOriginal, String contentType, long tamano, InputStream contenido, Long usuarioId, String rol) {
-        if (usuarioId == null) {
-            throw new FalloAutenticacionException("Token de autenticación ausente, inválido o expirado");
-        }
-        if (rol != null && !rol.isBlank()) {
-            autorizacionValidator.validarRolTienda(rol);
-        }
+        exigirTiendaAutenticada(usuarioId, rol);
         validarArchivoPdfRut(nombreOriginal, contentType, tamano);
 
         String rutaDestino = "rut/" + usuarioId + "/" + UUID.randomUUID() + ".pdf";
-        String url = almacenamientoBlobPort != null
-                ? almacenamientoBlobPort.subirArchivo("documentos-almacenes", rutaDestino, contenido, "application/pdf", tamano)
-                : "https://styleradarblob.blob.core.windows.net/documentos-almacenes/" + rutaDestino;
+        String url = almacenamientoBlobPort.subirArchivo(
+                "documentos-almacenes", rutaDestino, contenido, "application/pdf", tamano);
 
         return new DocumentoSubidoResponseDTO(url, nombreOriginal, "application/pdf", tamano, Instant.now());
+    }
+
+    private void exigirTiendaAutenticada(Long usuarioId, String rol) {
+        if (usuarioId == null) {
+            throw new FalloAutenticacionException("Token de autenticación ausente, inválido o expirado");
+        }
+        autorizacionValidator.validarRolTienda(rol);
     }
 
     private void validarArchivoPdfRut(String nombreOriginal, String contentType, long tamano) {
@@ -180,21 +166,14 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
     @Override
     @Transactional(readOnly = true)
     public PageResponseDTO<AlmacenResponseDTO> consultarAlmacenes(ConsultaAlmacenRequestDTO request) {
-        int pageNum = request != null ? request.getPage() : 0;
-        int size = request != null ? request.getSize() : 20;
+        SolicitudPagina solicitud = request != null
+                ? SolicitudPagina.de(request.getPage(), request.getSize(),
+                        "Parámetros de paginación inválidos para la consulta de almacenes")
+                : new SolicitudPagina(0, 20);
 
-        if (pageNum < 0 || size < 1 || size > 100) {
-            throw new ReglaDeNegocioException("Parámetros de paginación inválidos para la consulta de almacenes");
-        }
+        Pagina<Almacen> page = repositoryPort.findByEstadoVerificacion(EstadoVerificacionAlmacen.APROBADO, solicitud);
 
-        Pageable pageable = PageRequest.of(
-                pageNum,
-                size,
-                Sort.by("nombreComercial").ascending().and(Sort.by("nit").ascending()));
-
-        Page<Almacen> page = repositoryPort.findByEstadoVerificacion(EstadoVerificacionAlmacen.APROBADO, pageable);
-
-        List<AlmacenResponseDTO> content = page.getContent().stream()
+        List<AlmacenResponseDTO> content = page.contenido().stream()
                 .filter(a -> request == null
                         || request.getCategoria() == null
                         || (a.getCategorias() != null && a.getCategorias().contains(request.getCategoria())))
@@ -203,12 +182,12 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
 
         return new PageResponseDTO<>(
                 content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast()
+                page.numero(),
+                page.tamano(),
+                page.totalElementos(),
+                page.totalPaginas(),
+                page.esPrimera(),
+                page.esUltima()
         );
     }
 

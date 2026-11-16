@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,9 +64,11 @@ import edu.dosw.styleradar.tiendas.domain.port.in.MarcarDistintivoPrendaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFotografiaTiendaUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
 @WebMvcTest(AlmacenController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
+@ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - Controlador AlmacenController (SR-RF-59 / SR-RF-60 / SR-RF-62-A / SR-RF-74)")
 class AlmacenControllerIntegrationTest {
 
@@ -559,7 +562,7 @@ class AlmacenControllerIntegrationTest {
                 "contacto@atelierurbano.co", 4.6533, -74.0602, 0.0, Set.of(CategoriaAlmacen.CASUAL),
                 EstadoVerificacionAlmacen.PENDIENTE, false, null, null, null, "https://blob/rut.pdf", "Usuario #10");
 
-        when(registrarAlmacenUseCase.registrarAlmacen(any(RegistrarAlmacenRequestDTO.class), eq(10L)))
+        when(registrarAlmacenUseCase.registrarAlmacen(any(RegistrarAlmacenRequestDTO.class), eq(10L), eq("ROLE_TIENDA")))
                 .thenReturn(resp)
                 .thenThrow(new AlmacenYaRegistradoException("Ya existe un almacén registrado con el NIT: 900123456-1"));
         when(registrarAlmacenUseCase.obtenerMiAlmacen(10L)).thenReturn(resp);
@@ -568,6 +571,7 @@ class AlmacenControllerIntegrationTest {
 
         mockMvc.perform(post("/api/v1/almacenes")
                         .header("X-User-Id", 10L)
+                        .header("X-User-Roles", "ROLE_TIENDA")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -589,6 +593,7 @@ class AlmacenControllerIntegrationTest {
 
         mockMvc.perform(post("/api/v1/almacenes")
                         .header("X-User-Id", 10L)
+                        .header("X-User-Roles", "ROLE_TIENDA")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())

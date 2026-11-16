@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.PrecisionBaseDatos;
 import edu.dosw.styleradar.tiendas.domain.model.TipoPrenda;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -84,7 +85,7 @@ public class FundacionEntity {
 
     @Column(name = "fecha_registro", nullable = false)
     @Builder.Default
-    private Instant fechaRegistro = Instant.now();
+    private Instant fechaRegistro = PrecisionBaseDatos.ahora();
 
     @ElementCollection
     @CollectionTable(

@@ -5,12 +5,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import edu.dosw.styleradar.tiendas.domain.model.DecisionVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+@MotivoDeRechazoValido
 @Schema(description = "Decisión administrativa para aprobar o rechazar la vinculación pendiente de un almacén aliado (SR-RF-62)")
 public class DecisionVerificacionRequestDTO {
 
@@ -24,14 +24,12 @@ public class DecisionVerificacionRequestDTO {
 
     @JsonIgnore
     @Schema(hidden = true)
-    @AssertTrue(message = "El rechazo exige un motivo no vacío")
     public boolean isMotivoValido() {
         return decision != DecisionVerificacionAlmacen.RECHAZADO || (motivo != null && !motivo.isBlank());
     }
 
     @JsonIgnore
     @Schema(hidden = true)
-    @AssertTrue(message = "El motivo debe tener entre 10 y 1000 caracteres")
     public boolean isMotivoLongitudValida() {
         if (decision != DecisionVerificacionAlmacen.RECHAZADO || motivo == null || motivo.isBlank()) {
             return true;
