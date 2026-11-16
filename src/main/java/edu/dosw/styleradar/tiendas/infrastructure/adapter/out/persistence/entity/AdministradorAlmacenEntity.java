@@ -2,6 +2,8 @@ package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entit
 
 import java.time.Instant;
 
+import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.PrecisionBaseDatos;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,8 +39,12 @@ public class AdministradorAlmacenEntity {
     @Column(name = "almacen_nit", nullable = false, length = 30)
     private String almacenNit;
 
+    /** Administrador de StyleRadar que hizo la asociación; nulo cuando el vínculo nace del registro del almacén. */
+    @Column(name = "asignado_por_id")
+    private Long asignadoPorId;
+
     @Column(name = "fecha_asignacion")
     @Builder.Default
-    private Instant fechaAsignacion = Instant.now();
+    private Instant fechaAsignacion = PrecisionBaseDatos.ahora();
 }
 

@@ -17,12 +17,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
 
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence.entity.AdministradorAlmacenEntity;
@@ -122,7 +124,7 @@ class AlmacenRepositoryAdapterTest {
     @Test
     @DisplayName("Debe consultar almacenes filtrados por estado de verificación")
     void debeConsultarPorEstadoVerificacion() {
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("nombreComercial").ascending().and(Sort.by("nit").ascending()));
         AlmacenEntity entidad = AlmacenEntity.builder()
                 .nit(NIT)
                 .nombreComercial("Tienda Centro")
@@ -132,16 +134,20 @@ class AlmacenRepositoryAdapterTest {
         when(almacenRepository.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.PENDIENTE), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(entidad), pageable, 1));
 
-        Page<Almacen> resultado = adapter.findByEstadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE, pageable);
+        Pagina<Almacen> resultado = adapter.findByEstadoVerificacion(
+                EstadoVerificacionAlmacen.PENDIENTE, new SolicitudPagina(0, 10));
 
-        assertThat(resultado).hasSize(1);
-        assertThat(resultado.getContent().get(0).getNit()).isEqualTo(NIT);
+        assertThat(resultado.contenido()).hasSize(1);
+        assertThat(resultado.contenido().get(0).getNit()).isEqualTo(NIT);
+        assertThat(resultado.totalElementos()).isEqualTo(1);
+        assertThat(resultado.esPrimera()).isTrue();
+        assertThat(resultado.esUltima()).isTrue();
     }
 
     @Test
     @DisplayName("Debe consultar todos los almacenes para verificación con paginación")
     void debeConsultarTodosParaVerificacion() {
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("nombreComercial").ascending().and(Sort.by("nit").ascending()));
         AlmacenEntity entidad = AlmacenEntity.builder()
                 .nit(NIT)
                 .nombreComercial("Tienda Centro")
@@ -151,10 +157,10 @@ class AlmacenRepositoryAdapterTest {
         when(almacenRepository.findAll(pageable))
                 .thenReturn(new PageImpl<>(List.of(entidad), pageable, 1));
 
-        Page<Almacen> resultado = adapter.findAllVerificacion(pageable);
+        Pagina<Almacen> resultado = adapter.findAllVerificacion(new SolicitudPagina(0, 10));
 
-        assertThat(resultado).hasSize(1);
-        assertThat(resultado.getContent().get(0).getNit()).isEqualTo(NIT);
+        assertThat(resultado.contenido()).hasSize(1);
+        assertThat(resultado.map(Almacen::getNit).contenido()).containsExactly(NIT);
     }
 
     @Test
@@ -195,6 +201,7 @@ class AlmacenRepositoryAdapterTest {
                 .id(10L)
                 .almacenNit(NIT)
                 .usuarioId(USUARIO_ID)
+                .asignadoPorId(2L)
                 .fechaAsignacion(Instant.now())
                 .build();
 
@@ -204,11 +211,12 @@ class AlmacenRepositoryAdapterTest {
         when(administradorRepository.save(any(AdministradorAlmacenEntity.class))).thenReturn(entityGuardada);
         when(administradorRepository.findByAlmacenNit(NIT)).thenReturn(List.of(entityGuardada));
 
-        var creado = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
-        var existente = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
+        var creado = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID, 2L);
+        var existente = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID, 2L);
         var lista = adapter.listarAdministradoresPorNit(NIT);
 
         assertThat(creado.getId()).isEqualTo(10L);
+        assertThat(creado.getAsignadoPorId()).isEqualTo(2L);
         assertThat(existente.getUsuarioId()).isEqualTo(USUARIO_ID);
         assertThat(lista).hasSize(1);
     }
@@ -341,11 +349,11 @@ class AlmacenRepositoryAdapterTest {
     }
 
     @Test
-    @DisplayName("B-2.3 / B-0.3: AzureBlobStorageAdapter, AuthRequestContextResolver y excepciones 409")
+    @DisplayName("B-2.3 / B-0.3: MemoriaBlobStorageAdapter, AuthRequestContextResolver y excepciones 409")
     void debeCubrirStorageResolverYExcepcionesConflicto() {
-        var blobAdapter = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.AzureBlobStorageAdapter(
+        var blobAdapter = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.MemoriaBlobStorageAdapter(
                 "https://styleradarblob.blob.core.windows.net///");
-        var blobDefault = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.AzureBlobStorageAdapter("  ");
+        var blobDefault = new edu.dosw.styleradar.tiendas.infrastructure.adapter.out.storage.MemoriaBlobStorageAdapter("  ");
 
         String url = blobAdapter.subirArchivo("tiendas", "1/foto.jpg",
                 new java.io.ByteArrayInputStream(new byte[]{1, 2, 3}), "image/jpeg", 3L);

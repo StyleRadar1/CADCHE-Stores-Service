@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +34,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.Fundacion;
 import edu.dosw.styleradar.tiendas.domain.model.TipoPrenda;
+import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.FundacionRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarValidator;
 
@@ -44,6 +47,9 @@ class RegistrarFundacionUseCaseTest {
 
     @Mock
     private AutorizacionAdminStyleRadarValidator adminValidator;
+
+    @Mock
+    private AlmacenamientoBlobPort almacenamientoBlobPort;
 
     @InjectMocks
     private RegistrarFundacionUseCaseImpl useCase;
@@ -160,9 +166,11 @@ class RegistrarFundacionUseCaseTest {
         assertEquals(1L, porId.getId());
         assertThrows(FundacionNoEncontradaException.class, () -> useCase.obtenerPorId(99L, ADMIN_ROLE));
 
+        when(almacenamientoBlobPort.subirArchivo(eq("documentos-fundaciones"), anyString(), any(), eq("application/pdf"), eq(1024L)))
+                .thenReturn("https://blob/documentos-fundaciones/certificados/c.pdf");
         DocumentoSubidoResponseDTO cert = useCase.subirCertificado(
                 "certificado.pdf", "application/pdf", 1024L, new ByteArrayInputStream("%PDF".getBytes()), ADMIN_ROLE);
-        assertNotNull(cert.url());
+        assertEquals("https://blob/documentos-fundaciones/certificados/c.pdf", cert.url());
         assertThrows(ReglaDeNegocioException.class, () -> useCase.subirCertificado(
                 "foto.jpg", "image/jpeg", 1024L, new ByteArrayInputStream("img".getBytes()), ADMIN_ROLE));
     }

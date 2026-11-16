@@ -31,7 +31,8 @@ spring:
     locations: classpath:db/migration
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:styleradar-rabbitmq-qa.northcentralus.cloudapp.azure.com}
+    # CADCHE-131: sin valor por defecto; PROD nunca debe publicar en el broker de QA.
+    host: ${RABBITMQ_HOST}
     port: ${RABBITMQ_PORT:5671}
     username: ${RABBITMQ_USER:${RABBITMQ_USERNAME:}}
     password: ${RABBITMQ_PASSWORD:}
@@ -42,7 +43,9 @@ spring:
 
 azure:
   storage:
-    blob-endpoint: ${AZURE_STORAGE_BLOB_ENDPOINT:https://styleradarblobprod.blob.core.windows.net}
+    # CADCHE-117: cadena de conexión de la cuenta de Storage (secreto). Sin ella las subidas responden 503.
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:}
+    contenedores-publicos: ${AZURE_STORAGE_CONTENEDORES_PUBLICOS:tiendas,documentos-almacenes,documentos-fundaciones}
 
 swagger:
   server-url: ${SWAGGER_SERVER_URL:https://styleradar-tiendas-prod.azurewebsites.net}
@@ -66,3 +69,9 @@ management:
     rabbit:
       enabled: false
 
+# JWT_SECRET_BASE64 es obligatorio (mismo valor que ms-auth en este ambiente); sin el, el servicio no arranca.
+styleradar:
+  security:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64}
+    trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:false}

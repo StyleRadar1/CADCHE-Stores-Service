@@ -10,7 +10,6 @@ on:
   push:
     branches:
       - develop
-      - main
       - 'feature/**'
   pull_request:
     branches:
@@ -65,7 +64,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service -Dsonar.qualitygate.wait=true
 
       - name: Publicar reporte de cobertura JaCoCo
         if: always()
@@ -102,7 +101,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix=qa-
+            type=raw,value=qa-${{ github.sha }}
             type=raw,value=qa-latest
 
       - name: Compilar y publicar imagen OCI multi-stage
@@ -156,31 +155,55 @@ jobs:
                 RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD }}" \
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_QA || 'https://styleradarblobqa.blob.core.windows.net' }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
-            if [ -n "${{ secrets.JWT_SECRET_QA }}" ]; then
-              az webapp config appsettings set \
-                --name "${{ env.AZURE_WEBAPP_NAME }}" \
-                --resource-group "$RG" \
-                --output none \
-                --settings JWT_SECRET="${{ secrets.JWT_SECRET_QA }}"
+            # CADCHE-117: cadena de conexión de Azure Blob Storage; sin ella las subidas responden 503.
+            BLOB_CS="${{ secrets.AZURE_STORAGE_CONNECTION_STRING_QA }}"
+            if [ -n "$BLOB_CS" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings AZURE_STORAGE_CONNECTION_STRING="$BLOB_CS"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='AZURE_STORAGE_CONNECTION_STRING'].name" -o tsv)" ]; then
+              echo "::warning::Falta AZURE_STORAGE_CONNECTION_STRING. Configure el secreto AZURE_STORAGE_CONNECTION_STRING_QA; las subidas responderán 503."
             fi
+            JWT_SECRET="${{ secrets.JWT_QA || secrets.JWT_SECRET_BASE64_QA || secrets.JWT_SECRET_QA }}"
+            if [ -n "$JWT_SECRET" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings JWT_SECRET_BASE64="$JWT_SECRET"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='JWT_SECRET_BASE64'].name" -o tsv)" ]; then
+              echo "::error::Falta JWT_SECRET_BASE64 (mismo secreto Base64 de ms-auth QA). Configure el secreto JWT_QA."
+              exit 1
+            fi
+            az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+              --output none --settings TRUST_GATEWAY_HEADERS="${{ vars.TRUST_GATEWAY_HEADERS_QA || 'false' }}"
+            # Guarda los logs del contenedor para poder diagnosticar un arranque fallido.
+            az webapp log config --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+              --docker-container-logging filesystem --output none
+            echo "RG=$RG" >> "$GITHUB_ENV"
+            az webapp start --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG"
 
       - name: Desplegar Contenedor Docker en Azure Web App (QA)
         id: deploy
         uses: azure/webapps-deploy@145a0687697df1d8a28909569f6e5d86213041f9 # v3.0.0
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-latest
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-${{ github.sha }}
 
       - name: Smoke Test - Verificacion Swagger OpenAPI y Health en Vivo
         run: |
           API_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           HEALTH_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/actuator/health"
           echo "Ejecutando Smoke Test contra: $API_URL y $HEALTH_URL"
-          for i in $(seq 1 25); do
+          # Espera a que App Service reemplace el contenedor anterior para no validar la versión vieja.
+          sleep 90
+          SEGUIDOS=0
+          for i in $(seq 1 30); do
             STATUS_API=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" || true)
             STATUS_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
             echo "Intento $i: OpenAPI=$STATUS_API Health=$STATUS_HEALTH"
             if [ "$STATUS_API" = "200" ] && [ "$STATUS_HEALTH" = "200" ]; then
+              SEGUIDOS=$((SEGUIDOS + 1))
+            else
+              SEGUIDOS=0
+            fi
+            if [ "$SEGUIDOS" -ge 3 ]; then
               echo "Microservicio QA desplegado y respondiendo 200 OK (OpenAPI y Actuator Health)"
               exit 0
             fi
@@ -188,3 +211,18 @@ jobs:
           done
           echo "Advertencia: La API tardo en iniciar o no respondio HTTP 200 (OpenAPI=$STATUS_API, Health=$STATUS_HEALTH)"
           exit 1
+
+      - name: Diagnostico - Logs del contenedor si el arranque falla
+        if: failure()
+        uses: azure/cli@3c87847598b988e406a2c25e657114d760fd035c # v2.1.0
+        with:
+          inlineScript: |
+            az webapp show --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "${{ env.RG }}" \
+              --query "{estado:state, plan:appServicePlanId, disponible:availabilityState}" -o json || true
+            az webapp log download --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "${{ env.RG }}" \
+              --log-file /tmp/logs.zip || exit 0
+            cd /tmp && unzip -oq logs.zip -d logs || exit 0
+            for f in $(ls -t logs/LogFiles/*default_docker.log logs/LogFiles/*_docker.log 2>/dev/null | head -2); do
+              echo "===== $f"
+              tail -n 120 "$f"
+            done

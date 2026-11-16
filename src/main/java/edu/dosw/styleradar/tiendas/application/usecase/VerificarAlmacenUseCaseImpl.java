@@ -3,11 +3,6 @@ package edu.dosw.styleradar.tiendas.application.usecase;
 import java.time.Instant;
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.DecisionVerificacionRequestDTO;
@@ -19,13 +14,14 @@ import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.port.in.VerificarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
@@ -76,31 +72,25 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
             VerificacionConsultaRequestDTO request, String rol) {
         adminValidator.validarEsAdministradorStyleRadar(rol);
 
-        int pageNum = request.getPage() != null ? request.getPage() : 0;
-        int size = request.getSize() != null ? request.getSize() : 20;
+        SolicitudPagina solicitud = SolicitudPagina.de(
+                request.getPage(), request.getSize(), "Paginación de verificación inválida");
 
-        if (pageNum < 0 || size < 1 || size > 100) {
-            throw new ReglaDeNegocioException("Paginación de verificación inválida");
-        }
+        Pagina<Almacen> page = request.getEstado() != null
+                ? repositoryPort.findByEstadoVerificacion(request.getEstado(), solicitud)
+                : repositoryPort.findAllVerificacion(solicitud);
 
-        Pageable pageable = PageRequest.of(pageNum, size, Sort.by("nombreComercial").ascending().and(Sort.by("nit").ascending()));
-
-        Page<Almacen> page = request.getEstado() != null
-                ? repositoryPort.findByEstadoVerificacion(request.getEstado(), pageable)
-                : repositoryPort.findAllVerificacion(pageable);
-
-        List<VerificacionAlmacenResponseDTO> content = page.getContent().stream()
+        List<VerificacionAlmacenResponseDTO> content = page.contenido().stream()
                 .map(this::toResponseDTO)
                 .toList();
 
         return new PageResponseDTO<>(
                 content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast()
+                page.numero(),
+                page.tamano(),
+                page.totalElementos(),
+                page.totalPaginas(),
+                page.esPrimera(),
+                page.esUltima()
         );
     }
 

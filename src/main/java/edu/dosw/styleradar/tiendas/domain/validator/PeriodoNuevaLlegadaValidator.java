@@ -1,11 +1,9 @@
 package edu.dosw.styleradar.tiendas.domain.validator;
 
-import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.exception.PeriodoInvalidoException;
 import edu.dosw.styleradar.tiendas.domain.model.PeriodoNuevaLlegada;
 
-@Component
 public class PeriodoNuevaLlegadaValidator {
 
     public void validar(Integer dias) {

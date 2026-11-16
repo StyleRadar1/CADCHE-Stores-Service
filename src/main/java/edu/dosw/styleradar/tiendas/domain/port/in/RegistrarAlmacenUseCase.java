@@ -11,7 +11,6 @@ import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenR
 
 public interface RegistrarAlmacenUseCase {
 
-    VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId);
 
     VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId, String rol);
 

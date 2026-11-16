@@ -3,13 +3,13 @@ package edu.dosw.styleradar.tiendas.domain.port.out;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.FotografiaTienda;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 
 public interface AlmacenRepositoryPort {
 
@@ -27,13 +27,13 @@ public interface AlmacenRepositoryPort {
 
     void asociarAdministrador(String nit, Long usuarioId);
 
-    AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId);
+    AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId, Long asignadoPorId);
 
     List<AdministradorAlmacen> listarAdministradoresPorNit(String nit);
 
-    Page<Almacen> findByEstadoVerificacion(EstadoVerificacionAlmacen estado, Pageable pageable);
+    Pagina<Almacen> findByEstadoVerificacion(EstadoVerificacionAlmacen estado, SolicitudPagina solicitud);
 
-    Page<Almacen> findAllVerificacion(Pageable pageable);
+    Pagina<Almacen> findAllVerificacion(SolicitudPagina solicitud);
 
     List<FotografiaTienda> findFotosByAlmacenNit(String nit);
 

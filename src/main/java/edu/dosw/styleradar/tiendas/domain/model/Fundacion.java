@@ -19,6 +19,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Fundacion {
 
+    /** SR-RF-65: el motivo de desactivar o reactivar admite como máximo 500 caracteres. */
+    public static final int MAX_LONGITUD_MOTIVO = 500;
+
+    /**
+     * Valida el motivo opcional de un cambio de estado (desactivar o reactivar).
+     */
+    public static void validarMotivoCambioEstado(String motivo) {
+        if (motivo != null && motivo.length() > MAX_LONGITUD_MOTIVO) {
+            throw new ReglaDeNegocioException("El motivo no puede superar " + MAX_LONGITUD_MOTIVO + " caracteres");
+        }
+    }
+
     private static final Pattern PATRON_NIT = Pattern.compile("^[0-9]{8,12}(-[0-9])?$");
 
     private Long id;

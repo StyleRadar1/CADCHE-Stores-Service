@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,9 +46,11 @@ import edu.dosw.styleradar.tiendas.domain.port.in.EditarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ReactivarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
+import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
 @WebMvcTest(FundacionController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
+@ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - FundacionController (SR-RF-63 / SR-RF-64 / SR-RF-65)")
 class FundacionControllerIntegrationTest {
 
@@ -173,6 +177,13 @@ class FundacionControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
                 .andExpect(jsonPath("$.validationErrors.nombre").exists());
@@ -390,6 +401,13 @@ class FundacionControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe otra fundación aliada registrada con el nombre: Fundación Duplicada"));
     }
@@ -430,6 +448,13 @@ class FundacionControllerIntegrationTest {
         mockMvc.perform(patch("/api/v1/admin/fundaciones/3/activar")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra activa"));
     }
@@ -443,6 +468,13 @@ class FundacionControllerIntegrationTest {
         mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra desactivada"));
     }
@@ -484,5 +516,13 @@ class FundacionControllerIntegrationTest {
                         .param("longitud", "-74.0531"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nombre").value("Fundación Cercana"));
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("Una ruta inexistente responde 404 RECURSO_NO_ENCONTRADO, no 500")
+    void rutaInexistenteResponde404() throws Exception {
+        mockMvc.perform(get("/api/v1/no-existe"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.codigo").value("RECURSO_NO_ENCONTRADO"));
     }
 }

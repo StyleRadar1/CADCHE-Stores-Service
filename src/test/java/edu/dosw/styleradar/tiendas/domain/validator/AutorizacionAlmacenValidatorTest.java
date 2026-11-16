@@ -79,8 +79,8 @@ class AutorizacionAlmacenValidatorTest {
                 .isInstanceOf(AccesoDenegadoAlmacenException.class)
                 .hasMessage("Solo una cuenta con rol de tienda puede registrar un almacén");
         assertThatThrownBy(() -> validator.validarRolTienda(null))
-                .isInstanceOf(AccesoDenegadoAlmacenException.class);
+                .isInstanceOf(FalloAutenticacionException.class);
         assertThatThrownBy(() -> validator.validarRolTienda("   "))
-                .isInstanceOf(AccesoDenegadoAlmacenException.class);
+                .isInstanceOf(FalloAutenticacionException.class);
     }
 }

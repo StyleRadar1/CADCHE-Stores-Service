@@ -19,8 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.DecisionVerificacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.VerificacionConsultaRequestDTO;
@@ -30,6 +28,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.DecisionVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
@@ -148,7 +147,7 @@ class VerificarAlmacenUseCaseTest {
         consulta.setSize(10);
 
         when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.PENDIENTE), any()))
-                .thenReturn(new PageImpl<>(List.of(almacenPendiente), PageRequest.of(0, 10), 1));
+                .thenReturn(new Pagina<>(List.of(almacenPendiente), 0, 10, 1, 1));
 
         PageResponseDTO<VerificacionAlmacenResponseDTO> response = useCase.consultar(consulta, ADMIN_ROLE);
 

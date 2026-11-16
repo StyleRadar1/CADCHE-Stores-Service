@@ -1,17 +1,28 @@
+# Perfil dev: PostgreSQL 16 local (docker compose up -d tiendas-db) con migraciones Flyway reales.
 spring:
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:styleradar_tiendas;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/styleradar_tiendas}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
   flyway:
-    enabled: false
+    enabled: true
 
 management:
   health:
     rabbit:
       enabled: false
 
+# Secreto JWT de desarrollo: el mismo de ms-auth en dev (nunca valido en qa/prod).
+styleradar:
+  security:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:true}
+
+azure:
+  storage:
+    # Sin Azure ni Azurite: archivos en memoria (CADCHE-117).
+    memoria-permitida: true
