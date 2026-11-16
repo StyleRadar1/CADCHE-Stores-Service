@@ -165,12 +165,12 @@ jobs:
             elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='AZURE_STORAGE_CONNECTION_STRING'].name" -o tsv)" ]; then
               echo "::warning::Falta AZURE_STORAGE_CONNECTION_STRING. Configure el secreto AZURE_STORAGE_CONNECTION_STRING_PROD; las subidas responderán 503."
             fi
-            JWT_SECRET="${{ secrets.JWT_SECRET_BASE64_PROD || secrets.JWT_SECRET_PROD }}"
+            JWT_SECRET="${{ secrets.JWT_PROD || secrets.JWT_SECRET_BASE64_PROD || secrets.JWT_SECRET_PROD }}"
             if [ -n "$JWT_SECRET" ]; then
               az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
                 --output none --settings JWT_SECRET_BASE64="$JWT_SECRET"
             elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='JWT_SECRET_BASE64'].name" -o tsv)" ]; then
-              echo "::error::Falta JWT_SECRET_BASE64 (mismo secreto Base64 de ms-auth PROD). Configure el secreto JWT_SECRET_BASE64_PROD."
+              echo "::error::Falta JWT_SECRET_BASE64 (mismo secreto Base64 de ms-auth PROD). Configure el secreto JWT_PROD."
               exit 1
             fi
             az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
