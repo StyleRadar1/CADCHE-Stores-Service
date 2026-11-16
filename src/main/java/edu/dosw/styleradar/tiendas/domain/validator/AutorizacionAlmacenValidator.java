@@ -24,6 +24,9 @@ public class AutorizacionAlmacenValidator {
     }
 
     public void validarRolTienda(String roles) {
+        if (roles == null || roles.isBlank()) {
+            throw new FalloAutenticacionException(AutorizacionAdminStyleRadarValidator.MENSAJE_SIN_IDENTIDAD);
+        }
         if (!RolesUsuario.contieneAlguno(roles, ROL_ADMIN_ALMACEN, "ROLE_" + ROL_ADMIN_ALMACEN, ROL_TIENDA, "ROLE_" + ROL_TIENDA)) {
             throw new AccesoDenegadoAlmacenException("Solo una cuenta con rol de tienda puede registrar un almacén");
         }
