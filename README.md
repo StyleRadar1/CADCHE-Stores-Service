@@ -761,7 +761,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 
 #### 8.1 Resumen de Decisiones y Factores de Éxito
 
-La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 93.76% instrucciones / 95.31% líneas sobre 316 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V6` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
+La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 93.78% instrucciones / 95.30% líneas sobre 321 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V6` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
 
 #### 8.2 Roadmap de Evolución Tecnológica
 
@@ -835,7 +835,7 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **11** | **10 · Roles** | Matriz RBAC por endpoint y mitigación de vulnerabilidades BOLA/IDOR (`SR-RNF-01` vía `AutorizacionAlmacenValidator`). |
 | **12** | **11 · Errores** | Catálogo `CodigoError` con `ErrorResponseDTO` ProblemDetail (`GlobalExceptionHandler`) y `401` (`JwtAuthFilter`). |
 | **13** | **12 · Integraciones** | Mapeo de dependencias Upstream (síncronas vía API Gateway) y Downstream (`ms-segunda-vida-donaciones :8520`). |
-| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`93.76%` instr. / `95.31%` líneas), `316` pruebas y pipeline CI/CD GitHub Actions. |
+| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`93.78%` instr. / `95.30%` líneas), `321` pruebas y pipeline CI/CD GitHub Actions. |
 | **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Azure App Service, BDs y Jira). |
 | **16** | **Contraportada** | Cierre editorial oficial: *"Descubre tu estilo. En tu ciudad."* |
 
@@ -976,9 +976,9 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en la suite de pruebas del microservicio (`mvn -B clean verify spotbugs:check`) y en el pipeline de integración continua (`.github/workflows/ci-qa.yml`):
 
 1. **Métricas Verificadas de la Suite de Pruebas y Calidad**:
-   - **Total de pruebas ejecutadas**: `316 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
-   - **Cobertura de instrucciones (JaCoCo)**: `93.76%` (`7.788 / 8.306`, umbral bloqueante `>= 85%` en `pom.xml`).
-   - **Cobertura de líneas (JaCoCo)**: `95.31%` (`1.707 / 1.791`).
+   - **Total de pruebas ejecutadas**: `321 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
+   - **Cobertura de instrucciones (JaCoCo)**: `93.78%` (`7.788 / 8.306`, umbral bloqueante `>= 85%` en `pom.xml`).
+   - **Cobertura de líneas (JaCoCo)**: `95.30%` (`1.707 / 1.791`).
    - **Análisis estático SpotBugs**: `0 bugs` / `0 errores` (`spotbugs:check`).
 
 2. **Matriz de Pruebas Automatizadas por Categoría OWASP Top 10:2025**:
