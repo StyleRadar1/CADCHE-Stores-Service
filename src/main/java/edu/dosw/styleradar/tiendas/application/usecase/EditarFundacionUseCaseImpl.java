@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
@@ -19,7 +18,6 @@ import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarV
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {

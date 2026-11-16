@@ -33,6 +33,8 @@ import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException
 import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
@@ -196,8 +198,8 @@ class RegistrarAlmacenUseCaseTest {
                 .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
                 .build();
 
-        when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.APROBADO), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(a1, a2)));
+        when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.APROBADO), any(SolicitudPagina.class)))
+                .thenReturn(new Pagina<>(List.of(a1, a2), 0, 10, 2, 1));
 
         ConsultaAlmacenRequestDTO req = new ConsultaAlmacenRequestDTO();
         req.setCategoria(CategoriaAlmacen.CASUAL);

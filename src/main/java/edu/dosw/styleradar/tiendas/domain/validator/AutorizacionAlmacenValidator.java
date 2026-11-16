@@ -1,15 +1,15 @@
 package edu.dosw.styleradar.tiendas.domain.validator;
 
-import java.util.Locale;
 
-import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 
-@Component
 public class AutorizacionAlmacenValidator {
+
+    public static final String ROL_ADMIN_ALMACEN = "ADMIN_ALMACEN";
+    public static final String ROL_TIENDA = "TIENDA";
 
     public void validarAcceso(String nit, Long usuarioId, AlmacenRepositoryPort repositoryPort) {
         if (usuarioId == null) {
@@ -24,14 +24,7 @@ public class AutorizacionAlmacenValidator {
     }
 
     public void validarRolTienda(String roles) {
-        if (roles == null || roles.isBlank()) {
-            throw new AccesoDenegadoAlmacenException("Solo una cuenta con rol de tienda puede registrar un almacén");
-        }
-        String upper = roles.toUpperCase(Locale.ROOT);
-        boolean esTienda = upper.contains("TIENDA")
-                || upper.contains("ADMIN_ALMACEN")
-                || upper.contains("ALMACEN");
-        if (!esTienda) {
+        if (!RolesUsuario.contieneAlguno(roles, ROL_ADMIN_ALMACEN, "ROLE_" + ROL_ADMIN_ALMACEN, ROL_TIENDA, "ROLE_" + ROL_TIENDA)) {
             throw new AccesoDenegadoAlmacenException("Solo una cuenta con rol de tienda puede registrar un almacén");
         }
     }

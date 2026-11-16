@@ -9,8 +9,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRequestDTO;
@@ -27,7 +25,6 @@ import edu.dosw.styleradar.tiendas.domain.port.out.FundacionRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarValidator;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @Slf4j
 public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase {
 
@@ -43,7 +40,6 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
         this(repositoryPort, adminValidator, null);
     }
 
-    @Autowired
     public RegistrarFundacionUseCaseImpl(
             FundacionRepositoryPort repositoryPort,
             AutorizacionAdminStyleRadarValidator adminValidator,

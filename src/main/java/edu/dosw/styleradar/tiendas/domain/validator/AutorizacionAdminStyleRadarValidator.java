@@ -1,10 +1,8 @@
 package edu.dosw.styleradar.tiendas.domain.validator;
 
-import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
 
-@Component
 public class AutorizacionAdminStyleRadarValidator {
 
     public static final String ROL_ADMIN_STYLERADAR = "ROLE_ADMIN_STYLERADAR";
@@ -24,11 +22,7 @@ public class AutorizacionAdminStyleRadarValidator {
     }
 
     private void validarRolConMensaje(String roles, String mensajeError) {
-        if (roles == null || roles.isBlank()) {
-            throw new AccesoDenegadoAlmacenException(mensajeError);
-        }
-        boolean esAdmin = roles.contains(ROL_ADMIN_STYLERADAR) || roles.contains(ROL_ADMIN_CORTO);
-        if (!esAdmin) {
+        if (!RolesUsuario.contieneAlguno(roles, ROL_ADMIN_STYLERADAR, ROL_ADMIN_CORTO)) {
             throw new AccesoDenegadoAlmacenException(mensajeError);
         }
     }

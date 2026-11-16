@@ -2,7 +2,6 @@ package edu.dosw.styleradar.tiendas.application.usecase;
 
 import java.time.Instant;
 
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
@@ -17,7 +16,6 @@ import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarV
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCase {

@@ -2,7 +2,6 @@ package edu.dosw.styleradar.tiendas.application.usecase;
 
 import java.util.List;
 
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.AdministradorAlmacenResponseDTO;
@@ -16,7 +15,6 @@ import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class AsociarAdministradorAlmacenUseCaseImpl implements AsociarAdministradorAlmacenUseCase {

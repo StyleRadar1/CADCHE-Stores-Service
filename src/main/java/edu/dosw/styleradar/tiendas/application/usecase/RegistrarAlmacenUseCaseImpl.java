@@ -8,12 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaAlmacenRequestDTO;
@@ -28,6 +22,8 @@ import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.Pagina;
+import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.PeriodoNuevaLlegada;
 import edu.dosw.styleradar.tiendas.domain.model.UmbralUltimasUnidades;
@@ -37,7 +33,6 @@ import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator;
 import lombok.extern.slf4j.Slf4j;
 
-@Service
 @Slf4j
 public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
 
@@ -51,7 +46,6 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
         this(repositoryPort, null, new AutorizacionAlmacenValidator());
     }
 
-    @Autowired
     public RegistrarAlmacenUseCaseImpl(
             AlmacenRepositoryPort repositoryPort,
             AlmacenamientoBlobPort almacenamientoBlobPort,
@@ -180,21 +174,14 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
     @Override
     @Transactional(readOnly = true)
     public PageResponseDTO<AlmacenResponseDTO> consultarAlmacenes(ConsultaAlmacenRequestDTO request) {
-        int pageNum = request != null ? request.getPage() : 0;
-        int size = request != null ? request.getSize() : 20;
+        SolicitudPagina solicitud = request != null
+                ? SolicitudPagina.de(request.getPage(), request.getSize(),
+                        "Parámetros de paginación inválidos para la consulta de almacenes")
+                : new SolicitudPagina(0, 20);
 
-        if (pageNum < 0 || size < 1 || size > 100) {
-            throw new ReglaDeNegocioException("Parámetros de paginación inválidos para la consulta de almacenes");
-        }
+        Pagina<Almacen> page = repositoryPort.findByEstadoVerificacion(EstadoVerificacionAlmacen.APROBADO, solicitud);
 
-        Pageable pageable = PageRequest.of(
-                pageNum,
-                size,
-                Sort.by("nombreComercial").ascending().and(Sort.by("nit").ascending()));
-
-        Page<Almacen> page = repositoryPort.findByEstadoVerificacion(EstadoVerificacionAlmacen.APROBADO, pageable);
-
-        List<AlmacenResponseDTO> content = page.getContent().stream()
+        List<AlmacenResponseDTO> content = page.contenido().stream()
                 .filter(a -> request == null
                         || request.getCategoria() == null
                         || (a.getCategorias() != null && a.getCategorias().contains(request.getCategoria())))
@@ -203,12 +190,12 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
 
         return new PageResponseDTO<>(
                 content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast()
+                page.numero(),
+                page.tamano(),
+                page.totalElementos(),
+                page.totalPaginas(),
+                page.esPrimera(),
+                page.esUltima()
         );
     }
 
