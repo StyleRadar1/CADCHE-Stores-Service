@@ -1,13 +1,15 @@
 # ==============================================================================
 # STYLE RADAR - PIPELINE CD PROD
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
-# Flujo Automatizado: Quality Gate -> Build OCI SemVer -> Aprobacion Manual -> Azure PROD
+# Flujo Automatizado: push a main (o tag vX.Y.Z) -> Quality Gate -> Build OCI -> Aprobacion (environment production) -> Azure PROD
 # ==============================================================================
 
 name: CD PROD - Tiendas
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -64,7 +66,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service -Dsonar.qualitygate.wait=true
 
   build-prod:
     name: 2. Build y Push Imagen OCI Produccion
@@ -92,9 +94,9 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=prod-${{ github.sha }}
             type=semver,pattern={{version}}
-            type=raw,value=latest
-            type=raw,value=${{ github.event.inputs.version || 'prod-latest' }}
+            type=raw,value=prod-latest
 
       - name: Compilar y publicar imagen OCI de Produccion
         uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6.11.0
@@ -147,20 +149,24 @@ jobs:
                 RABBITMQ_USER="${{ secrets.RABBITMQ_USER_PROD || secrets.RABBITMQ_USER || 'ms_tiendas' }}" \
                 RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD_PROD || secrets.RABBITMQ_PASSWORD }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
-            if [ -n "${{ secrets.JWT_SECRET_PROD }}" ]; then
-              az webapp config appsettings set \
-                --name "${{ env.AZURE_WEBAPP_NAME }}" \
-                --resource-group "$RG" \
-                --output none \
-                --settings JWT_SECRET="${{ secrets.JWT_SECRET_PROD }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET_BASE64_PROD || secrets.JWT_SECRET_PROD }}"
+            if [ -n "$JWT_SECRET" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings JWT_SECRET_BASE64="$JWT_SECRET"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='JWT_SECRET_BASE64'].name" -o tsv)" ]; then
+              echo "::error::Falta JWT_SECRET_BASE64 (mismo secreto Base64 de ms-auth PROD). Configure el secreto JWT_SECRET_BASE64_PROD."
+              exit 1
             fi
+            az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+              --output none --settings TRUST_GATEWAY_HEADERS="${{ vars.TRUST_GATEWAY_HEADERS_PROD || 'false' }}"
+            az webapp start --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG"
 
       - name: Desplegar Contenedor Docker en Azure Web App (PROD)
         id: deploy
         uses: azure/webapps-deploy@145a0687697df1d8a28909569f6e5d86213041f9 # v3.0.0
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build-prod.outputs.version || 'latest' }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:prod-${{ github.sha }}
 
       - name: Smoke Test - Verificacion Swagger OpenAPI y Health en Vivo
         run: |
@@ -189,7 +195,7 @@ jobs:
         run: |
           echo "=========================================================="
           echo "PROD desplegado exitosamente a traves de CD automatizado"
-          echo "Version: ${{ github.ref_name }}"
+          echo "Version: ${{ github.ref_name }} (imagen prod-${{ github.sha }})"
           echo "URL Swagger UI: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/swagger-ui/index.html"
           echo "URL OpenAPI Spec: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/v3/api-docs"
           echo "=========================================================="

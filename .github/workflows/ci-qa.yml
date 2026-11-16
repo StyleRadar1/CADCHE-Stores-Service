@@ -10,7 +10,6 @@ on:
   push:
     branches:
       - develop
-      - main
       - 'feature/**'
   pull_request:
     branches:
@@ -65,7 +64,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service -Dsonar.qualitygate.wait=true
 
       - name: Publicar reporte de cobertura JaCoCo
         if: always()
@@ -102,7 +101,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix=qa-
+            type=raw,value=qa-${{ github.sha }}
             type=raw,value=qa-latest
 
       - name: Compilar y publicar imagen OCI multi-stage
@@ -156,20 +155,24 @@ jobs:
                 RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD }}" \
                 AZURE_STORAGE_BLOB_ENDPOINT="${{ secrets.AZURE_STORAGE_BLOB_ENDPOINT_QA || 'https://styleradarblobqa.blob.core.windows.net' }}" \
                 SWAGGER_SERVER_URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
-            if [ -n "${{ secrets.JWT_SECRET_QA }}" ]; then
-              az webapp config appsettings set \
-                --name "${{ env.AZURE_WEBAPP_NAME }}" \
-                --resource-group "$RG" \
-                --output none \
-                --settings JWT_SECRET="${{ secrets.JWT_SECRET_QA }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET_BASE64_QA || secrets.JWT_SECRET_QA }}"
+            if [ -n "$JWT_SECRET" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings JWT_SECRET_BASE64="$JWT_SECRET"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='JWT_SECRET_BASE64'].name" -o tsv)" ]; then
+              echo "::error::Falta JWT_SECRET_BASE64 (mismo secreto Base64 de ms-auth QA). Configure el secreto JWT_SECRET_BASE64_QA."
+              exit 1
             fi
+            az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+              --output none --settings TRUST_GATEWAY_HEADERS="${{ vars.TRUST_GATEWAY_HEADERS_QA || 'false' }}"
+            az webapp start --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG"
 
       - name: Desplegar Contenedor Docker en Azure Web App (QA)
         id: deploy
         uses: azure/webapps-deploy@145a0687697df1d8a28909569f6e5d86213041f9 # v3.0.0
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-latest
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:qa-${{ github.sha }}
 
       - name: Smoke Test - Verificacion Swagger OpenAPI y Health en Vivo
         run: |
