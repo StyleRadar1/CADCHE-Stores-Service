@@ -361,7 +361,8 @@ class OwaspTop10SecurityTest {
                     .isAnnotationPresent(org.springframework.stereotype.Service.class)).isFalse();
             assertThat(java.util.Arrays.stream(
                             edu.dosw.styleradar.tiendas.infrastructure.config.BeanConfig.class.getDeclaredMethods())
-                    .anyMatch(m -> m.getReturnType().getSimpleName().equals("ConfigurarUmbralUltimasUnidadesUseCase")))
+                    .anyMatch(m -> m.getReturnType()
+                            == edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase.class))
                     .isTrue();
 
             boolean hasTransactionalMethods = java.util.Arrays.stream(
