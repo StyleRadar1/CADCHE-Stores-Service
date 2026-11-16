@@ -36,6 +36,7 @@ public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCas
     @Transactional
     public FundacionResponseDTO desactivar(Long id, String motivo, String rolUsuario) {
         adminValidator.validarEsAdministradorParaFundaciones(rolUsuario);
+        Fundacion.validarMotivoCambioEstado(motivo);
 
         if (id == null) {
             throw new ReglaDeNegocioException("El identificador de la fundación es obligatorio");

@@ -166,4 +166,16 @@ class DesactivarFundacionUseCaseTest {
         assertThrows(ReglaDeNegocioException.class,
                 () -> useCase.desactivar(null, ADMIN_ROLE));
     }
+
+    @Test
+    @DisplayName("SR-RF-65: un motivo de más de 500 caracteres responde 400 y no cambia el estado")
+    void motivoDemasiadoLargoNoDesactiva() {
+        String motivo = "x".repeat(501);
+
+        ReglaDeNegocioException ex = assertThrows(ReglaDeNegocioException.class,
+                () -> useCase.desactivar(5L, motivo, ADMIN_ROLE));
+
+        assertEquals("El motivo no puede superar 500 caracteres", ex.getMessage());
+        verify(repositoryPort, never()).save(any());
+    }
 }
