@@ -116,8 +116,16 @@ public class Almacen {
         if (Boolean.TRUE.equals(retirada)) {
             return false;
         }
-        long diasTranscurridos = Duration.between(fechaPublicacion, ref).toDays();
-        return diasTranscurridos <= getDiasNuevaLlegadaEfectivo();
+        return dentroDelPeriodoNuevaLlegada(fechaPublicacion, ref);
+    }
+
+    /**
+     * SR-RF-60: la prenda es nueva mientras no hayan pasado más de {@code diasNuevaLlegada} días completos
+     * (duración exacta; con 7 días, a los 7 días y 1 hora ya no lo es).
+     */
+    private boolean dentroDelPeriodoNuevaLlegada(Instant fechaPublicacion, Instant ref) {
+        Duration transcurrido = Duration.between(fechaPublicacion, ref);
+        return transcurrido.compareTo(Duration.ofDays(getDiasNuevaLlegadaEfectivo())) <= 0;
     }
 
     public boolean evaluarUltimasUnidades(int stockActual) {
@@ -139,8 +147,7 @@ public class Almacen {
         }
         Instant ref = fechaReferencia != null ? fechaReferencia : Instant.now();
         int diasPermitidos = getDiasNuevaLlegadaEfectivo();
-        long diasTranscurridos = Duration.between(fechaIngreso, ref).toDays();
-        if (diasTranscurridos > diasPermitidos) {
+        if (!dentroDelPeriodoNuevaLlegada(fechaIngreso, ref)) {
             throw new PrendaNoCumpleDistintivoException(
                     "La fecha de publicación de la prenda supera el periodo de nueva llegada configurado para el almacén ("
                             + diasPermitidos + " días)");

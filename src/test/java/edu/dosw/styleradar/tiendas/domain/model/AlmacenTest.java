@@ -279,6 +279,9 @@ class AlmacenTest {
         Instant ahora = Instant.now();
         assertThat(almacen.calcularNuevaLlegada(ahora.minus(7, ChronoUnit.DAYS), false, ahora)).isTrue();
         assertThat(almacen.calcularNuevaLlegada(ahora.minus(8, ChronoUnit.DAYS), false, ahora)).isFalse();
+        // Duración exacta (contrato 1.2): pasada una hora del último día ya no es nueva llegada.
+        assertThat(almacen.calcularNuevaLlegada(ahora.minus(7, ChronoUnit.DAYS).minus(1, ChronoUnit.HOURS), false, ahora))
+                .isFalse();
         assertThat(almacen.calcularNuevaLlegada(ahora.minus(2, ChronoUnit.DAYS), true, ahora)).isFalse();
         assertThatThrownBy(() -> almacen.calcularNuevaLlegada(ahora.plus(1, ChronoUnit.DAYS), false, ahora))
                 .isInstanceOf(ReglaDeNegocioException.class)
