@@ -117,4 +117,34 @@ class JwtAuthFilterTest {
         assertThat(respuestaVencido.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
         assertThat(respuestaVencido.getContentAsString()).contains("ha expirado");
     }
+
+    @Test
+    @DisplayName("B-0.1: una escritura sin token responde 401 antes de validar el cuerpo")
+    void escrituraSinToken_responde401() throws ServletException, IOException {
+        request.setMethod("POST");
+        request.setRequestURI("/api/v1/almacenes");
+        request.addHeader("X-User-Id", "1");
+
+        filtro(false).doFilter(request, response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getContentType()).startsWith("application/problem+json");
+        assertThat(response.getContentAsString()).contains("Se requiere un token de acceso válido para esta operación");
+        assertThat(filterChain.getRequest()).isNull();
+    }
+
+    @Test
+    @DisplayName("Las lecturas sin token siguen pasando (rutas públicas) y el Gateway de confianza puede escribir")
+    void lecturaSinTokenYGatewayDeConfianza_pasan() throws ServletException, IOException {
+        request.setMethod("GET");
+        request.setRequestURI("/api/v1/fundaciones");
+        filtro(false).doFilter(request, response, filterChain);
+        assertThat(filterChain.getRequest()).isNotNull();
+
+        MockHttpServletRequest escritura = new MockHttpServletRequest("PUT", "/api/v1/almacenes/900123456-1/configuracion-catalogo");
+        escritura.addHeader("X-User-Id", "7");
+        MockFilterChain cadena = new MockFilterChain();
+        filtro(true).doFilter(escritura, new MockHttpServletResponse(), cadena);
+        assertThat(cadena.getRequest()).isNotNull();
+    }
 }

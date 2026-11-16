@@ -2,6 +2,7 @@ package edu.dosw.styleradar.tiendas.infrastructure.security;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
@@ -40,6 +41,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     static final String ATRIBUTO_USUARIO = "authenticatedUserId";
     static final String ATRIBUTO_ROLES = "authenticatedRoles";
     private static final String BEARER = "Bearer ";
+    static final String MENSAJE_SIN_TOKEN = "Se requiere un token de acceso válido para esta operación";
+    private static final Set<String> METODOS_ESCRITURA = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     private final JwtSecurityValidator jwtSecurityValidator;
     private final ObjectMapper objectMapper;
@@ -60,6 +63,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith(BEARER)) {
+            if (esEscrituraSinIdentidad(request)) {
+                // B-0.1: toda escritura exige identidad; se responde 401 antes de validar el cuerpo (que daría 400).
+                escribirRespuestaUnauthorized(response, request.getRequestURI(), MENSAJE_SIN_TOKEN);
+                return;
+            }
             filterChain.doFilter(confiarCabecerasGateway ? request : IdentidadVerificadaRequest.sinIdentidad(request),
                     response);
             return;
@@ -79,6 +87,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         verificada.setAttribute(ATRIBUTO_USUARIO, identidad.usuarioId());
         verificada.setAttribute(ATRIBUTO_ROLES, identidad.rolesCsv());
         filterChain.doFilter(verificada, response);
+    }
+
+    /**
+     * Todas las rutas de escritura de la API (POST, PUT, PATCH, DELETE) son restringidas. Sin token, solo pasan si
+     * el servicio confía en las cabeceras del Gateway y este envió la identidad ({@code X-User-Id} o el rol).
+     */
+    private boolean esEscrituraSinIdentidad(HttpServletRequest request) {
+        if (!METODOS_ESCRITURA.contains(request.getMethod()) || !request.getRequestURI().startsWith("/api/")) {
+            return false;
+        }
+        return !confiarCabecerasGateway
+                || (vacia(request.getHeader("X-User-Id")) && vacia(request.getHeader("X-User-Roles"))
+                        && vacia(request.getHeader("X-User-Role")));
+    }
+
+    private static boolean vacia(String valor) {
+        return valor == null || valor.isBlank();
     }
 
     private void escribirRespuestaUnauthorized(HttpServletResponse response, String path, String mensaje)
