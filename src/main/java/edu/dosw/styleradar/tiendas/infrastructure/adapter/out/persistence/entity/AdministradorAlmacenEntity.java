@@ -37,6 +37,10 @@ public class AdministradorAlmacenEntity {
     @Column(name = "almacen_nit", nullable = false, length = 30)
     private String almacenNit;
 
+    /** Administrador de StyleRadar que hizo la asociación; nulo cuando el vínculo nace del registro del almacén. */
+    @Column(name = "asignado_por_id")
+    private Long asignadoPorId;
+
     @Column(name = "fecha_asignacion")
     @Builder.Default
     private Instant fechaAsignacion = Instant.now();

@@ -81,7 +81,7 @@
 * **Identificador de Servicio:** `ms-tiendas` (`CADCHE-Stores-Service`)
 * **Paquete Arquitectónico:** `Paquete 1: Identidad` · Equipo `CADche`
 * **Puerto de Escucha Oficial:** `8140` (bloque `8100` del equipo: ms-auth `8100`, ms-usuarios `8120`, ms-tiendas `8140`)
-* **Base de Datos Asignada:** `PostgreSQL 16` (`styleradar_tiendas`), una por ambiente (QA y PROD separadas), con migraciones **Flyway V1..V5**. Los binarios (RUT en PDF, fotos y certificados) van a **Azure Blob Storage**; la base solo guarda la URL.
+* **Base de Datos Asignada:** `PostgreSQL 16` (`styleradar_tiendas`), una por ambiente (QA y PROD separadas), con migraciones **Flyway V1..V6**. Los binarios (RUT en PDF, fotos y certificados) van a **Azure Blob Storage**; la base solo guarda la URL.
 * **Bounded Context:** `Gestión de Tiendas Aliadas y Fundaciones`
 
 ### Responsabilidades del Dominio (historias del Sprint 2)
@@ -173,7 +173,7 @@ flowchart LR
 
 <div align="center">
   <img src="docs/uml/DiagramaBaseDatos.png" alt="Modelo de base de datos ms-tiendas" width="100%" />
-  <sub>Figura 3.2: esquema real de PostgreSQL 16 tras Flyway V1..V5 (<a href="docs/uml/DiagramaBaseDatos.drawio">DiagramaBaseDatos.drawio</a>).</sub>
+  <sub>Figura 3.2: esquema real de PostgreSQL 16 tras Flyway V1..V6 (<a href="docs/uml/DiagramaBaseDatos.drawio">DiagramaBaseDatos.drawio</a>).</sub>
 </div>
 
 | Tabla | Clave | Relaciones e integridad |
@@ -181,7 +181,7 @@ flowchart LR
 | `almacenes` | `nit` (PK) | Raíz del agregado; `estado_verificacion`, `url_rut_pdf`, umbral y días de nueva llegada. |
 | `almacen_categorias` | — | FK `almacen_nit` → `almacenes.nit`; `UNIQUE (almacen_nit, categoria)`. |
 | `almacen_fotos` | `id` | FK `almacen_nit` → `almacenes.nit`; `orden` y `es_portada`. |
-| `administradores_almacenes` | `id` | FK `almacen_nit`; `UNIQUE (usuario_id, almacen_nit)`: base del control de propiedad (BOLA). |
+| `administradores_almacenes` | `id` | FK `almacen_nit`; `UNIQUE (usuario_id, almacen_nit)`: base del control de propiedad (BOLA). `asignado_por_id` (V6, CADCHE-130) guarda el admin StyleRadar que hizo la asociación, tomado del JWT. |
 | `fundaciones` | `id` | `nombre` y `nit` únicos; `activa` para la desactivación lógica. |
 | `fundacion_categorias_aceptadas` | — | FK `fundacion_id` → `fundaciones.id`; `UNIQUE (fundacion_id, categoria)`. |
 
@@ -305,7 +305,7 @@ Cada evento lleva un `eventoId` para que los consumidores sean idempotentes.
 | Lenguaje | Java LTS | `21` | Estándar del curso. |
 | Framework | Spring Boot | `3.2.12` | Web, Data JPA, AMQP, Validation y Actuator. |
 | Base de datos | PostgreSQL | `16` | Todos los perfiles (dev con Docker Compose); **sin H2**. |
-| Migraciones | Flyway | `10.20.1` | V1..V5 con `ddl-auto=validate`. |
+| Migraciones | Flyway | `10.20.1` | V1..V6 con `ddl-auto=validate`. |
 | Mensajería | RabbitMQ (Spring AMQP) | `3.13` | Eventos de fundaciones. |
 | Seguridad | JJWT | `0.12.6` | Validación de los JWT de ms-auth (misma librería y versión). |
 | Almacenamiento | Azure Blob Storage SDK | — | RUT, fotos y certificados (Azurite en local). |
@@ -382,7 +382,7 @@ mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.exclud
 | Casos de uso (Mockito) | Los 13 casos de uso con sus flujos alternos. |
 | WebMvc | Los 4 controladores con el contrato de errores. |
 | Seguridad | `JwtAuthFilterTest` (cabeceras falsificadas, token vencido o ajeno), `JwtSecurityValidatorTest` y `OwaspTop10SecurityTest`. |
-| **Integración PostgreSQL 16** | `PersistenciaPostgres16IntegrationTest`: Flyway V1..V5 sobre PostgreSQL 16 real con `ddl-auto=validate`, paginación, propiedad (BOLA) y fundaciones. |
+| **Integración PostgreSQL 16** | `PersistenciaPostgres16IntegrationTest`: Flyway V1..V6 sobre PostgreSQL 16 real con `ddl-auto=validate`, paginación, propiedad (BOLA) y fundaciones. |
 
 > Testcontainers se omite si no hay Docker. Con Docker 29+ en local exporte `DOCKER_API_VERSION=1.44`.
 
@@ -679,7 +679,7 @@ El Technology Radar de StyleRadar categoriza las tecnologías según su nivel de
 * **HOLD:** Monolito no modular, Node.js sin TypeScript, frameworks sin tipado.
 
 #### Cuadrante 2: Almacenamiento & Datos
-* **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 10.20.1 (`V1..V4`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
+* **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 10.20.1 (`V1..V6`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
 * **TRIAL:** Integración completa del SDK Azure Blob Storage v12 para subida directa de binarios desde `AzureBlobStorageAdapter`.
 * **ASSESS:** PostGIS y Redis en iteraciones futuras si aumenta la carga de lectura geoespacial.
 * **HOLD:** MongoDB para transacciones relacionales de NIT o binarios `BYTEA` dentro de PostgreSQL.
@@ -723,7 +723,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 | Servicio / Puerto Oficial | Paquete de Dominio | Persistencia / Almacenamiento | Caché / Estado | Integración / Herramientas Clave |
 | :--- | :--- | :--- | :--- | :--- |
 | **`sr-api-gateway`** (`:8080`) | Perímetro | Sin estado (Stateless) | Límite de tasa perimetral | Enrutamiento HTTP centralizado hacia los paquetes P1–P5 |
-| **`ms-tiendas`** (`:8140`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_tiendas`) + `AzureBlobStorageAdapter`** | **Stateless (JwtAuthFilter HS256)** | **Flyway `V1..V4`, SpringDoc OpenAPI, AMQP deshabilitado hoy en QA/PROD** |
+| **`ms-tiendas`** (`:8140`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_tiendas`) + `AzureBlobStorageAdapter`** | **Stateless (JwtAuthFilter HS256)** | **Flyway `V1..V6`, SpringDoc OpenAPI, AMQP deshabilitado hoy en QA/PROD** |
 | **`ms-auth`** (`:8100`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_auth`)** | **Stateless JWT HS256 / OTP** | **Emisión JWT, BCrypt, JavaMail** |
 | **`ms-usuarios`** (`:8120`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_usuarios`)** | **Stateless** | **Gestión de perfiles y usuarios** |
 | **`ms-inventario`** (`:8200`) | P2: Catálogo | PostgreSQL 16 | En evolución por equipo RESTrepo | Control de stock y tallas |
@@ -748,7 +748,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
    **Persistencia Relacional en PostgreSQL 16 (`styleradar_tiendas`) + puerto `AlmacenamientoBlobPort` (`AzureBlobStorageAdapter`).** PostgreSQL garantiza atomicidad transaccional y reglas estructurales (`almacenes.nit` PK, `UNIQUE (almacen_nit, usuario_id)`, llaves foráneas con `ON DELETE CASCADE`), mientras que la regla de dominio `Almacen.MAXIMO_FOTOGRAFIAS = 6` controla la cuota de vitrina en `almacen_fotos`. Actualmente `ms-tiendas` **no utiliza Redis**.
 
 3. **Frameworks, Lenguaje y Herramientas:**
-   **Java 21 LTS, Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation 3, Flyway 10.20.1, SpringDoc OpenAPI 2.3.0, MapStruct 1.5.5.Final y Lombok 1.18.42.** Spring Boot gestiona el límite multipart (`6MB` por archivo, `7MB` por petición). Flyway versiona `V1..V4` de `styleradar_tiendas`, y los 9 casos de uso se cablean mediante `@Service` implementando `domain.port.in.*UseCase` sin acoplar Spring al dominio puro.
+   **Java 21 LTS, Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation 3, Flyway 10.20.1, SpringDoc OpenAPI 2.3.0, MapStruct 1.5.5.Final y Lombok 1.18.42.** Spring Boot gestiona el límite multipart (`6MB` por archivo, `7MB` por petición). Flyway versiona `V1..V6` de `styleradar_tiendas`, y los 9 casos de uso se cablean mediante `@Service` implementando `domain.port.in.*UseCase` sin acoplar Spring al dominio puro.
 
 4. **Broker de Mensajería:**
    **Spring AMQP / RabbitMQ (`RabbitMQFundacionEventPublisherAdapter`).** El microservicio implementa la publicación de `FundacionDesactivadaEvent` hacia el exchange `styleradar.fundaciones.exchange` (routing key `fundacion.desactivada`) capturando `AmqpException` para no bloquear las confirmaciones SQL. Actualmente **ni `ms-tiendas` ni `ms-auth` se conectan al broker RabbitMQ compartido** y `management.health.rabbit.enabled=false` está configurado en QA, PROD y DEV.
@@ -759,13 +759,13 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 
 #### 8.1 Resumen de Decisiones y Factores de Éxito
 
-La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 89.41% instrucciones / 91.05% líneas sobre 289 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V4` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
+La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 89.41% instrucciones / 91.05% líneas sobre 289 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V6` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
 
 #### 8.2 Roadmap de Evolución Tecnológica
 
 | Fase / Sprint | Objetivo Tecnológico Clave | Criterio de Aceptación |
 | :--- | :--- | :--- |
-| **Sprint 1 (Semanas 1-2)** | Core arquitectónico: Autenticación JWT, Flyway `V1..V4` y dominio hexagonal puro. | Tokens HS256 validados; migraciones ejecutadas en PostgreSQL 16. |
+| **Sprint 1 (Semanas 1-2)** | Core arquitectónico: Autenticación JWT, Flyway `V1..V6` y dominio hexagonal puro. | Tokens HS256 validados; migraciones ejecutadas en PostgreSQL 16. |
 | **Sprint 2 (Semanas 3-4)** | Fotografías de vitrina (máx. 6), verificación RUT, fundaciones y control BOLA (`SR-RNF-01`). | Endpoints OpenAPI validados; ≥ 85% cobertura JaCoCo; 0 bugs SpotBugs. |
 | **Sprint 3 (Semanas 5-6)** | Cableado persistente de los 8 endpoints de contrato DTO pendientes y SDK Azure Blob real. | Todos los endpoints persistidos en PostgreSQL 16 y blobs reales en Azurite/Blob. |
 | **Sprint 4 (Semanas 7-8)** | Activación de mensajería AMQP TLS 5671 (cuando aplique) y pruebas E2E integradas. | Healthcheck limpio y smoke tests pasando en Azure QA y PROD. |
@@ -827,7 +827,7 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **05** | **04 · Componentes** | Diagrama de puertos y adaptadores: Perímetro Seguridad / REST &rarr; 9 Casos de Uso &rarr; Dominio Puro &rarr; PostgreSQL 16 / Blob / AMQP. |
 | **06** | **05 · Endpoints** | Catálogo OpenAPI de 25 endpoints en `:8140`, métodos, roles y notas de contrato vs persistencia. |
 | **07** | **06 · Flujo** | Casos de uso en 4 fases secuenciales: Controller &rarr; `UseCaseImpl` &rarr; Repositorio JPA / Blob &rarr; Evento AMQP (`DesactivarFundacion`). |
-| **08** | **07 · Datos** | Modelo relacional PostgreSQL 16 Flyway `V1..V4`: tablas `almacenes`, `almacen_categorias`, `administradores_almacenes`, `almacen_fotos`, `fundaciones` y `fundacion_categorias_aceptadas`. |
+| **08** | **07 · Datos** | Modelo relacional PostgreSQL 16 Flyway `V1..V6`: tablas `almacenes`, `almacen_categorias`, `administradores_almacenes`, `almacen_fotos`, `fundaciones` y `fundacion_categorias_aceptadas`. |
 | **09** | **08 · Ambientes** | Aislamiento estricto de infraestructura entre QA, Producción y Local (PostgreSQL SSL, puertos y salud AMQP deshabilitada). |
 | **10** | **09 · Eventos** | Integración AMQP con RabbitMQ: `FundacionDesactivadaEvent` (`styleradar.fundaciones.exchange`) y estado actual en QA/PROD. |
 | **11** | **10 · Roles** | Matriz RBAC por endpoint y mitigación de vulnerabilidades BOLA/IDOR (`SR-RNF-01` vía `AutorizacionAlmacenValidator`). |
@@ -948,7 +948,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Acciones y Controles Técnicos Implementados**:
   1. **Deserialización Segura**: Jackson opera sin tipado polimórfico arbitrario (`enableDefaultTyping` deshabilitado).
   2. **Integridad Relacional ACID en PostgreSQL 16**: Claves primarias (`almacenes.nit`, `fundaciones.id`), unicidad (`UNIQUE (almacen_nit, usuario_id)`, `fundaciones.nombre`, `fundaciones.representante_id`) y llaves foráneas `ON DELETE CASCADE`.
-  3. **Integridad de Migraciones DDL con Flyway (`V1..V4`)**: Flyway valida el historial e integridad de migraciones antes de habilitar el esquema con `ddl-auto: validate`.
+  3. **Integridad de Migraciones DDL con Flyway (`V1..V6`)**: Flyway valida el historial e integridad de migraciones antes de habilitar el esquema con `ddl-auto: validate`.
 
 #### A09:2025 – Security Logging and Alerting Failures (Fallas en Registro de Seguridad y Alertas)
 * **¿Aplica?**: **SÍ (Medio)**. La ausencia de trazas forenses impide la detección temprana y respuesta a incidentes de seguridad.

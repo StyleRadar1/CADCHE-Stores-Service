@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.dosw.styleradar.tiendas.application.dto.response.AdministradorAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.in.AsociarAdministradorAlmacenUseCase;
@@ -26,8 +27,9 @@ public class AsociarAdministradorAlmacenUseCaseImpl implements AsociarAdministra
     @Override
     @Transactional
     public AdministradorAlmacenResponseDTO asociar(String nit, Long usuarioId, Long adminId, String rol) {
-        if (rol != null && !rol.isBlank()) {
-            adminValidator.validarEsAdministradorStyleRadar(rol);
+        adminValidator.validarEsAdministradorStyleRadar(rol);
+        if (adminId == null || adminId <= 0) {
+            throw new FalloAutenticacionException(AutorizacionAdminStyleRadarValidator.MENSAJE_SIN_IDENTIDAD);
         }
         if (usuarioId == null || usuarioId <= 0) {
             throw new ReglaDeNegocioException("El identificador del usuario administrador debe ser mayor a cero");
@@ -37,16 +39,7 @@ public class AsociarAdministradorAlmacenUseCaseImpl implements AsociarAdministra
         }
 
         log.info("Asociando usuarioId={} como administrador del almacén NIT={}", usuarioId, nit);
-        AdministradorAlmacen vinculo = repositoryPort.guardarAsociacionAdministrador(nit, usuarioId);
-        Long asignadoPor = adminId != null ? adminId : (vinculo.getAsignadoPorId() != null ? vinculo.getAsignadoPorId() : 1L);
-
-        return new AdministradorAlmacenResponseDTO(
-                vinculo.getId(),
-                vinculo.getUsuarioId(),
-                vinculo.getAlmacenNit(),
-                asignadoPor,
-                vinculo.getFechaAsignacion()
-        );
+        return aRespuesta(repositoryPort.guardarAsociacionAdministrador(nit, usuarioId, adminId));
     }
 
     @Override
@@ -63,13 +56,17 @@ public class AsociarAdministradorAlmacenUseCaseImpl implements AsociarAdministra
         }
 
         return repositoryPort.listarAdministradoresPorNit(nit).stream()
-                .map(v -> new AdministradorAlmacenResponseDTO(
-                        v.getId(),
-                        v.getUsuarioId(),
-                        v.getAlmacenNit(),
-                        v.getAsignadoPorId() != null ? v.getAsignadoPorId() : 1L,
-                        v.getFechaAsignacion()))
+                .map(AsociarAdministradorAlmacenUseCaseImpl::aRespuesta)
                 .toList();
+    }
+
+    private static AdministradorAlmacenResponseDTO aRespuesta(AdministradorAlmacen vinculo) {
+        return new AdministradorAlmacenResponseDTO(
+                vinculo.getId(),
+                vinculo.getUsuarioId(),
+                vinculo.getAlmacenNit(),
+                vinculo.getAsignadoPorId(),
+                vinculo.getFechaAsignacion());
     }
 }
 

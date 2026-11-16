@@ -201,6 +201,7 @@ class AlmacenRepositoryAdapterTest {
                 .id(10L)
                 .almacenNit(NIT)
                 .usuarioId(USUARIO_ID)
+                .asignadoPorId(2L)
                 .fechaAsignacion(Instant.now())
                 .build();
 
@@ -210,11 +211,12 @@ class AlmacenRepositoryAdapterTest {
         when(administradorRepository.save(any(AdministradorAlmacenEntity.class))).thenReturn(entityGuardada);
         when(administradorRepository.findByAlmacenNit(NIT)).thenReturn(List.of(entityGuardada));
 
-        var creado = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
-        var existente = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID);
+        var creado = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID, 2L);
+        var existente = adapter.guardarAsociacionAdministrador(NIT, USUARIO_ID, 2L);
         var lista = adapter.listarAdministradoresPorNit(NIT);
 
         assertThat(creado.getId()).isEqualTo(10L);
+        assertThat(creado.getAsignadoPorId()).isEqualTo(2L);
         assertThat(existente.getUsuarioId()).isEqualTo(USUARIO_ID);
         assertThat(lista).hasSize(1);
     }

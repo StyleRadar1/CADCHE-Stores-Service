@@ -102,7 +102,7 @@ public class AlmacenPersistenceMapper {
                 .id(entity.getId())
                 .usuarioId(entity.getUsuarioId())
                 .almacenNit(entity.getAlmacenNit())
-                .asignadoPorId(1L)
+                .asignadoPorId(entity.getAsignadoPorId())
                 .fechaAsignacion(entity.getFechaAsignacion())
                 .build();
     }

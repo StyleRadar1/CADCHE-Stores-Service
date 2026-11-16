@@ -27,7 +27,7 @@ public interface AlmacenRepositoryPort {
 
     void asociarAdministrador(String nit, Long usuarioId);
 
-    AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId);
+    AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId, Long asignadoPorId);
 
     List<AdministradorAlmacen> listarAdministradoresPorNit(String nit);
 

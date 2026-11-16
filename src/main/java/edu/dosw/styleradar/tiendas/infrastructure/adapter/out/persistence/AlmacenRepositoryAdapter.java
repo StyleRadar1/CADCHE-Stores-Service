@@ -91,13 +91,14 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
     }
 
     @Override
-    public AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId) {
+    public AdministradorAlmacen guardarAsociacionAdministrador(String nit, Long usuarioId, Long asignadoPorId) {
         return administradorRepository.findByAlmacenNitAndUsuarioId(nit, usuarioId)
                 .map(mapper::toDomain)
                 .orElseGet(() -> {
                     AdministradorAlmacenEntity vinculo = AdministradorAlmacenEntity.builder()
                             .almacenNit(nit)
                             .usuarioId(usuarioId)
+                            .asignadoPorId(asignadoPorId)
                             .fechaAsignacion(Instant.now())
                             .build();
                     return mapper.toDomain(administradorRepository.save(vinculo));
