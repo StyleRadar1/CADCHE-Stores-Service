@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -118,11 +119,32 @@ class RegistrarAlmacenUseCaseTest {
 
         when(repositoryPort.existsByNit(NIT)).thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.registrarAlmacen(req, null))
+        assertThatThrownBy(() -> useCase.registrarAlmacen(req, 15L, "ROLE_TIENDA"))
                 .isInstanceOf(AlmacenYaRegistradoException.class)
                 .hasMessage("Ya existe un almacén registrado con el NIT: " + NIT);
-        assertThatThrownBy(() -> useCase.registrarAlmacen(null, null))
+        assertThatThrownBy(() -> useCase.registrarAlmacen(null, 15L, "ROLE_TIENDA"))
                 .isInstanceOf(ReglaDeNegocioException.class);
+    }
+
+    @Test
+    @DisplayName("SR-RF-62-A FA-01: sin identidad o sin rol responde 401 y nunca crea el almacén ni sube el RUT")
+    void sinIdentidadNoRegistraNiSubeRut() {
+        RegistrarAlmacenRequestDTO req = RegistrarAlmacenRequestDTO.builder()
+                .nit(NIT)
+                .nombreComercial("Atelier Urbano")
+                .correoContacto("contacto@atelier.co")
+                .categorias(Set.of(CategoriaAlmacen.CASUAL))
+                .urlRutPdf("https://blob/rut.pdf")
+                .build();
+
+        assertThatThrownBy(() -> useCase.registrarAlmacen(req, null, "ROLE_TIENDA"))
+                .isInstanceOf(FalloAutenticacionException.class);
+        assertThatThrownBy(() -> useCase.registrarAlmacen(req, 15L, null))
+                .isInstanceOf(FalloAutenticacionException.class);
+        assertThatThrownBy(() -> useCase.subirDocumentoRut(
+                "rut.pdf", "application/pdf", 12L, new ByteArrayInputStream("%PDF".getBytes()), 15L, " "))
+                .isInstanceOf(FalloAutenticacionException.class);
+        verify(repositoryPort, never()).save(any());
     }
 
     @Test

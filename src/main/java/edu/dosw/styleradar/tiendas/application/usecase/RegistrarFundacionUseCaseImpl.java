@@ -143,9 +143,8 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
         }
 
         String rutaDestino = "certificados/" + UUID.randomUUID() + ".pdf";
-        String url = almacenamientoBlobPort != null
-                ? almacenamientoBlobPort.subirArchivo("documentos-fundaciones", rutaDestino, contenido, "application/pdf", tamano)
-                : "https://styleradarblob.blob.core.windows.net/documentos-fundaciones/" + rutaDestino;
+        String url = almacenamientoBlobPort.subirArchivo(
+                "documentos-fundaciones", rutaDestino, contenido, "application/pdf", tamano);
 
         return new DocumentoSubidoResponseDTO(url, nombreOriginal, "application/pdf", tamano, Instant.now());
     }

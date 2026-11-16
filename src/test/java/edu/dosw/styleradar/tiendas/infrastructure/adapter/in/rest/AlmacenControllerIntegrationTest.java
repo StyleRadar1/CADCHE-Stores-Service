@@ -562,7 +562,7 @@ class AlmacenControllerIntegrationTest {
                 "contacto@atelierurbano.co", 4.6533, -74.0602, 0.0, Set.of(CategoriaAlmacen.CASUAL),
                 EstadoVerificacionAlmacen.PENDIENTE, false, null, null, null, "https://blob/rut.pdf", "Usuario #10");
 
-        when(registrarAlmacenUseCase.registrarAlmacen(any(RegistrarAlmacenRequestDTO.class), eq(10L)))
+        when(registrarAlmacenUseCase.registrarAlmacen(any(RegistrarAlmacenRequestDTO.class), eq(10L), eq("ROLE_TIENDA")))
                 .thenReturn(resp)
                 .thenThrow(new AlmacenYaRegistradoException("Ya existe un almacén registrado con el NIT: 900123456-1"));
         when(registrarAlmacenUseCase.obtenerMiAlmacen(10L)).thenReturn(resp);
@@ -571,6 +571,7 @@ class AlmacenControllerIntegrationTest {
 
         mockMvc.perform(post("/api/v1/almacenes")
                         .header("X-User-Id", 10L)
+                        .header("X-User-Roles", "ROLE_TIENDA")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -592,6 +593,7 @@ class AlmacenControllerIntegrationTest {
 
         mockMvc.perform(post("/api/v1/almacenes")
                         .header("X-User-Id", 10L)
+                        .header("X-User-Roles", "ROLE_TIENDA")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())

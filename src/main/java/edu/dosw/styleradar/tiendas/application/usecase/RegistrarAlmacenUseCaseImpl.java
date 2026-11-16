@@ -55,28 +55,19 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
         this.autorizacionValidator = autorizacionValidator != null ? autorizacionValidator : new AutorizacionAlmacenValidator();
     }
 
-    @Override
-    @Transactional
-    public VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId) {
-        return registrarAlmacenInterno(request, usuarioId, null, false);
-    }
-
+    /**
+     * SR-RF-62-A: solo una Tienda autenticada registra su almacén. Sin identidad responde 401 y con otro rol 403;
+     * el almacén nace PENDIENTE y queda asociado a quien lo registra.
+     */
     @Override
     @Transactional
     public VerificacionAlmacenResponseDTO registrarAlmacen(RegistrarAlmacenRequestDTO request, Long usuarioId, String rol) {
-        return registrarAlmacenInterno(request, usuarioId, rol, rol != null && !rol.isBlank());
-    }
-
-    private VerificacionAlmacenResponseDTO registrarAlmacenInterno(
-            RegistrarAlmacenRequestDTO request, Long usuarioId, String rol, boolean validarRol) {
-        if (validarRol) {
-            autorizacionValidator.validarRolTienda(rol);
-        }
+        exigirTiendaAutenticada(usuarioId, rol);
         if (request == null) {
             throw new ReglaDeNegocioException("La solicitud de registro del almacén no puede ser nula");
         }
 
-        if (usuarioId != null && repositoryPort.existeAlmacenParaUsuario(usuarioId)) {
+        if (repositoryPort.existeAlmacenParaUsuario(usuarioId)) {
             throw new AlmacenYaRegistradoException(
                     "El usuario ya administra un almacén",
                     Map.of("usuarioId", "El usuario ya administra un almacén"));
@@ -138,20 +129,21 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
     @Override
     public DocumentoSubidoResponseDTO subirDocumentoRut(
             String nombreOriginal, String contentType, long tamano, InputStream contenido, Long usuarioId, String rol) {
-        if (usuarioId == null) {
-            throw new FalloAutenticacionException("Token de autenticación ausente, inválido o expirado");
-        }
-        if (rol != null && !rol.isBlank()) {
-            autorizacionValidator.validarRolTienda(rol);
-        }
+        exigirTiendaAutenticada(usuarioId, rol);
         validarArchivoPdfRut(nombreOriginal, contentType, tamano);
 
         String rutaDestino = "rut/" + usuarioId + "/" + UUID.randomUUID() + ".pdf";
-        String url = almacenamientoBlobPort != null
-                ? almacenamientoBlobPort.subirArchivo("documentos-almacenes", rutaDestino, contenido, "application/pdf", tamano)
-                : "https://styleradarblob.blob.core.windows.net/documentos-almacenes/" + rutaDestino;
+        String url = almacenamientoBlobPort.subirArchivo(
+                "documentos-almacenes", rutaDestino, contenido, "application/pdf", tamano);
 
         return new DocumentoSubidoResponseDTO(url, nombreOriginal, "application/pdf", tamano, Instant.now());
+    }
+
+    private void exigirTiendaAutenticada(Long usuarioId, String rol) {
+        if (usuarioId == null) {
+            throw new FalloAutenticacionException("Token de autenticación ausente, inválido o expirado");
+        }
+        autorizacionValidator.validarRolTienda(rol);
     }
 
     private void validarArchivoPdfRut(String nombreOriginal, String contentType, long tamano) {
