@@ -163,6 +163,7 @@ class RegistrarFotografiaTiendaUseCaseTest {
     @Test
     @DisplayName("Criterio 3 y B-2.3 / B-2.4: Debe rechazar archivos que no son JPEG/PNG/WebP (400) o que superan 6 MB (413)")
     void debeLanzar400CuandoArchivoNoEsImagenY413CuandoSupera6MB() {
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenValido));
         InputStream contenidoPdf = new ByteArrayInputStream("fake-pdf".getBytes());
         assertThrows(ArchivoNoEsImagenException.class, () ->
                 useCase.registrarFotografia(NIT, "documento.pdf", "application/pdf", 1024, contenidoPdf, ADMIN_ID));
@@ -181,6 +182,7 @@ class RegistrarFotografiaTiendaUseCaseTest {
     @Test
     @DisplayName("Criterio 4: Dado un almacén que no es mío, cuando cargo fotos, recibo AccesoDenegadoAlmacenException (403)")
     void debeLanzar403CuandoUsuarioNoEsPropietario() {
+        when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenValido));
         doThrow(new AccesoDenegadoAlmacenException("Acceso denegado"))
                 .when(autorizacionValidator).validarAcceso(NIT, 999L, repositoryPort);
 
@@ -189,7 +191,7 @@ class RegistrarFotografiaTiendaUseCaseTest {
         assertThrows(AccesoDenegadoAlmacenException.class, () ->
                 useCase.registrarFotografia(NIT, "fachada.jpg", "image/jpeg", 1024, contenido, 999L));
 
-        verify(repositoryPort, never()).findByNit(any());
+        verify(repositoryPort, never()).findFotosByAlmacenNit(any());
         verify(almacenamientoBlobPort, never()).subirArchivo(any(), any(), any(), any(), anyLong());
     }
 
