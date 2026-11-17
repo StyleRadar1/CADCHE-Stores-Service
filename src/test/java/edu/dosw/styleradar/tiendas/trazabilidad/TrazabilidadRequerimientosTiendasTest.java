@@ -59,7 +59,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 /**
- * Trazabilidad del análisis de requerimientos de ms-tiendas (Requerimientos_ms-tiendas_completo, 13/11/2026).
+ * Trazabilidad del análisis de requerimientos y del contrato Front ↔ ms-tiendas (versión final) de ms-tiendas (Requerimientos_ms-tiendas_completo, 13/11/2026).
  * Cada prueba corresponde a un flujo alterno (FA) o regla de negocio (RN) de SR-RF-59, 60, 62-A, 62, 63, 64, 65 y 74
  * y verifica, por la API real con PostgreSQL 16 y JWT firmados como los de ms-auth, el código HTTP y el mensaje exactos
  * del documento. El servicio corre como en QA/PROD: no confía en cabeceras X-User-*. Solo se capturan los eventos.
@@ -903,6 +903,253 @@ class TrazabilidadRequerimientosTiendasTest {
             subirFoto("b.png");
             error(json(HttpMethod.PUT, fotos + "/orden", tienda, Map.of("fotoIds", List.of(a))), 400,
                     "El nuevo orden debe incluir todas las fotografías actuales del almacén");
+        }
+    }
+
+    // ---------------------------------------------------------------- Contrato Front ↔ ms-tiendas
+
+    @Nested
+    @DisplayName("Contrato Front ↔ ms-tiendas (versión final 13/11/2026)")
+    class ContratoFront {
+
+        private static final String FECHA_UTC = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z";
+
+        private JsonNode cuerpo(ResultActions r) throws Exception {
+            return objectMapper.readTree(r.andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        private void campos(JsonNode nodo, String... nombres) {
+            assertThat(nodo.fieldNames()).toIterable().contains(nombres);
+        }
+
+        @Test
+        @DisplayName("0.2: todo error trae timestamp, status, error, message, path y validationErrors")
+        void formatoDeError() throws Exception {
+            JsonNode e = cuerpo(json(HttpMethod.POST, "/api/v1/admin/fundaciones", admin, Map.of()));
+            campos(e, "timestamp", "status", "error", "message", "path", "validationErrors");
+            assertThat(e.get("error").asText()).isEqualTo("Bad Request");
+            assertThat(e.get("path").asText()).isEqualTo("/api/v1/admin/fundaciones");
+            JsonNode n = cuerpo(json(HttpMethod.GET, "/api/v1/admin/fundaciones/999999", admin, null));
+            assertThat(n.get("error").asText()).isEqualTo("Not Found");
+        }
+
+        @Test
+        @DisplayName("0.1 y B-0.1: sin token, toda función restringida responde 401 (también las consultas de Admin)")
+        void sinToken() throws Exception {
+            error(json(HttpMethod.GET, "/api/v1/admin/fundaciones", null, null), 401, null);
+            error(json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion", null, null), 401, null);
+            error(json(HttpMethod.GET, "/api/v1/almacenes/mi-almacen", null, null), 401, null);
+            error(json(HttpMethod.PUT, "/api/v1/almacenes/" + NIT + "/umbral-ultimas-unidades", null,
+                    Map.of("umbralUltimasUnidades", 3)), 401, null);
+        }
+
+        @Test
+        @DisplayName("1.1 y 3A.1: mi-almacen responde 404 si la Tienda aún no registra uno")
+        void miAlmacenSinRegistrar() throws Exception {
+            json(HttpMethod.GET, "/api/v1/almacenes/mi-almacen", tienda, null).andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("1.1 y 1.3: configuración con nit, umbral, días y fechaActualizacion en UTC; PUT solo del umbral")
+        void configuracion() throws Exception {
+            registrarAlmacen();
+            String base = "/api/v1/almacenes/" + NIT;
+            JsonNode c = cuerpo(json(HttpMethod.PUT, base + "/configuracion-catalogo", tienda,
+                    Map.of("umbralUltimasUnidades", 5, "diasNuevaLlegada", 14)).andExpect(status().isOk()));
+            campos(c, "nit", "umbralUltimasUnidades", "diasNuevaLlegada", "fechaActualizacion");
+            assertThat(c.get("nit").asText()).isEqualTo(NIT);
+            assertThat(c.get("fechaActualizacion").asText()).matches(FECHA_UTC);
+            json(HttpMethod.PUT, base + "/umbral-ultimas-unidades", tienda, Map.of("umbralUltimasUnidades", 9))
+                    .andExpect(status().isOk());
+            json(HttpMethod.GET, base + "/configuracion-catalogo", tienda, null)
+                    .andExpect(jsonPath("$.umbralUltimasUnidades").value(9))
+                    .andExpect(jsonPath("$.diasNuevaLlegada").value(14));
+            campo(json(HttpMethod.PUT, base + "/umbral-ultimas-unidades", tienda, Map.of("umbralUltimasUnidades", 51)),
+                    "umbralUltimasUnidades", "El umbral de últimas unidades no puede superar 50");
+        }
+
+        @Test
+        @DisplayName("1.3: el distintivo trae nit, itemId, banderas, umbral, días, distintivoActivo y fecha; usa la configuración guardada")
+        void distintivo() throws Exception {
+            registrarAlmacen();
+            String base = "/api/v1/almacenes/" + NIT;
+            json(HttpMethod.PUT, base + "/configuracion-catalogo", tienda, Map.of("umbralUltimasUnidades", 5, "diasNuevaLlegada", 14));
+            JsonNode u = cuerpo(json(HttpMethod.PATCH, base + "/prendas/7/ultimas-unidades", tienda,
+                    Map.of("stockActual", 5, "disponible", true)).andExpect(status().isOk()));
+            campos(u, "nit", "itemId", "ultimasUnidades", "umbralUltimasUnidades", "nuevaLlegada", "diasNuevaLlegada",
+                    "distintivoActivo", "fechaActualizacion");
+            assertThat(u.get("itemId").asLong()).isEqualTo(7);
+            assertThat(u.get("umbralUltimasUnidades").asInt()).isEqualTo(5);
+            assertThat(u.get("distintivoActivo").asText()).isEqualTo("ULTIMAS_UNIDADES");
+            assertThat(u.get("fechaActualizacion").asText()).matches(FECHA_UTC);
+            JsonNode n = cuerpo(json(HttpMethod.PATCH, base + "/prendas/8/nueva-llegada", tienda,
+                    Map.of("fechaPublicacion", Instant.now().minus(13, ChronoUnit.DAYS).toString(), "retirada", false)));
+            assertThat(n.get("nuevaLlegada").asBoolean()).isTrue();
+            assertThat(n.get("diasNuevaLlegada").asInt()).isEqualTo(14);
+            assertThat(n.get("distintivoActivo").asText()).isEqualTo("NUEVA_PRENDA");
+            error(json(HttpMethod.PATCH, base + "/prendas/7/ultimas-unidades", otraTienda,
+                    Map.of("stockActual", 1, "disponible", true)), 403, null);
+        }
+
+        @Test
+        @DisplayName("2.3: cada foto trae id, almacenNit, url, orden, portada y fechaRegistro; el Comprador puede ver la galería")
+        void fotos() throws Exception {
+            registrarAlmacen();
+            JsonNode f = cuerpo(subir("/api/v1/almacenes/" + NIT + "/fotografias", tienda, "f.png", "image/png", png())
+                    .andExpect(status().isCreated()));
+            campos(f, "id", "almacenNit", "url", "orden", "portada", "fechaRegistro");
+            assertThat(f.get("almacenNit").asText()).isEqualTo(NIT);
+            assertThat(f.get("orden").asInt()).isEqualTo(1);
+            assertThat(f.get("fechaRegistro").asText()).matches(FECHA_UTC);
+            json(HttpMethod.GET, "/api/v1/almacenes/" + NIT + "/fotografias", comprador, null)
+                    .andExpect(status().isOk()).andExpect(jsonPath("$[0].portada").value(true));
+            subir("/api/v1/almacenes/" + NIT + "/fotografias", tienda, "w.webp", "image/webp",
+                    new byte[] {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P'}).andExpect(status().isCreated());
+            subir("/api/v1/almacenes/" + NIT + "/fotografias", tienda, "j.jpg", "image/jpeg",
+                    new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0}).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("3A.2 y 3A.4: campos opcionales del almacén con sus límites y categorías fuera del catálogo")
+        void opcionalesAlmacen() throws Exception {
+            Map<String, Object> a = almacen(NIT);
+            a.put("descripcion", "d".repeat(501));
+            a.put("telefono", "1".repeat(31));
+            a.put("latitud", 91);
+            a.put("longitud", 181);
+            ResultActions r = json(HttpMethod.POST, "/api/v1/almacenes", tienda, a);
+            campo(r, "descripcion", "La descripción no puede superar 500 caracteres");
+            campo(r, "telefono", "El teléfono no puede superar 30 caracteres");
+            campo(r, "latitud", "La latitud debe estar entre -90 y 90");
+            campo(r, "longitud", "La longitud debe estar entre -180 y 180");
+            Map<String, Object> malaCategoria = almacen(NIT);
+            malaCategoria.put("categorias", List.of("ROPA_INTERIOR"));
+            error(json(HttpMethod.POST, "/api/v1/almacenes", tienda, malaCategoria), 400, null);
+            Map<String, Object> completo = almacen(NIT);
+            completo.put("descripcion", "Moda urbana");
+            completo.put("telefono", "+57 300 000 0000");
+            completo.put("latitud", 4.65);
+            completo.put("longitud", -74.06);
+            completo.put("categorias", List.of("CASUAL", "FORMAL", "DEPORTIVA", "VINTAGE", "ACCESORIOS"));
+            json(HttpMethod.POST, "/api/v1/almacenes", tienda, completo).andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.categorias.length()").value(5));
+        }
+
+        @Test
+        @DisplayName("3.2 y 3.3: página con content, page, size, totalPages, totalElements, first y last; size de 1 a 100")
+        void paginaVerificacion() throws Exception {
+            registrarAlmacen();
+            JsonNode p = cuerpo(json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion?page=0&size=20", admin, null)
+                    .andExpect(status().isOk()));
+            campos(p, "content", "page", "size", "totalPages", "totalElements", "first", "last");
+            assertThat(p.get("first").asBoolean()).isTrue();
+            assertThat(p.get("last").asBoolean()).isTrue();
+            assertThat(p.get("size").asInt()).isEqualTo(20);
+            json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion?estado=APROBADO", admin, null)
+                    .andExpect(jsonPath("$.totalElements").value(0));
+            error(json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion?size=101", admin, null), 400, null);
+            error(json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion?size=0", admin, null), 400, null);
+            error(json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion?page=-1", admin, null), 400, null);
+            error(json(HttpMethod.GET, "/api/v1/admin/almacenes/verificacion?estado=OTRO", admin, null), 400, null);
+        }
+
+        @Test
+        @DisplayName("3.3 y B-3.3: el almacén trae todos los campos del contrato, incluido el representante")
+        void camposAlmacen() throws Exception {
+            registrarAlmacen();
+            json(HttpMethod.PATCH, "/api/v1/admin/almacenes/" + NIT + "/verificacion", admin, Map.of("decision", "APROBADO"));
+            JsonNode a = cuerpo(json(HttpMethod.GET, "/api/v1/admin/almacenes/" + NIT + "/verificacion", admin, null)
+                    .andExpect(status().isOk()));
+            campos(a, "nit", "nombreComercial", "descripcion", "telefono", "correoContacto", "latitud", "longitud",
+                    "reputacion", "categorias", "estadoVerificacion", "legadoSinVerificacion", "fechaDecisionVerificacion",
+                    "administradorDecisionId", "motivoVerificacion", "urlRutPdf", "representante");
+            assertThat(a.get("representante").asText()).contains("20");
+            assertThat(a.get("fechaDecisionVerificacion").asText()).matches(FECHA_UTC);
+        }
+
+        @Test
+        @DisplayName("3.4: motivo de más de 1000 caracteres → 400 en el campo motivo")
+        void motivoLargo() throws Exception {
+            registrarAlmacen();
+            campo(json(HttpMethod.PATCH, "/api/v1/admin/almacenes/" + NIT + "/verificacion", admin,
+                    Map.of("decision", "RECHAZADO", "motivo", "m".repeat(1001))),
+                    "motivo", "El motivo debe tener entre 10 y 1000 caracteres");
+        }
+
+        @Test
+        @DisplayName("4.1 y B-4.2: subir el certificado PDF devuelve la URL; solo Admin y solo PDF")
+        void certificado() throws Exception {
+            subir("/api/v1/admin/fundaciones/certificados", admin, "c.pdf", "application/pdf", "%PDF-1.7".getBytes())
+                    .andExpect(status().isCreated()).andExpect(jsonPath("$.url").isNotEmpty());
+            error(subir("/api/v1/admin/fundaciones/certificados", tienda, "c.pdf", "application/pdf", "%PDF-1.7".getBytes()),
+                    403, SIN_PERMISO_FUNDACIONES);
+            error(subir("/api/v1/admin/fundaciones/certificados", admin, "c.png", "image/png", png()), 400, null);
+        }
+
+        @Test
+        @DisplayName("4.1 y 4.3: listar fundaciones devuelve una lista con todos los campos y fechaRegistro en UTC")
+        void listarFundaciones() throws Exception {
+            Map<String, Object> f = fundacion("Fundación Abrigo Solidario", "900215884-1", 24);
+            f.put("descripcion", "Recolección de prendas");
+            f.put("telefono", "+57 601 742 8899");
+            f.put("causasApoyadas", "Niñez");
+            f.put("horarioAtencion", "L-V 8-17");
+            f.put("politicasDonacion", "Prendas limpias");
+            f.put("categoriasAceptadas", List.of("SUPERIOR", "INFERIOR", "CALZADO", "VESTIDO", "ACCESORIO"));
+            json(HttpMethod.POST, "/api/v1/admin/fundaciones", admin, f).andExpect(status().isCreated());
+            JsonNode lista = cuerpo(json(HttpMethod.GET, "/api/v1/admin/fundaciones", admin, null).andExpect(status().isOk()));
+            assertThat(lista.isArray()).isTrue();
+            JsonNode x = lista.get(0);
+            campos(x, "id", "nombre", "descripcion", "direccion", "telefono", "email", "nit", "barrio", "latitud", "longitud",
+                    "categoriasAceptadas", "representanteId", "urlCertificadoPersoneriaJuridica", "causasApoyadas",
+                    "horarioAtencion", "politicasDonacion", "activa", "fechaRegistro");
+            assertThat(x.get("categoriasAceptadas").size()).isEqualTo(5);
+            assertThat(x.get("fechaRegistro").asText()).matches(FECHA_UTC);
+            error(json(HttpMethod.GET, "/api/v1/admin/fundaciones", tienda, null), 403, SIN_PERMISO_FUNDACIONES);
+        }
+
+        @Test
+        @DisplayName("4.2: límites de los campos opcionales de la fundación, URL de 300 y categoría fuera del catálogo")
+        void opcionalesFundacion() throws Exception {
+            Map<String, Object> f = fundacion("Fundación Abrigo", "900215884-1", 24);
+            f.put("descripcion", "d".repeat(501));
+            f.put("telefono", "1".repeat(31));
+            f.put("urlCertificadoPersoneriaJuridica", "https://" + "u".repeat(300));
+            f.put("causasApoyadas", "c".repeat(251));
+            f.put("horarioAtencion", "h".repeat(151));
+            f.put("politicasDonacion", "p".repeat(501));
+            ResultActions r = json(HttpMethod.POST, "/api/v1/admin/fundaciones", admin, f);
+            campo(r, "descripcion", "La descripción no puede superar 500 caracteres");
+            campo(r, "telefono", "El teléfono no puede superar 30 caracteres");
+            campo(r, "urlCertificadoPersoneriaJuridica", "La URL del certificado no puede superar 300 caracteres");
+            campo(r, "causasApoyadas", "Las causas apoyadas no pueden superar 250 caracteres");
+            campo(r, "horarioAtencion", "El horario de atención no puede superar 150 caracteres");
+            campo(r, "politicasDonacion", "Las políticas de donación no pueden superar 500 caracteres");
+            Map<String, Object> mala = fundacion("Fundación Abrigo", "900215884-1", 24);
+            mala.put("categoriasAceptadas", List.of("SOMBRERO"));
+            error(json(HttpMethod.POST, "/api/v1/admin/fundaciones", admin, mala), 400, null);
+            Map<String, Object> sinTelefono = fundacion("Fundación Abrigo", "900215884-1", 24);
+            json(HttpMethod.POST, "/api/v1/admin/fundaciones", admin, sinTelefono).andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("6.3: los eventos traen nombreFundacion y la fecha del cambio; el motivo por defecto al desactivar")
+        void eventos() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            json(HttpMethod.PATCH, "/api/v1/admin/fundaciones/" + id + "/desactivar", admin, null).andExpect(status().isOk());
+            ArgumentCaptor<FundacionDesactivadaEvent> d = ArgumentCaptor.forClass(FundacionDesactivadaEvent.class);
+            verify(eventos).publicarFundacionDesactivada(d.capture());
+            assertThat(d.getValue().getNombreFundacion()).isEqualTo("Fundación Abrigo");
+            assertThat(d.getValue().getFundacionId()).isEqualTo(id);
+            assertThat(d.getValue().getFechaDesactivacion()).isNotNull();
+            json(HttpMethod.PATCH, "/api/v1/admin/fundaciones/" + id + "/activar", admin, null).andExpect(status().isOk());
+            ArgumentCaptor<FundacionReactivadaEvent> r = ArgumentCaptor.forClass(FundacionReactivadaEvent.class);
+            verify(eventos).publicarFundacionReactivada(r.capture());
+            assertThat(r.getValue().getEventoId()).isNotBlank().isNotEqualTo(d.getValue().getEventoId());
+            assertThat(r.getValue().getNombreFundacion()).isEqualTo("Fundación Abrigo");
+            assertThat(r.getValue().getRepresentanteId()).isEqualTo(24L);
+            assertThat(r.getValue().getFechaReactivacion()).isNotNull();
+            assertThat(r.getValue().getMotivo()).isNotBlank();
         }
     }
 }
