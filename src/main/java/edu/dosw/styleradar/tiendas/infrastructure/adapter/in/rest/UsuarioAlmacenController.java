@@ -1,8 +1,6 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,10 +22,10 @@ public class UsuarioAlmacenController implements UsuarioAlmacenApi {
 
     @Override
     public ResponseEntity<VerificacionAlmacenResponseDTO> obtenerAlmacenDelUsuario(
-            @PathVariable("userId") Long userId,
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
-            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+            Long userId,
+            Long usuarioId,
+            String rolesHeader,
+            String roleHeader) {
         Long solicitante = AuthRequestContextResolver.resolveUserId(usuarioId);
         String roles = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
         AUTORIZACION.validarAccesoAlUsuario(solicitante, roles, userId);
