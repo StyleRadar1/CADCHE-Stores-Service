@@ -40,7 +40,7 @@
       <img src="https://sonarcloud.io/api/project_badges/measure?project=StyleRadar1_CADCHE-Stores-Service&metric=alert_status" alt="Quality Gate" />
     </a>
     <a href="https://sonarcloud.io/component_measures?id=StyleRadar1_CADCHE-Stores-Service&metric=coverage">
-      <img src="https://img.shields.io/badge/JaCoCo_Coverage-93.5%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" />
+      <img src="https://img.shields.io/badge/JaCoCo_Coverage-94.7%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" />
     </a>
   </p>
   <p>
@@ -136,7 +136,7 @@ flowchart LR
     AUTH["ms-auth :8100<br>emite el JWT"] -. JWT HS256 .-> IN
     GW --> IN
     subgraph IN["adapter.in"]
-        REST["AlmacenController · VerificacionAlmacenController<br>FundacionController · AsociacionAdministradorAlmacenController"]
+        REST["AlmacenController · UsuarioAlmacenController<br>VerificacionAlmacenController · FundacionController<br>AsociacionAdministradorAlmacenController"]
         JWT["JwtAuthFilter (identidad desde el token)"]
     end
     subgraph CORE["Núcleo hexagonal"]
@@ -162,6 +162,8 @@ flowchart LR
     MQ --> RMQ["RabbitMQ styleradar.exchange"]
 ```
 
+**Justificación del diagrama de capas.** Resume la regla de dependencia de la arquitectura hexagonal: el front y ms-auth (que emite el JWT) llegan por los adaptadores de entrada; PostgreSQL, Azure Blob y RabbitMQ quedan detrás de puertos de salida. Permite verificar de un vistazo que los casos de uso no conocen JPA, el SDK de Azure ni AMQP, y que cambiar un proveedor solo exige otro adaptador.
+
 ### 3.1 Diagrama de Clases
 
 <div align="center">
@@ -169,12 +171,16 @@ flowchart LR
   <sub>Figura 3.1: dominio completo de ms-tiendas (<a href="docs/uml/DiagramaClases.drawio">DiagramaClases.drawio</a>), generado desde el código.</sub>
 </div>
 
+**Justificación del diagrama de clases.** Se genera desde el código fuente y muestra los dos agregados del servicio: `Almacen` (con sus fotografías, administradores, umbral y periodo de nueva llegada) y `Fundacion`. Ahí viven las reglas del análisis de requerimientos (máximo 6 fotos y portada, «agotado prevalece», motivo de rechazo de 10 a 1000 caracteres, desactivar y reactivar), además de los validadores de autorización (dueño del almacén, Admin de StyleRadar y dueño del recurso en `/users/{userId}`) y los eventos que se publican.
+
 ### 3.2 Diagrama de Base de Datos
 
 <div align="center">
   <img src="docs/uml/DiagramaBaseDatos.png" alt="Modelo de base de datos ms-tiendas" width="100%" />
   <sub>Figura 3.2: esquema real de PostgreSQL 16 tras Flyway V1..V6 (<a href="docs/uml/DiagramaBaseDatos.drawio">DiagramaBaseDatos.drawio</a>).</sub>
 </div>
+
+**Justificación del diagrama de base de datos.** Es el esquema real que deja Flyway (V1 a V6) en PostgreSQL 16, el mismo que Hibernate valida al arrancar (`ddl-auto=validate`). Documenta las claves, las restricciones de unicidad (NIT del almacén, nombre y NIT de la fundación, una categoría por fila) y la tabla `administradores_almacenes`, que es la base del control de propiedad (BOLA) de todas las operaciones de la Tienda.
 
 | Tabla | Clave | Relaciones e integridad |
 | :--- | :--- | :--- |
@@ -192,6 +198,42 @@ flowchart LR
   <sub>Figura 3.3: componentes por capa hexagonal (<a href="docs/uml/DiagramaComponentesEspecifico.drawio">DiagramaComponentesEspecifico.drawio</a>).</sub>
 </div>
 
+**Justificación del diagrama de componentes específico.** Detalla cada controlador, caso de uso, puerto y adaptador real de ms-tiendas y las interfaces que los unen. Sirve para ubicar dónde se implementa cada historia (SR-RF-59 a SR-RF-74) y para comprobar que cada puerto de salida tiene su adaptador: JPA para los datos, Azure Blob (o memoria en pruebas) para los archivos y RabbitMQ para los eventos.
+
+### 3.4 Diagrama de Componentes General (ecosistema StyleRadar)
+
+<div align="center">
+  <img src="docs/uml/DiagramaComponentesGeneral.webp" alt="Diagrama de componentes general de StyleRadar" width="100%" />
+  <sub>Figura 3.4: los 13 microservicios del back, sus bases de datos, los brokers RabbitMQ, Redis y los sistemas externos.</sub>
+</div>
+
+**Justificación.** Ubica a ms-tiendas dentro del ecosistema y explica sus dependencias:
+
+* **Cliente → API Gateway → ms-tiendas.** Ninguna petición del front llega directo al servicio.
+* **Base de datos propia (`tiendas_db`).** Cada microservicio es dueño de sus datos; los demás consultan almacenes y fundaciones por la API, nunca por la base.
+* **Azure Blob Storage** (sistema externo) guarda las fotos de la tienda, el RUT y el certificado de las fundaciones.
+* **RabbitMQ:** ms-tiendas publica `fundacion.desactivada` y `fundacion.reactivada` para que el servicio de donaciones deje de ofrecer la fundación o la vuelva a ofrecer.
+* **ms-auth** no se llama en cada petición: ms-tiendas valida el JWT localmente con el mismo secreto.
+
+### 3.5 Diagrama de Despliegue
+
+<div align="center">
+  <img src="docs/uml/DiagramaDespliegue.webp" alt="Diagrama de despliegue de StyleRadar" width="100%" />
+  <sub>Figura 3.5: nodos de ejecución (Container Apps), puertos, PostgreSQL, Redis y el adaptador de RabbitMQ.</sub>
+</div>
+
+**Justificación.** Muestra dónde corre cada pieza y por qué puertos se comunica. Para ms-tiendas confirma:
+
+* **Puerto 8140** (`Store`), detrás del API Gateway (8080).
+* La base **`Store`** dentro del nodo PostgreSQL, separada de las bases de los demás servicios.
+* La conexión al **RabbitMQAdapter** para publicar los eventos de fundaciones.
+
+**Diferencias con lo implementado hoy (para corregir en el diagrama):**
+
+1. ms-tiendas hoy se despliega en **Azure App Service** (`styleradar-tiendas-qa` y `styleradar-tiendas-prod`), no en Container Apps. El diagrama representa la arquitectura objetivo.
+2. El diagrama de despliegue no muestra **Azure Blob Storage**, que ms-tiendas sí usa (el de componentes general sí lo incluye).
+3. `Donations` y `Virtual Try-on` aparecen con el mismo puerto `8520`; uno de los dos debe cambiar.
+
 ### Estructura de Paquetes en `src/main/java/edu/dosw/styleradar/tiendas/`
 
 ```text
@@ -200,7 +242,7 @@ tiendas/
 │   ├── model/        Almacen, FotografiaTienda, AdministradorAlmacen, Fundacion, UmbralUltimasUnidades,
 │   │                 PeriodoNuevaLlegada, Pagina, SolicitudPagina y enums
 │   ├── event/        FundacionDesactivadaEvent, FundacionReactivadaEvent
-│   ├── validator/    AutorizacionAlmacen, AutorizacionAdminStyleRadar, PeriodoNuevaLlegada,
+│   ├── validator/    AutorizacionAlmacen, AutorizacionAdminStyleRadar, AutorizacionUsuario, PeriodoNuevaLlegada,
 │   │                 UmbralInventario, RolesUsuario (comparación exacta de roles)
 │   ├── exception/    18 excepciones de negocio
 │   └── port/{in,out} 13 casos de uso · 4 puertos de salida
@@ -208,7 +250,7 @@ tiendas/
 │   ├── usecase/      13 *UseCaseImpl (sin @Service)
 │   └── dto/          request/, response/
 └── infrastructure/
-    ├── adapter/in/rest/         4 controladores + doc/ (Swagger) + AuthRequestContextResolver
+    ├── adapter/in/rest/         5 controladores + doc/ (Swagger) + AuthRequestContextResolver
     ├── adapter/out/persistence/ adaptadores, entidades JPA, mappers y repositorios Spring Data
     ├── adapter/out/messaging/   RabbitMQFundacionEventPublisherAdapter + config
     ├── adapter/out/storage/     AzureBlobStorageAdapter (SDK real) · MemoriaBlobStorageAdapter (dev/test) · BlobNoDisponibleAdapter (503)
@@ -229,6 +271,13 @@ tiendas/
 | **QA** | `https://styleradar-tiendas-qa.azurewebsites.net` | [Swagger QA](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html) | [`/actuator/health`](https://styleradar-tiendas-qa.azurewebsites.net/actuator/health) |
 | **Local** | `http://localhost:8140` | [Swagger local](http://localhost:8140/swagger-ui.html) | `http://localhost:8140/actuator/health` |
 
+### Convención de rutas
+
+* Todas las rutas están **en inglés** y empiezan por **`/api/v1`**. Los nombres de los campos JSON se mantienen como los define el contrato con el front.
+* El proyecto **no usa `/me`**. El almacén de una Tienda se consulta con **`GET /api/v1/users/{userId}/store`**, que nombra al usuario de forma explícita. El backend comprueba que quien llama sea ese mismo usuario o un `ADMIN_STYLERADAR`; cualquier otra identidad recibe `403`.
+* El API Gateway debe enrutar ese patrón exacto (`/api/v1/users/{userId}/store`) a ms-tiendas, porque el resto de `/api/v1/users/**` pertenece a ms-usuarios.
+* `/actuator/health` y la documentación OpenAPI (`/v3/api-docs`, `/swagger-ui`) son rutas de operación y quedan fuera de esta convención.
+
 ### Autenticación e identidad (contrato Front ↔ ms-tiendas, B-0.1 y B-0.3)
 
 * El front envía `Authorization: Bearer <JWT de ms-auth>` a través del API Gateway.
@@ -242,7 +291,7 @@ tiendas/
 | :---: | :--- | :--- | :--- |
 | `GET` | `/api/v1/stores` | Consulta de almacenes aprobados (paginada, filtro por categoría) | Público |
 | `POST` | `/api/v1/stores` | SR-RF-62-A · Registrar almacén | Tienda |
-| `GET` | `/api/v1/stores/mi-almacen` | SR-RF-62-A · Estado de mi almacén | Tienda |
+| `GET` | `/api/v1/users/{userId}/store` | SR-RF-62-A · Almacén que administra el usuario | El mismo usuario o Admin |
 | `POST` | `/api/v1/stores/documents/rut` | SR-RF-62-A · Subir RUT (PDF) | Tienda |
 | `GET` | `/api/v1/stores/{nit}` | Detalle de un almacén | Público |
 | `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Dueño |
@@ -373,17 +422,18 @@ mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.exclud
 
 | Métrica (`mvn verify`, rama `feature/arreglos`) | Resultado | Umbral |
 | :--- | :---: | :---: |
-| Pruebas | **307**, 0 fallos | 100 % en verde |
-| Cobertura de instrucciones | **93.5 %** | ≥ 85 % (rompe el build) |
-| Cobertura de ramas | **73.2 %** | — |
+| Pruebas | **400**, 0 fallos | 100 % en verde |
+| Cobertura de instrucciones | **94.7 %** | ≥ 85 % (rompe el build) |
+| Cobertura de ramas | **76.5 %** | — |
 | SpotBugs | 0 hallazgos | 0 |
 
 | Nivel | Qué cubre |
 | :--- | :--- |
 | Dominio y validadores | Reglas de `Almacen`, `Fundacion`, umbrales, periodos y roles exactos. |
 | Casos de uso (Mockito) | Los 13 casos de uso con sus flujos alternos. |
-| WebMvc | Los 4 controladores con el contrato de errores. |
+| WebMvc | Los 5 controladores con el contrato de errores. |
 | Seguridad | `JwtAuthFilterTest` (cabeceras falsificadas, token vencido o ajeno), `JwtSecurityValidatorTest` y `OwaspTop10SecurityTest`. |
+| **Trazabilidad Word y contrato** | `TrazabilidadRequerimientosTiendasTest`: un caso por cada flujo alterno y regla de negocio de SR-RF-59 a SR-RF-74 y por cada punto del contrato Front ↔ ms-tiendas, contra PostgreSQL 16 real y con JWT como los de ms-auth. |
 | **Integración PostgreSQL 16** | `PersistenciaPostgres16IntegrationTest`: Flyway V1..V6 sobre PostgreSQL 16 real con `ddl-auto=validate`, paginación, propiedad (BOLA) y fundaciones. |
 
 > Testcontainers se omite si no hay Docker. Con Docker 29+ en local exporte `DOCKER_API_VERSION=1.44`.
@@ -761,7 +811,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 
 #### 8.1 Resumen de Decisiones y Factores de Éxito
 
-La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 93.78% instrucciones / 95.30% líneas sobre 321 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V6` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
+La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 94.67% instrucciones / 95.75% líneas sobre 400 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V6` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
 
 #### 8.2 Roadmap de Evolución Tecnológica
 
@@ -835,7 +885,7 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **11** | **10 · Roles** | Matriz RBAC por endpoint y mitigación de vulnerabilidades BOLA/IDOR (`SR-RNF-01` vía `AutorizacionAlmacenValidator`). |
 | **12** | **11 · Errores** | Catálogo `CodigoError` con `ErrorResponseDTO` ProblemDetail (`GlobalExceptionHandler`) y `401` (`JwtAuthFilter`). |
 | **13** | **12 · Integraciones** | Mapeo de dependencias Upstream (síncronas vía API Gateway) y Downstream (`ms-segunda-vida-donaciones :8520`). |
-| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`93.78%` instr. / `95.30%` líneas), `321` pruebas y pipeline CI/CD GitHub Actions. |
+| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`94.67%` instr. / `95.75%` líneas), `400` pruebas y pipeline CI/CD GitHub Actions. |
 | **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Azure App Service, BDs y Jira). |
 | **16** | **Contraportada** | Cierre editorial oficial: *"Descubre tu estilo. En tu ciudad."* |
 
@@ -976,9 +1026,9 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en la suite de pruebas del microservicio (`mvn -B clean verify spotbugs:check`) y en el pipeline de integración continua (`.github/workflows/ci-qa.yml`):
 
 1. **Métricas Verificadas de la Suite de Pruebas y Calidad**:
-   - **Total de pruebas ejecutadas**: `321 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
-   - **Cobertura de instrucciones (JaCoCo)**: `93.78%` (`7.788 / 8.306`, umbral bloqueante `>= 85%` en `pom.xml`).
-   - **Cobertura de líneas (JaCoCo)**: `95.30%` (`1.707 / 1.791`).
+   - **Total de pruebas ejecutadas**: `400 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
+   - **Cobertura de instrucciones (JaCoCo)**: `94.67%` (`8.056 / 8.510`, umbral bloqueante `>= 85%` en `pom.xml`).
+   - **Cobertura de líneas (JaCoCo)**: `95.75%` (`1.757 / 1.835`).
    - **Análisis estático SpotBugs**: `0 bugs` / `0 errores` (`spotbugs:check`).
 
 2. **Matriz de Pruebas Automatizadas por Categoría OWASP Top 10:2025**:
