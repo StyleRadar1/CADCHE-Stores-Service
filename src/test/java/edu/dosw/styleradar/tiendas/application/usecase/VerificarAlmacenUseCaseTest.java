@@ -142,7 +142,7 @@ class VerificarAlmacenUseCaseTest {
     @DisplayName("Debe consultar almacenes paginados con filtro de estado")
     void debeConsultarAlmacenesPaginadosConFiltro() {
         VerificacionConsultaRequestDTO consulta = new VerificacionConsultaRequestDTO();
-        consulta.setEstado(EstadoVerificacionAlmacen.PENDIENTE);
+        consulta.setStatus(EstadoVerificacionAlmacen.PENDIENTE);
         consulta.setPage(0);
         consulta.setSize(10);
 

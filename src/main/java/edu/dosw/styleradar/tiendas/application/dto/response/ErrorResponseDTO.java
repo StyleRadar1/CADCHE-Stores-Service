@@ -38,7 +38,7 @@ public class ErrorResponseDTO {
     @Schema(description = "Explicación del problema para esta ocurrencia (RFC 9457)", example = "La solicitud contiene datos inválidos")
     String detail;
 
-    @Schema(description = "Ruta de la solicitud que produjo el problema (RFC 9457)", example = "/api/v1/almacenes")
+    @Schema(description = "Ruta de la solicitud que produjo el problema (RFC 9457)", example = "/api/v1/stores")
     String instance;
 
     @Schema(description = "Código de error del catálogo; el front elige el texto por este valor", example = "DATOS_INVALIDOS")
@@ -54,7 +54,7 @@ public class ErrorResponseDTO {
     @Schema(description = "Alias de detail (compatibilidad)", example = "La solicitud contiene datos inválidos")
     String message;
 
-    @Schema(description = "Alias de instance (compatibilidad)", example = "/api/v1/almacenes")
+    @Schema(description = "Alias de instance (compatibilidad)", example = "/api/v1/stores")
     String path;
 
     @Schema(description = "Errores de validación por campo cuando aplica", example = "{}")

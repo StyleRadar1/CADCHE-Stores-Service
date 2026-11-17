@@ -43,8 +43,8 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
         String nitNormalizado = stripOrNull(request.getNit());
         if (nitNormalizado != null && repositoryPort.existsByNitIgnoreCaseAndIdNot(nitNormalizado, id)) {
             throw new FundacionYaRegistradaException(
-                    "Ya existe otra fundación aliada registrada con el NIT: " + nitNormalizado,
-                    Map.of("nit", "Ya existe otra fundación aliada registrada con el NIT: " + nitNormalizado));
+                    "Ya existe una fundación aliada registrada con el NIT: " + nitNormalizado,
+                    Map.of("nit", "Ya existe una fundación aliada registrada con el NIT: " + nitNormalizado));
         }
 
         String nombreNormalizado = stripOrNull(request.getNombre());

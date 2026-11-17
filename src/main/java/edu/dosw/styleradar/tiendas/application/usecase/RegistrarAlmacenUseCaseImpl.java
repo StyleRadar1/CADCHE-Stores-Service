@@ -175,8 +175,8 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
 
         List<AlmacenResponseDTO> content = page.contenido().stream()
                 .filter(a -> request == null
-                        || request.getCategoria() == null
-                        || (a.getCategorias() != null && a.getCategorias().contains(request.getCategoria())))
+                        || request.getCategory() == null
+                        || (a.getCategorias() != null && a.getCategorias().contains(request.getCategory())))
                 .map(this::toAlmacenResponseDTO)
                 .toList();
 

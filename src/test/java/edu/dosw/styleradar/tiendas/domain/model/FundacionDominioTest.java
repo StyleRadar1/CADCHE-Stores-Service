@@ -152,7 +152,7 @@ class FundacionDominioTest {
                 .horarioAtencion("Lunes a Viernes 08:00 - 18:00")
                 .politicasDonacion("Prendas limpias y planchadas")
                 .causasApoyadas("Familias campesinas y madres comunitarias")
-                .urlCertificadoPersoneriaJuridica("https://styleradarblob.blob.core.windows.net/certificados/nuevo.pdf")
+                .urlCertificadoPersoneriaJuridica("https://styleradarblob.blob.core.windows.net/certificates/nuevo.pdf")
                 .build();
 
         fundacionValida.actualizarDatosInstitucionales(cambios);

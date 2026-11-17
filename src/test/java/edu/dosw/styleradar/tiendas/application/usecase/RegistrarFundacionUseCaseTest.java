@@ -167,10 +167,10 @@ class RegistrarFundacionUseCaseTest {
         assertThrows(FundacionNoEncontradaException.class, () -> useCase.obtenerPorId(99L, ADMIN_ROLE));
 
         when(almacenamientoBlobPort.subirArchivo(eq("documentos-fundaciones"), anyString(), any(), eq("application/pdf"), eq(1024L)))
-                .thenReturn("https://blob/documentos-fundaciones/certificados/c.pdf");
+                .thenReturn("https://blob/documentos-fundaciones/certificates/c.pdf");
         DocumentoSubidoResponseDTO cert = useCase.subirCertificado(
                 "certificado.pdf", "application/pdf", 1024L, new ByteArrayInputStream("%PDF".getBytes()), ADMIN_ROLE);
-        assertEquals("https://blob/documentos-fundaciones/certificados/c.pdf", cert.url());
+        assertEquals("https://blob/documentos-fundaciones/certificates/c.pdf", cert.url());
         assertThrows(ReglaDeNegocioException.class, () -> useCase.subirCertificado(
                 "foto.jpg", "image/jpeg", 1024L, new ByteArrayInputStream("img".getBytes()), ADMIN_ROLE));
     }
@@ -191,7 +191,7 @@ class RegistrarFundacionUseCaseTest {
         when(repositoryPort.findAll()).thenReturn(List.of(lejana, inactiva, cercana));
 
         ConsultaFundacionesRequestDTO req = ConsultaFundacionesRequestDTO.builder()
-                .latitud(4.6712).longitud(-74.0531).tipo(TipoPrenda.SUPERIOR).build();
+                .latitude(4.6712).longitude(-74.0531).type(TipoPrenda.SUPERIOR).build();
 
         List<FundacionResponseDTO> resultado = useCase.consultarCercanas(req);
 

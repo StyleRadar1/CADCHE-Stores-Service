@@ -45,7 +45,7 @@ public interface VerificacionAlmacenApi {
             summary = "Consultar almacenes para verificación (SR-RF-62)",
             description = "ROLE_ADMIN_STYLERADAR. Filtro de estado opcional; sin filtro incluye almacenes pendientes y decididos. "
                     + "page=0, size=20; máximo 100. Orden nombreComercial ASC, nit ASC.")
-    @GetMapping("/verificacion")
+    @GetMapping("/verifications")
     ResponseEntity<PageResponseDTO<VerificacionAlmacenResponseDTO>> consultar(
             @Valid @ParameterObject @ModelAttribute VerificacionConsultaRequestDTO request,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
@@ -56,7 +56,7 @@ public interface VerificacionAlmacenApi {
     @Operation(
             summary = "Revisar datos de un almacén por NIT (SR-RF-62)",
             description = "ROLE_ADMIN_STYLERADAR. Retorna los datos de registro, contacto, personería jurídica (NIT y RUT PDF) y la última decisión de verificación.")
-    @GetMapping("/{nit}/verificacion")
+    @GetMapping("/{nit}/verification")
     ResponseEntity<VerificacionAlmacenResponseDTO> consultarUno(
             @Parameter(description = "NIT del almacén a revisar", example = "900123456-1") @PathVariable String nit,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
@@ -69,7 +69,7 @@ public interface VerificacionAlmacenApi {
             description = "ROLE_ADMIN_STYLERADAR. Solo aplica cuando el almacén está en estado PENDIENTE. "
                     + "Para APROBAR exige que el almacén cuente con RUT en PDF (de lo contrario retorna 422). "
                     + "Si ya fue decidido previamente retorna 409. El rechazo exige motivo explicativo.")
-    @PatchMapping("/{nit}/verificacion")
+    @PatchMapping("/{nit}/verification")
     ResponseEntity<VerificacionAlmacenResponseDTO> decidir(
             @Parameter(description = "NIT del almacén pendiente de decisión", example = "900123456-1") @PathVariable String nit,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -89,7 +89,7 @@ public interface VerificacionAlmacenApi {
             summary = "Iniciar o reabrir revisión de un almacén (SR-RF-62)",
             description = "ROLE_ADMIN_STYLERADAR. Pasa un almacén con estado APROBADO o RECHAZADO a PENDIENTE. "
                     + "Si ya se encuentra en PENDIENTE devuelve 422.")
-    @PostMapping("/{nit}/verificacion/solicitar-revision")
+    @PostMapping("/{nit}/verification/review-request")
     ResponseEntity<VerificacionAlmacenResponseDTO> solicitarRevision(
             @Parameter(description = "NIT del almacén para iniciar revisión", example = "900123456-1") @PathVariable String nit,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")

@@ -63,8 +63,8 @@ public class SwaggerConfig {
     @Bean
     OpenApiCustomizer storesAuthenticationDocumentation() {
         Set<String> publicGets = Set.of(
-                "/api/v1/almacenes",
-                "/api/v1/almacenes/{nit}/fotografias");
+                "/api/v1/stores",
+                "/api/v1/stores/{nit}/photos");
         return api -> {
             if (api.getPaths() == null) {
                 return;
