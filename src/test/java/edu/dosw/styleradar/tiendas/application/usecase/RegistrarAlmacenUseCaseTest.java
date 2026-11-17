@@ -224,7 +224,7 @@ class RegistrarAlmacenUseCaseTest {
                 .thenReturn(new Pagina<>(List.of(a1, a2), 0, 10, 2, 1));
 
         ConsultaAlmacenRequestDTO req = new ConsultaAlmacenRequestDTO();
-        req.setCategoria(CategoriaAlmacen.CASUAL);
+        req.setCategory(CategoriaAlmacen.CASUAL);
         req.setPage(0);
         req.setSize(10);
 

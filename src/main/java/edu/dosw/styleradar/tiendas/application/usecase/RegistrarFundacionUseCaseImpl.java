@@ -152,16 +152,16 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
     @Override
     @Transactional(readOnly = true)
     public List<FundacionResponseDTO> consultarCercanas(ConsultaFundacionesRequestDTO request) {
-        if (request == null || request.getLatitud() == null || request.getLongitud() == null) {
+        if (request == null || request.getLatitude() == null || request.getLongitude() == null) {
             throw new ReglaDeNegocioException("Las coordenadas geográficas de latitud y longitud son obligatorias");
         }
         return repositoryPort.findAll().stream()
                 .filter(Fundacion::isActiva)
-                .filter(f -> request.getTipo() == null
-                        || (f.getCategoriasAceptadas() != null && f.getCategoriasAceptadas().contains(request.getTipo())))
+                .filter(f -> request.getType() == null
+                        || (f.getCategoriasAceptadas() != null && f.getCategoriasAceptadas().contains(request.getType())))
                 .sorted(Comparator.comparingDouble(f -> calcularDistanciaKm(
-                        request.getLatitud(),
-                        request.getLongitud(),
+                        request.getLatitude(),
+                        request.getLongitude(),
                         f.getLatitud() != null ? f.getLatitud() : 0.0,
                         f.getLongitud() != null ? f.getLongitud() : 0.0)))
                 .map(this::toResponseDTO)

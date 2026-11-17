@@ -86,7 +86,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
                 .thenReturn(response);
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +126,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
                 .thenReturn(response);
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -147,7 +147,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
                 .thenThrow(new RutRequeridoParaAprobacionException("No es posible aprobar el almacén con NIT " + NIT + " porque no cuenta con el documento RUT adjunto en PDF"));
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -166,7 +166,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
                 .thenThrow(new AlmacenYaDecididoException("El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APROBADO"));
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -185,7 +185,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(99L), eq("ROLE_COMPRADOR")))
                 .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados"));
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", "ROLE_COMPRADOR")
                         .header("X-User-Id", 99L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -204,7 +204,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.decidir(eq("000000000"), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
                 .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", "000000000")
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", "000000000")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -221,7 +221,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         request.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
         request.setMotivo("");
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -233,7 +233,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         requestCorto.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
         requestCorto.setMotivo("Corto");
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -241,7 +241,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
 
-        mockMvc.perform(patch("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -275,7 +275,7 @@ class VerificacionAlmacenControllerIntegrationTest {
 
         when(useCase.consultarUno(NIT, ADMIN_ROLE)).thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/admin/almacenes/{nit}/verificacion", NIT)
+        mockMvc.perform(get("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
@@ -292,7 +292,7 @@ class VerificacionAlmacenControllerIntegrationTest {
 
         when(useCase.consultar(any(), eq(ADMIN_ROLE))).thenReturn(pageResponse);
 
-        mockMvc.perform(get("/api/v1/admin/almacenes/verificacion")
+        mockMvc.perform(get("/api/v1/admin/stores/verifications")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0))
@@ -322,7 +322,7 @@ class VerificacionAlmacenControllerIntegrationTest {
 
         when(useCase.solicitarRevision(NIT, 1L, ADMIN_ROLE)).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/admin/almacenes/{nit}/verificacion/solicitar-revision", NIT)
+        mockMvc.perform(post("/api/v1/admin/stores/{nit}/verification/review-request", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L))
                 .andExpect(status().isOk())
@@ -335,7 +335,7 @@ class VerificacionAlmacenControllerIntegrationTest {
         when(useCase.solicitarRevision(NIT, 1L, ADMIN_ROLE))
                 .thenThrow(new AlmacenYaPendienteException("El almacén ya se encuentra pendiente de revisión"));
 
-        mockMvc.perform(post("/api/v1/admin/almacenes/{nit}/verificacion/solicitar-revision", NIT)
+        mockMvc.perform(post("/api/v1/admin/stores/{nit}/verification/review-request", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L))
                 .andExpect(status().isUnprocessableEntity())

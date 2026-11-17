@@ -38,10 +38,10 @@ public interface AsociacionAdministradorAlmacenApi {
             @ApiResponse(responseCode = "422", description = "Usuario objetivo sin rol ADMIN_ALMACEN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "500", description = "Fallo técnico", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
-    @PutMapping("/{nit}/administradores/{usuarioId}")
+    @PutMapping("/{nit}/administrators/{userId}")
     ResponseEntity<AdministradorAlmacenResponseDTO> asociar(
             @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador del usuario con rol ADMIN_ALMACEN", example = "15") @PathVariable Long usuarioId,
+            @Parameter(description = "Identificador del usuario con rol ADMIN_ALMACEN", example = "15") @PathVariable("userId") Long usuarioId,
             @Parameter(in = ParameterIn.HEADER, description = "ID del administrador StyleRadar", example = "1")
             @RequestHeader(value = "X-User-Id", required = false) Long adminId,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
@@ -59,7 +59,7 @@ public interface AsociacionAdministradorAlmacenApi {
             @ApiResponse(responseCode = "404", description = "Almacén inexistente", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
-    @GetMapping("/{nit}/administradores")
+    @GetMapping("/{nit}/administrators")
     ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(
             @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit,
             @Parameter(in = ParameterIn.HEADER, description = "ID del usuario autenticado", example = "15")

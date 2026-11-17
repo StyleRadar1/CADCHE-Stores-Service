@@ -43,7 +43,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/almacenes")
+@RequestMapping("/api/v1/stores")
 @RequiredArgsConstructor
 public class AlmacenController implements AlmacenApi {
 
@@ -59,13 +59,6 @@ public class AlmacenController implements AlmacenApi {
     public ResponseEntity<PageResponseDTO<AlmacenResponseDTO>> consultar(
             @Valid @ModelAttribute ConsultaAlmacenRequestDTO request) {
         return ResponseEntity.ok(registrarAlmacenUseCase.consultarAlmacenes(request));
-    }
-
-    @Override
-    public ResponseEntity<VerificacionAlmacenResponseDTO> obtenerMiAlmacen(
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
-        Long resolvedId = resolveUserId(usuarioId);
-        return ResponseEntity.ok(registrarAlmacenUseCase.obtenerMiAlmacen(resolvedId));
     }
 
     @Override
@@ -164,7 +157,7 @@ public class AlmacenController implements AlmacenApi {
     public ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarUltimasUnidades(
             String nit,
             Long itemId,
-            @RequestParam(value = "stockActual", required = false) Integer stockActual,
+            @RequestParam(value = "currentStock", required = false) Integer stockActual,
             @Valid @RequestBody(required = false) EvaluarUltimasUnidadesRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
         Long resolvedId = resolveUserId(usuarioId);
@@ -178,7 +171,7 @@ public class AlmacenController implements AlmacenApi {
     public ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarNuevaLlegada(
             String nit,
             Long itemId,
-            @RequestParam(value = "fechaIngreso", required = false) Instant fechaIngreso,
+            @RequestParam(value = "arrivalDate", required = false) Instant fechaIngreso,
             @Valid @RequestBody(required = false) EvaluarNuevaLlegadaRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
         Long resolvedId = resolveUserId(usuarioId);

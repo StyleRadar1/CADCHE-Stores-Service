@@ -39,7 +39,7 @@ class AsociacionAdministradorAlmacenControllerIntegrationTest {
     private static final String NIT = "900123456-1";
 
     @Test
-    @DisplayName("PUT y GET /api/v1/admin/almacenes/{nit}/administradores deben asociar y listar administradores reales")
+    @DisplayName("PUT y GET /api/v1/admin/stores/{nit}/administrators deben asociar y listar administradores reales")
     void debeAsociarYListarAdministradoresViaRest() throws Exception {
         AdministradorAlmacenResponseDTO dto = new AdministradorAlmacenResponseDTO(
                 10L, 15L, NIT, 1L, Instant.now());
@@ -47,14 +47,14 @@ class AsociacionAdministradorAlmacenControllerIntegrationTest {
         when(useCase.asociar(eq(NIT), eq(15L), eq(1L), eq("ROLE_ADMIN_STYLERADAR"))).thenReturn(dto);
         when(useCase.listarAdministradores(eq(NIT), eq(15L), eq("ROLE_ADMIN_STYLERADAR"))).thenReturn(List.of(dto));
 
-        mockMvc.perform(put("/api/v1/admin/almacenes/{nit}/administradores/{usuarioId}", NIT, 15L)
+        mockMvc.perform(put("/api/v1/admin/stores/{nit}/administrators/{userId}", NIT, 15L)
                         .header("X-User-Id", 1L)
                         .header("X-User-Roles", "ROLE_ADMIN_STYLERADAR"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.usuarioId").value(15))
                 .andExpect(jsonPath("$.almacenNit").value(NIT));
 
-        mockMvc.perform(get("/api/v1/admin/almacenes/{nit}/administradores", NIT)
+        mockMvc.perform(get("/api/v1/admin/stores/{nit}/administrators", NIT)
                         .header("X-User-Id", 15L)
                         .header("X-User-Roles", "ROLE_ADMIN_STYLERADAR"))
                 .andExpect(status().isOk())

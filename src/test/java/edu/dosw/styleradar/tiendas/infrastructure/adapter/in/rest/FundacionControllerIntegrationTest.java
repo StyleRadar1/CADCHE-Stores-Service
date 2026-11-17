@@ -115,7 +115,7 @@ class FundacionControllerIntegrationTest {
         when(useCase.registrar(any(FundacionRequestDTO.class), eq(ADMIN_ROLE)))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/admin/fundaciones")
+        mockMvc.perform(post("/api/v1/admin/foundations")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -143,7 +143,7 @@ class FundacionControllerIntegrationTest {
                 .representanteId(24L)
                 .build();
 
-        mockMvc.perform(post("/api/v1/admin/fundaciones")
+        mockMvc.perform(post("/api/v1/admin/foundations")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -172,7 +172,7 @@ class FundacionControllerIntegrationTest {
         when(useCase.registrar(any(FundacionRequestDTO.class), eq(ADMIN_ROLE)))
                 .thenThrow(new FundacionYaRegistradaException("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"));
 
-        mockMvc.perform(post("/api/v1/admin/fundaciones")
+        mockMvc.perform(post("/api/v1/admin/foundations")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -182,7 +182,7 @@ class FundacionControllerIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Conflict"))
                 .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
-                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
@@ -208,7 +208,7 @@ class FundacionControllerIntegrationTest {
         when(useCase.registrar(any(FundacionRequestDTO.class), eq("ROLE_COMPRADOR")))
                 .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
 
-        mockMvc.perform(post("/api/v1/admin/fundaciones")
+        mockMvc.perform(post("/api/v1/admin/foundations")
                         .header("X-User-Roles", "ROLE_COMPRADOR")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -227,11 +227,11 @@ class FundacionControllerIntegrationTest {
         when(useCase.subirCertificado(any(), any(), anyLong(), any(), eq(ADMIN_ROLE)))
                 .thenReturn(new DocumentoSubidoResponseDTO("https://blob/cert.pdf", "cert.pdf", "application/pdf", 120L, Instant.now()));
 
-        mockMvc.perform(get("/api/v1/admin/fundaciones")
+        mockMvc.perform(get("/api/v1/admin/foundations")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/v1/admin/fundaciones/1")
+        mockMvc.perform(get("/api/v1/admin/foundations/1")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -239,7 +239,7 @@ class FundacionControllerIntegrationTest {
 
         MockMultipartFile certFile = new MockMultipartFile(
                 "archivo", "cert.pdf", MediaType.APPLICATION_PDF_VALUE, "%PDF-1.4".getBytes());
-        mockMvc.perform(multipart("/api/v1/admin/fundaciones/certificados")
+        mockMvc.perform(multipart("/api/v1/admin/foundations/certificates")
                         .file(certFile)
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isCreated())
@@ -287,7 +287,7 @@ class FundacionControllerIntegrationTest {
         when(editarFundacionUseCase.editar(eq(1L), any(FundacionRequestDTO.class), eq(ADMIN_ROLE)))
                 .thenReturn(response);
 
-        mockMvc.perform(put("/api/v1/admin/fundaciones/1")
+        mockMvc.perform(put("/api/v1/admin/foundations/1")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -318,7 +318,7 @@ class FundacionControllerIntegrationTest {
         when(editarFundacionUseCase.editar(eq(999L), any(FundacionRequestDTO.class), eq(ADMIN_ROLE)))
                 .thenThrow(new FundacionNoEncontradaException("No existe una fundación aliada con ID: 999"));
 
-        mockMvc.perform(put("/api/v1/admin/fundaciones/999")
+        mockMvc.perform(put("/api/v1/admin/foundations/999")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -342,7 +342,7 @@ class FundacionControllerIntegrationTest {
                 .representanteId(10L)
                 .build();
 
-        mockMvc.perform(put("/api/v1/admin/fundaciones/1")
+        mockMvc.perform(put("/api/v1/admin/foundations/1")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestInvalido)))
@@ -370,7 +370,7 @@ class FundacionControllerIntegrationTest {
         when(editarFundacionUseCase.editar(eq(1L), any(FundacionRequestDTO.class), eq("ROLE_COMPRADOR")))
                 .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
 
-        mockMvc.perform(put("/api/v1/admin/fundaciones/1")
+        mockMvc.perform(put("/api/v1/admin/foundations/1")
                         .header("X-User-Roles", "ROLE_COMPRADOR")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -396,7 +396,7 @@ class FundacionControllerIntegrationTest {
         when(editarFundacionUseCase.editar(eq(1L), any(FundacionRequestDTO.class), eq(ADMIN_ROLE)))
                 .thenThrow(new FundacionYaRegistradaException("Ya existe otra fundación aliada registrada con el nombre: Fundación Duplicada"));
 
-        mockMvc.perform(put("/api/v1/admin/fundaciones/1")
+        mockMvc.perform(put("/api/v1/admin/foundations/1")
                         .header("X-User-Roles", ADMIN_ROLE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -406,7 +406,7 @@ class FundacionControllerIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Conflict"))
                 .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
-                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe otra fundación aliada registrada con el nombre: Fundación Duplicada"));
@@ -432,20 +432,20 @@ class FundacionControllerIntegrationTest {
                 .thenReturn(responseActiva)
                 .thenThrow(new FundacionYaActivaException("La fundación aliada ya se encuentra activa"));
 
-        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
+        mockMvc.perform(patch("/api/v1/admin/foundations/3/deactivate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3))
                 .andExpect(jsonPath("$.activa").value(false))
                 .andExpect(jsonPath("$.nombre").value("Fundación Receptora"));
 
-        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/activar")
+        mockMvc.perform(patch("/api/v1/admin/foundations/3/activate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3))
                 .andExpect(jsonPath("$.activa").value(true));
 
-        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/activar")
+        mockMvc.perform(patch("/api/v1/admin/foundations/3/activate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
@@ -453,7 +453,7 @@ class FundacionControllerIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Conflict"))
                 .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
-                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra activa"));
@@ -465,7 +465,7 @@ class FundacionControllerIntegrationTest {
         when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq(ADMIN_ROLE)))
                 .thenThrow(new FundacionYaDesactivadaException("La fundación aliada ya se encuentra desactivada"));
 
-        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
+        mockMvc.perform(patch("/api/v1/admin/foundations/3/deactivate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
@@ -473,7 +473,7 @@ class FundacionControllerIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Conflict"))
                 .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
-                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/fundaciones")))
+                .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("La fundación aliada ya se encuentra desactivada"));
@@ -485,7 +485,7 @@ class FundacionControllerIntegrationTest {
         when(desactivarFundacionUseCase.desactivar(eq(999L), any(), eq(ADMIN_ROLE)))
                 .thenThrow(new FundacionNoEncontradaException("No existe una fundación aliada con ID: 999"));
 
-        mockMvc.perform(patch("/api/v1/admin/fundaciones/999/desactivar")
+        mockMvc.perform(patch("/api/v1/admin/foundations/999/deactivate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -498,22 +498,22 @@ class FundacionControllerIntegrationTest {
         when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq("ROLE_COMPRADOR")))
                 .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
 
-        mockMvc.perform(patch("/api/v1/admin/fundaciones/3/desactivar")
+        mockMvc.perform(patch("/api/v1/admin/foundations/3/deactivate")
                         .header("X-User-Roles", "ROLE_COMPRADOR"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test
-    @DisplayName("SR-RF-43: GET /api/v1/fundaciones retorna fundaciones cercanas activas")
+    @DisplayName("SR-RF-43: GET /api/v1/foundations retorna fundaciones cercanas activas")
     void debeConsultarFundacionesCercanasRetornando200() throws Exception {
         FundacionResponseDTO dto = FundacionResponseDTO.builder()
                 .id(1L).nombre("Fundación Cercana").activa(true).build();
         when(useCase.consultarCercanas(any())).thenReturn(List.of(dto));
 
-        mockMvc.perform(get("/api/v1/fundaciones")
-                        .param("latitud", "4.6712")
-                        .param("longitud", "-74.0531"))
+        mockMvc.perform(get("/api/v1/foundations")
+                        .param("latitude", "4.6712")
+                        .param("longitude", "-74.0531"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nombre").value("Fundación Cercana"));
     }

@@ -115,7 +115,7 @@ public class FundacionController implements FundacionApi {
     @Override
     public ResponseEntity<FundacionResponseDTO> desactivar(
             Long id,
-            @RequestParam(value = "motivo", required = false) String motivo,
+            @RequestParam(value = "reason", required = false) String motivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
@@ -126,7 +126,7 @@ public class FundacionController implements FundacionApi {
     @Override
     public ResponseEntity<FundacionResponseDTO> activar(
             Long id,
-            @RequestParam(value = "motivo", required = false) String motivo,
+            @RequestParam(value = "reason", required = false) String motivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);

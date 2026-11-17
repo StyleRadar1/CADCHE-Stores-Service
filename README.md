@@ -240,38 +240,38 @@ tiendas/
 
 | Método | Ruta | Historia | Acceso |
 | :---: | :--- | :--- | :--- |
-| `GET` | `/api/v1/almacenes` | Consulta de almacenes aprobados (paginada, filtro por categoría) | Público |
-| `POST` | `/api/v1/almacenes` | SR-RF-62-A · Registrar almacén | Tienda |
-| `GET` | `/api/v1/almacenes/mi-almacen` | SR-RF-62-A · Estado de mi almacén | Tienda |
-| `POST` | `/api/v1/almacenes/documentos/rut` | SR-RF-62-A · Subir RUT (PDF) | Tienda |
-| `GET` | `/api/v1/almacenes/{nit}` | Detalle de un almacén | Público |
-| `GET` · `PUT` | `/api/v1/almacenes/{nit}/configuracion-catalogo` | SR-RF-59/60 · Umbral y días | Dueño |
-| `GET` · `PUT` | `/api/v1/almacenes/{nit}/umbral-ultimas-unidades` | SR-RF-59 | Dueño |
-| `GET` · `PUT` | `/api/v1/almacenes/{nit}/dias-nueva-llegada` | SR-RF-60 | Dueño |
-| `PATCH` | `/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades` | SR-RF-59 · Distintivo | Dueño |
-| `PATCH` | `/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada` | SR-RF-60 · Distintivo | Dueño |
-| `GET` · `POST` | `/api/v1/almacenes/{nit}/fotografias` | SR-RF-74 · Listar / subir foto | Dueño (subir) |
-| `PUT` | `/api/v1/almacenes/{nit}/fotografias/orden` | SR-RF-74 · Reordenar | Dueño |
-| `DELETE` | `/api/v1/almacenes/{nit}/fotografias/{fotoId}` | SR-RF-74 · Eliminar | Dueño |
-| `GET` | `/api/v1/admin/almacenes/verificacion` | SR-RF-62 · Bandeja paginada por estado | Admin |
-| `GET` · `PATCH` | `/api/v1/admin/almacenes/{nit}/verificacion` | SR-RF-62 · Detalle / decidir | Admin |
-| `POST` | `/api/v1/admin/almacenes/{nit}/verificacion/solicitar-revision` | SR-RF-62 · Reabrir revisión | Admin / dueño |
-| `PUT` | `/api/v1/admin/almacenes/{nit}/administradores/{usuarioId}` | Asociar administrador (BOLA) | Admin |
-| `GET` | `/api/v1/admin/almacenes/{nit}/administradores` | Listar administradores | Admin |
-| `POST` | `/api/v1/admin/fundaciones/certificados` | SR-RF-63 · Subir certificado | Admin |
-| `GET` · `POST` | `/api/v1/admin/fundaciones` | SR-RF-63 · Listar / registrar | Admin |
-| `GET` · `PUT` | `/api/v1/admin/fundaciones/{id}` | SR-RF-64 · Detalle / editar | Admin |
-| `PATCH` | `/api/v1/admin/fundaciones/{id}/desactivar` | SR-RF-65 · Desactivar (publica evento) | Admin |
-| `PATCH` | `/api/v1/admin/fundaciones/{id}/activar` | SR-RF-65 · Reactivar (publica evento) | Admin |
-| `GET` | `/api/v1/fundaciones` | Fundaciones cercanas activas | Público |
+| `GET` | `/api/v1/stores` | Consulta de almacenes aprobados (paginada, filtro por categoría) | Público |
+| `POST` | `/api/v1/stores` | SR-RF-62-A · Registrar almacén | Tienda |
+| `GET` | `/api/v1/stores/mi-almacen` | SR-RF-62-A · Estado de mi almacén | Tienda |
+| `POST` | `/api/v1/stores/documents/rut` | SR-RF-62-A · Subir RUT (PDF) | Tienda |
+| `GET` | `/api/v1/stores/{nit}` | Detalle de un almacén | Público |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Dueño |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/low-stock-threshold` | SR-RF-59 | Dueño |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/new-arrival-days` | SR-RF-60 | Dueño |
+| `PATCH` | `/api/v1/stores/{nit}/items/{itemId}/low-stock` | SR-RF-59 · Distintivo | Dueño |
+| `PATCH` | `/api/v1/stores/{nit}/items/{itemId}/new-arrival` | SR-RF-60 · Distintivo | Dueño |
+| `GET` · `POST` | `/api/v1/stores/{nit}/photos` | SR-RF-74 · Listar / subir foto | Dueño (subir) |
+| `PUT` | `/api/v1/stores/{nit}/photos/order` | SR-RF-74 · Reordenar | Dueño |
+| `DELETE` | `/api/v1/stores/{nit}/photos/{photoId}` | SR-RF-74 · Eliminar | Dueño |
+| `GET` | `/api/v1/admin/stores/verifications` | SR-RF-62 · Bandeja paginada por estado | Admin |
+| `GET` · `PATCH` | `/api/v1/admin/stores/{nit}/verification` | SR-RF-62 · Detalle / decidir | Admin |
+| `POST` | `/api/v1/admin/stores/{nit}/verification/review-request` | SR-RF-62 · Reabrir revisión | Admin / dueño |
+| `PUT` | `/api/v1/admin/stores/{nit}/administrators/{userId}` | Asociar administrador (BOLA) | Admin |
+| `GET` | `/api/v1/admin/stores/{nit}/administrators` | Listar administradores | Admin |
+| `POST` | `/api/v1/admin/foundations/certificates` | SR-RF-63 · Subir certificado | Admin |
+| `GET` · `POST` | `/api/v1/admin/foundations` | SR-RF-63 · Listar / registrar | Admin |
+| `GET` · `PUT` | `/api/v1/admin/foundations/{id}` | SR-RF-64 · Detalle / editar | Admin |
+| `PATCH` | `/api/v1/admin/foundations/{id}/deactivate` | SR-RF-65 · Desactivar (publica evento) | Admin |
+| `PATCH` | `/api/v1/admin/foundations/{id}/activate` | SR-RF-65 · Reactivar (publica evento) | Admin |
+| `GET` | `/api/v1/foundations` | Fundaciones cercanas activas | Público |
 
 Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `codigo`, `timestamp` y `validationErrors`; `error`, `message` y `path` quedan como alias de compatibilidad. Catálogo de `codigo`: `DATOS_INVALIDOS`, `REGLA_DE_NEGOCIO` (400), `NO_AUTENTICADO` (401), `ACCESO_DENEGADO` (403), `RECURSO_NO_ENCONTRADO` (404), `METODO_NO_PERMITIDO` (405), `CONFLICTO` (409), `ARCHIVO_DEMASIADO_GRANDE` (413), `OPERACION_NO_PROCESABLE` (422), `ERROR_INTERNO` (500) y `SERVICIO_NO_DISPONIBLE` (503).
 
 ```json
 { "type": "https://api.styleradar.com/errores/conflicto", "title": "Conflict", "status": 409,
-  "detail": "Ya existe una fundación con ese nombre", "instance": "/api/v1/admin/fundaciones",
+  "detail": "Ya existe una fundación con ese nombre", "instance": "/api/v1/admin/foundations",
   "codigo": "CONFLICTO", "timestamp": "2026-11-13T15:04:05", "error": "Conflict",
-  "message": "Ya existe una fundación con ese nombre", "path": "/api/v1/admin/fundaciones",
+  "message": "Ya existe una fundación con ese nombre", "path": "/api/v1/admin/foundations",
   "validationErrors": { "nombre": "Ya existe una fundación con ese nombre" } }
 ```
 
@@ -884,7 +884,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
 * **Vulnerabilidades evaluadas**: Broken Object Level Authorization (BOLA), Insecure Direct Object References (IDOR), Server-Side Request Forgery (SSRF) y Missing Function Level Access Control.
 * **Acciones y Controles Técnicos Implementados**:
-  1. **Mitigación BOLA/IDOR (`SR-RNF-01`)**: Se implementó `AutorizacionAlmacenValidator` (`domain/validator/`). Al recibir una mutación sobre `/api/v1/almacenes/{nit}/...` (configuración de catálogo o fotografías), el componente valida mediante `AlmacenRepositoryPort` (`SpringDataAdministradorAlmacenRepository`) que `usuarioId` esté asociado al NIT. Si no existe coincidencia, lanza `AccesoDenegadoAlmacenException` (`403 Forbidden`).
+  1. **Mitigación BOLA/IDOR (`SR-RNF-01`)**: Se implementó `AutorizacionAlmacenValidator` (`domain/validator/`). Al recibir una mutación sobre `/api/v1/stores/{nit}/...` (configuración de catálogo o fotografías), el componente valida mediante `AlmacenRepositoryPort` (`SpringDataAdministradorAlmacenRepository`) que `usuarioId` esté asociado al NIT. Si no existe coincidencia, lanza `AccesoDenegadoAlmacenException` (`403 Forbidden`).
   2. **Control de Acceso Administrativo (RBAC en Dominio)**: Los endpoints administrativos bajo `/api/v1/admin/**` delegan en `AutorizacionAdminStyleRadarValidator`, exigiendo el rol `ROLE_ADMIN_STYLERADAR`.
   3. **Prevención de SSRF**: Las URLs retornadas por `AzureBlobStorageAdapter` salen del cliente del SDK de la cuenta configurada (`https://{account}.blob.core.windows.net/` o Azurite en local), y `eliminarArchivo` ignora URLs de otras cuentas.
 
@@ -1042,13 +1042,13 @@ En cumplimiento de los requerimientos de entrega del **Sprint 2** (especificaci�
 En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
 
 * **`COMPRADOR` (Usuario Final / Cliente):**
-  * *Qué puede hacer:* Consultar el catálogo público de almacenes (`GET /api/v1/almacenes`, `GET /api/v1/almacenes/{nit}`), consultar configuraciones públicas y galería de fotografías (`GET /api/v1/almacenes/{nit}/fotografias`), y consultar fundaciones aliadas (`GET /api/v1/fundaciones`).
+  * *Qué puede hacer:* Consultar el catálogo público de almacenes (`GET /api/v1/stores`, `GET /api/v1/stores/{nit}`), consultar configuraciones públicas y galería de fotografías (`GET /api/v1/stores/{nit}/photos`), y consultar fundaciones aliadas (`GET /api/v1/foundations`).
   * *Qué NO puede hacer:* Subir o eliminar fotografías, configurar umbrales/periodos ni acceder a rutas administrativas bajo `/api/v1/admin/**`.
 * **`ADMIN_ALMACEN` (Tienda / Comercio Aliado):**
-  * *Qué puede hacer:* Administrar el almacén asociado a su NIT (`/api/v1/almacenes/{nit}/configuracion-catalogo`, `umbral-ultimas-unidades`, `dias-nueva-llegada`, `fotografias`) previa validación de propiedad BOLA (`AutorizacionAlmacenValidator`).
+  * *Qué puede hacer:* Administrar el almacén asociado a su NIT (`/api/v1/stores/{nit}/catalog-settings`, `low-stock-threshold`, `new-arrival-days`, `fotografias`) previa validación de propiedad BOLA (`AutorizacionAlmacenValidator`).
   * *Qué NO puede hacer:* Modificar almacenes de otros NITs (`403 Forbidden`), aprobar o rechazar su propia verificación ni crear/editar/desactivar fundaciones.
 * **`ROLE_ADMIN_STYLERADAR` (Administrador de Plataforma):**
-  * *Qué puede hacer:* Consultar y decidir la verificación documental de almacenes (`GET/PATCH /api/v1/admin/almacenes/{nit}/verificacion`, `solicitar-revision`), consultar contratos de administradores y gestionar el ciclo de vida de fundaciones (`POST/GET/PUT /api/v1/admin/fundaciones*`, `PATCH .../desactivar`).
+  * *Qué puede hacer:* Consultar y decidir la verificación documental de almacenes (`GET/PATCH /api/v1/admin/stores/{nit}/verification`, `solicitar-revision`), consultar contratos de administradores y gestionar el ciclo de vida de fundaciones (`POST/GET/PUT /api/v1/admin/foundations*`, `PATCH .../deactivate`).
   * *Qué NO puede hacer:* Aprobar un almacén sin documento RUT adjunto ni rechazar sin motivo explicativo.
 
 ##### B. Dónde se aplica cada regla
@@ -1101,7 +1101,7 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
   * **Versionamiento DDL con Flyway:** Migraciones `V1` a `V4` acompañadas de `jpa.hibernate.ddl-auto: validate`.
   * **Mensajería Asíncrona:** `RabbitMQFundacionEventPublisherAdapter` implementa publicación de `FundacionDesactivadaEvent` hacia `styleradar.fundaciones.exchange` (`fundacion.desactivada`) capturando `AmqpException` para no revertir ni fallar las transacciones SQL locales. Actualmente la conexión activa y el health indicator de RabbitMQ (`management.health.rabbit.enabled=false`) están deshabilitados en QA, PROD y DEV.
 * **Riesgos encontrados:**  
-  1. *Ocho endpoints de contrato sin persistencia SQL aún* (`POST/GET /api/v1/almacenes`, `GET /api/v1/almacenes/{nit}`, `PATCH .../ultimas-unidades`, `PATCH .../nueva-llegada`, `PUT/GET .../administradores`, `GET /api/v1/fundaciones`).
+  1. *Ocho endpoints de contrato sin persistencia SQL aún* (`POST/GET /api/v1/stores`, `GET /api/v1/stores/{nit}`, `PATCH .../low-stock`, `PATCH .../new-arrival`, `PUT/GET .../administrators`, `GET /api/v1/foundations`).
   2. *Posible desincronización si se reactiva AMQP en el futuro sin patrón Outbox*: Una falla de broker tras commit SQL perdería el evento emitido en memoria.
 * **Qué se va a corregir:**  
   1. Completar los casos de uso y persistencia JPA para los 8 endpoints restantes.
@@ -1114,7 +1114,7 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
   2. Si no coincide, se lanza `AccesoDenegadoAlmacenException` mapeada en `GlobalExceptionHandler` a HTTP `403 Forbidden`.
   3. Los flujos administrativos (`VerificarAlmacenUseCaseImpl`, `Fundacion`) exigen `ROLE_ADMIN_STYLERADAR` en `AutorizacionAdminStyleRadarValidator`.
 * **Riesgos encontrados:**  
-  1. *Endpoints de administración de vínculos (`PUT/GET .../administradores`) aún en modo contrato DTO*: La asociación dinámica aún requiere persistencia completa vía caso de uso dedicado.
+  1. *Endpoints de administración de vínculos (`PUT/GET .../administrators`) aún en modo contrato DTO*: La asociación dinámica aún requiere persistencia completa vía caso de uso dedicado.
 * **Qué se va a corregir:**  
   1. Implementar el caso de uso persistente de asociación/revocación de administradores validando siempre `ROLE_ADMIN_STYLERADAR` o propiedad legítima del comercio.
 
