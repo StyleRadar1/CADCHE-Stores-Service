@@ -55,12 +55,12 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
             throw new ReglaDeNegocioException("El NIT del almacén es obligatorio");
         }
 
+        Almacen almacen = repositoryPort.findByNit(nit)
+                .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén con el NIT: " + nit));
+
         autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
 
         validarArchivoImagen(nombreOriginal, contentType, tamano);
-
-        Almacen almacen = repositoryPort.findByNit(nit)
-                .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén con el NIT: " + nit));
 
         List<FotografiaTienda> fotosExistentes = repositoryPort.findFotosByAlmacenNit(nit);
         almacen.setFotos(new ArrayList<>(fotosExistentes));
@@ -101,10 +101,10 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
     @Override
     @Transactional
     public void eliminarFotografia(String nit, Long fotoId, Long usuarioId) {
-        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
-
         Almacen almacen = repositoryPort.findByNit(nit)
                 .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén con el NIT: " + nit));
+
+        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
 
         List<FotografiaTienda> fotosExistentes = new ArrayList<>(repositoryPort.findFotosByAlmacenNit(nit));
         String urlEliminada = fotosExistentes.stream()
@@ -135,10 +135,10 @@ public class RegistrarFotografiaTiendaUseCaseImpl implements RegistrarFotografia
             throw new ReglaDeNegocioException("El NIT del almacén es obligatorio");
         }
 
-        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
-
         Almacen almacen = repositoryPort.findByNit(nit)
                 .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén con el NIT: " + nit));
+
+        autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
 
         List<FotografiaTienda> fotosExistentes = new ArrayList<>(repositoryPort.findFotosByAlmacenNit(nit));
         almacen.setFotos(fotosExistentes);

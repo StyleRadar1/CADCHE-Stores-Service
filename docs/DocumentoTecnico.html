@@ -1,6 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>STYLE RADAR · ms-tiendas | Documento Técnico de Arquitectura</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&family=Montserrat:wght@700;800&family=Open+Sans:wght@400;600;700&family=Source+Code+Pro:wght@400;700&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;700&family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@400;600;700&family=Oswald:wght@600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
 <style>
 :root{--fd:'Anton',Impact,sans-serif;--fb:'Poppins',Arial,sans-serif;--fm:'Space Mono',monospace;--fw:400;--ts:1;--st:#EFE8DC;--fg:#262626;--mut:#5A5A66;--ctl:#FFFFFF;--line:#D9D0C0;--acc:#48119A;--accfg:#FFFFFF}
@@ -296,16 +295,16 @@ svgw('0 0 510 248',
 [
   ['POST','/almacenes','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Contrato DTO</span>','SR-RF-62 Registro'],
   ['GET','/almacenes','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Público</span>','SR-RF-17 Listado/Mapa'],
-  ['GET','/almacenes/{nit}/<wbr>configuracion-catalogo','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Público</span>','SR-RF-59/60 Config'],
-  ['PUT','/almacenes/{nit}/<wbr>configuracion-catalogo','<span class="pill" style="font-size:8.8px;padding:1px 6px">ADMIN_ALMACEN</span>','SR-RF-59/60 Umbral'],
+  ['GET','/almacenes/{nit}/<wbr>catalog-settings','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Público</span>','SR-RF-59/60 Config'],
+  ['PUT','/almacenes/{nit}/<wbr>catalog-settings','<span class="pill" style="font-size:8.8px;padding:1px 6px">ADMIN_ALMACEN</span>','SR-RF-59/60 Umbral'],
   ['POST','/almacenes/{nit}/<wbr>fotografias','<span class="pill" style="font-size:8.8px;padding:1px 6px">ADMIN_ALMACEN</span>','SR-RF-74 Vitrina (≤6MB)'],
-  ['PATCH','/admin/almacenes/<wbr>{nit}/verificacion','<span class="pill bad" style="font-size:8.8px;padding:1px 6px">ADMIN_SR</span>','SR-RF-62 Verif. RUT'],
-  ['PATCH','/admin/fundaciones/<wbr>{id}/desactivar','<span class="pill bad" style="font-size:8.8px;padding:1px 6px">ADMIN_SR</span>','SR-RF-65 Baja + Evento'],
+  ['PATCH','/admin/almacenes/<wbr>{nit}/verification','<span class="pill bad" style="font-size:8.8px;padding:1px 6px">ADMIN_SR</span>','SR-RF-62 Verif. RUT'],
+  ['PATCH','/admin/fundaciones/<wbr>{id}/deactivate','<span class="pill bad" style="font-size:8.8px;padding:1px 6px">ADMIN_SR</span>','SR-RF-65 Baja + Evento'],
   ['GET','/fundaciones','<span class="pill" style="font-size:8.8px;padding:1px 6px">Público/DTO</span>','SR-RF-43/63 Cercanas']
 ].map(function(r){return '<tr><td><span class="pill" style="font:700 9.2px var(--fm);padding:2px 5px;border-color:rgba(72,17,154,.3);color:#48119A">'+r[0]+'</span></td><td style="font:600 9.5px var(--fm);word-break:break-word">'+r[1]+'</td><td>'+r[2]+'</td><td style="font-size:10.2px">'+r[3]+'</td></tr>'}).join('')+'</table>'+
 '<div class="card" style="background:#18112C;color:#FBF7F0;border:1px solid #48119A;border-radius:10px;padding:8px 13px;gap:3px;margin-top:auto">'+
 '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="lab" style="font-size:9.3px;color:#C4B5FD;margin:0">25 rutas (14 Alm + 4 Verif + 5 Fund + 2 Admin) · 17 SQL + 8 DTO</span><a href="https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html" target="_blank" style="font:700 9.8px var(--fm);color:#34D399;text-decoration:none;white-space:nowrap">Swagger QA &amp; PROD ↗</a></div>'+
-'<div style="font:400 10.2px/1.35 var(--fm);color:#E8DCCB;margin:0">GET /api/v1/almacenes/900123456-7/configuracion-catalogo<br><span style="color:#6EE7B7">→ 200 OK { "nit": "900123456-7", "umbralUltimasUnidades": 3, "diasNuevaLlegada": 7 }</span></div></div></div>'},
+'<div style="font:400 10.2px/1.35 var(--fm);color:#E8DCCB;margin:0">GET /api/v1/stores/900123456-7/catalog-settings<br><span style="color:#6EE7B7">→ 200 OK { "nit": "900123456-7", "umbralUltimasUnidades": 3, "diasNuevaLlegada": 7 }</span></div></div></div>'},
 
 {c:'cream',t:'Flujo e HUs',tag:'06',tab:'Flujos',h:K('06 · Flujo y HUs')+H('Casos de uso','y trazabilidad RF')+
 '<div style="display:flex;flex-direction:column;gap:6px;margin-top:2px">'+
@@ -381,7 +380,7 @@ cdk('Mitigación BOLA / IDOR (SR-RNF-01)','AutorizacionAlmacenValidator verifica
 ].map(function(r){return '<tr><td>'+r[0]+'</td><td style="font-size:9.8px">'+r[1]+'</td><td style="font:600 9.2px var(--fm);word-break:break-word">'+r[2]+'</td></tr>'}).join('')+'</table>'+
 '<div class="card" style="background:#18112C;color:#FBF7F0;border:1px solid #48119A;border-radius:10px;padding:8px 12px;gap:2px;margin-top:auto">'+
 '<p class="lab" style="font-size:9.4px;color:#C4B5FD;margin:0">GlobalExceptionHandler · ErrorResponseDTO (14 Excepciones)</p>'+
-'<div style="font:400 9.8px/1.32 var(--fm);color:#E8DCCB">{ "status": 404, "error": "Not Found", "message": "No existe un almacén con el NIT 900123456-7", "path": "/api/v1/almacenes/900123456-7/umbral-ultimas-unidades" }</div></div></div>'},
+'<div style="font:400 9.8px/1.32 var(--fm);color:#E8DCCB">{ "status": 404, "error": "Not Found", "message": "No existe un almacén con el NIT 900123456-7", "path": "/api/v1/stores/900123456-7/low-stock-threshold" }</div></div></div>'},
 
 {c:'arena',t:'Relaciones e integraciones',tag:'12',tab:'Relaciones',h:K('12 · Relaciones')+H('Con quién se conecta','ecosistema de microservicios')+
 svgw('0 0 510 232',

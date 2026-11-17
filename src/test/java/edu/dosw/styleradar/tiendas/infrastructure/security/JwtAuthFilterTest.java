@@ -33,7 +33,7 @@ class JwtAuthFilterTest {
     @BeforeEach
     void setUp() {
         request = new MockHttpServletRequest();
-        request.setRequestURI("/api/v1/almacenes/900123456/umbral-ultimas-unidades");
+        request.setRequestURI("/api/v1/stores/900123456/low-stock-threshold");
         response = new MockHttpServletResponse();
         filterChain = new MockFilterChain();
     }
@@ -122,7 +122,7 @@ class JwtAuthFilterTest {
     @DisplayName("B-0.1: una escritura sin token responde 401 antes de validar el cuerpo")
     void escrituraSinToken_responde401() throws ServletException, IOException {
         request.setMethod("POST");
-        request.setRequestURI("/api/v1/almacenes");
+        request.setRequestURI("/api/v1/stores");
         request.addHeader("X-User-Id", "1");
 
         filtro(false).doFilter(request, response, filterChain);
@@ -137,11 +137,11 @@ class JwtAuthFilterTest {
     @DisplayName("Las lecturas sin token siguen pasando (rutas públicas) y el Gateway de confianza puede escribir")
     void lecturaSinTokenYGatewayDeConfianza_pasan() throws ServletException, IOException {
         request.setMethod("GET");
-        request.setRequestURI("/api/v1/fundaciones");
+        request.setRequestURI("/api/v1/foundations");
         filtro(false).doFilter(request, response, filterChain);
         assertThat(filterChain.getRequest()).isNotNull();
 
-        MockHttpServletRequest escritura = new MockHttpServletRequest("PUT", "/api/v1/almacenes/900123456-1/configuracion-catalogo");
+        MockHttpServletRequest escritura = new MockHttpServletRequest("PUT", "/api/v1/stores/900123456-1/catalog-settings");
         escritura.addHeader("X-User-Id", "7");
         MockFilterChain cadena = new MockFilterChain();
         filtro(true).doFilter(escritura, new MockHttpServletResponse(), cadena);

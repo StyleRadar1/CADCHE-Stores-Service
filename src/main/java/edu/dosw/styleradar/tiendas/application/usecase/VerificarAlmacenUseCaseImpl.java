@@ -75,8 +75,8 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
         SolicitudPagina solicitud = SolicitudPagina.de(
                 request.getPage(), request.getSize(), "Paginación de verificación inválida");
 
-        Pagina<Almacen> page = request.getEstado() != null
-                ? repositoryPort.findByEstadoVerificacion(request.getEstado(), solicitud)
+        Pagina<Almacen> page = request.getStatus() != null
+                ? repositoryPort.findByEstadoVerificacion(request.getStatus(), solicitud)
                 : repositoryPort.findAllVerificacion(solicitud);
 
         List<VerificacionAlmacenResponseDTO> content = page.contenido().stream()

@@ -32,7 +32,7 @@ class SecurityHeadersFilterTest {
     @Test
     @DisplayName("Debe inyectar todas las cabeceras de seguridad requeridas por OWASP Top 10:2025")
     void debeInyectarCabecerasDeSeguridad() throws IOException, ServletException {
-        request.setRequestURI("/api/v1/almacenes");
+        request.setRequestURI("/api/v1/stores");
 
         securityHeadersFilter.doFilter(request, response, filterChain);
 

@@ -319,7 +319,7 @@ class OwaspTop10SecurityTest {
         @DisplayName("A07.2: FalloAutenticacionException se transforma en HTTP 401 Unauthorized")
         void test_A07_AuthenticationFailures_MishandlingMapsTo401() {
             MockHttpServletRequest req = new MockHttpServletRequest();
-            req.setRequestURI("/api/v1/almacenes/900123456/catalogo");
+            req.setRequestURI("/api/v1/stores/900123456/catalogo");
 
             ResponseEntity<ErrorResponseDTO> response = exceptionHandler.handleFalloAutenticacion(
                     new FalloAutenticacionException("Token expirado"), req);
@@ -384,14 +384,14 @@ class OwaspTop10SecurityTest {
         @DisplayName("A09.1: Respuestas de error contienen auditoría de ruta, código de estado y timestamp")
         void test_A09_SecurityLogging_AuditResponseFields() {
             MockHttpServletRequest req = new MockHttpServletRequest();
-            req.setRequestURI("/api/v1/almacenes/900123456/catalogo");
+            req.setRequestURI("/api/v1/stores/900123456/catalogo");
 
             ResponseEntity<ErrorResponseDTO> response = exceptionHandler.handleAccesoDenegado(
                     new AccesoDenegadoAlmacenException("Acceso BOLA denegado"), req);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
             assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().getPath()).isEqualTo("/api/v1/almacenes/900123456/catalogo");
+            assertThat(response.getBody().getPath()).isEqualTo("/api/v1/stores/900123456/catalogo");
             assertThat(response.getBody().getTimestamp()).isNotNull();
             assertThat(response.getBody().getStatus()).isEqualTo(403);
         }
@@ -408,7 +408,7 @@ class OwaspTop10SecurityTest {
         @DisplayName("A10.1: Errores no controlados 500 suprimen trazas de JVM y detalles de base de datos")
         void test_A10_MishandlingOfExceptionalConditions_StackTracesSuppressed() {
             MockHttpServletRequest req = new MockHttpServletRequest();
-            req.setRequestURI("/api/v1/almacenes/critico");
+            req.setRequestURI("/api/v1/stores/critico");
 
             NullPointerException secretInternalException =
                     new NullPointerException("NullPointer in internal db driver class org.postgresql.Driver: table almacenes");

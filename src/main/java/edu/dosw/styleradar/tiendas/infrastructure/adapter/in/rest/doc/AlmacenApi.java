@@ -61,20 +61,6 @@ public interface AlmacenApi {
             @Valid @ParameterObject @ModelAttribute ConsultaAlmacenRequestDTO request);
 
     @Operation(
-            summary = "Consultar mi almacén asociado al usuario autenticado (SR-RF-59 / SR-RF-62-A)",
-            description = "ROLE_ADMIN_ALMACEN / TIENDA. Resuelve y retorna el almacén administrado por el usuario autenticado.",
-            security = {@SecurityRequirement(name = "bearerAuth")})
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Almacén del usuario autenticado consultado exitosamente"),
-            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "El usuario no administra ningún almacén", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
-    })
-    @GetMapping("/mi-almacen")
-    ResponseEntity<VerificacionAlmacenResponseDTO> obtenerMiAlmacen(
-            @Parameter(description = "ID del usuario autenticado", example = "10")
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
-
-    @Operation(
             summary = "Subir documento RUT en PDF previo o asociado al registro de almacén (SR-RF-62-A)",
             description = "ROLE_ADMIN_ALMACEN / TIENDA. Recibe un archivo PDF de máximo 5 MB, lo almacena en el repositorio de objetos y devuelve su URL pública.",
             security = {@SecurityRequirement(name = "bearerAuth")})
@@ -84,7 +70,7 @@ public interface AlmacenApi {
             @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "403", description = "Cuenta sin rol de tienda", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
-    @PostMapping(value = "/documentos/rut", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/documents/rut", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<DocumentoSubidoResponseDTO> subirDocumentoRut(
             @Parameter(description = "Archivo PDF del RUT (máximo 5 MB)") @RequestPart("archivo") MultipartFile archivo,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
@@ -114,14 +100,14 @@ public interface AlmacenApi {
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
     @Operation(summary = "Consultar configuración de catálogo y umbrales (SR-RF-59 / SR-RF-60)", security = {})
-    @GetMapping("/{nit}/configuracion-catalogo")
+    @GetMapping("/{nit}/catalog-settings")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(
             @Parameter(description = "NIT del almacén aliado", example = "900123456-1") @PathVariable String nit);
 
     @Operation(
             summary = "Configurar umbrales de últimas unidades y días de nueva llegada (SR-RF-59 / SR-RF-60)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PutMapping("/{nit}/configuracion-catalogo")
+    @PutMapping("/{nit}/catalog-settings")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> configurarCatalogo(
             @PathVariable String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
@@ -130,71 +116,71 @@ public interface AlmacenApi {
     @Operation(
             summary = "Configurar exclusivamente el umbral de últimas unidades (SR-RF-59)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PutMapping("/{nit}/umbral-ultimas-unidades")
+    @PutMapping("/{nit}/low-stock-threshold")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarUmbralUltimasUnidades(
             @PathVariable String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarUmbralRequestDTO request);
 
     @Operation(summary = "Consultar el umbral de últimas unidades (SR-RF-59)", security = {})
-    @GetMapping("/{nit}/umbral-ultimas-unidades")
+    @GetMapping("/{nit}/low-stock-threshold")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(
             @PathVariable String nit);
 
     @Operation(
             summary = "Configurar exclusivamente los días de nueva llegada (SR-RF-60)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PutMapping("/{nit}/dias-nueva-llegada")
+    @PutMapping("/{nit}/new-arrival-days")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarDiasNuevaLlegada(
             @PathVariable String nit,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarPeriodoRequestDTO request);
 
     @Operation(summary = "Consultar el periodo de días de nueva llegada (SR-RF-60)", security = {})
-    @GetMapping("/{nit}/dias-nueva-llegada")
+    @GetMapping("/{nit}/new-arrival-days")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(
             @PathVariable String nit);
 
     @Operation(
             summary = "Evaluar y marcar prenda como últimas unidades según el umbral del almacén (SR-RF-59)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PatchMapping("/{nit}/prendas/{itemId}/ultimas-unidades")
+    @PatchMapping("/{nit}/items/{itemId}/low-stock")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarUltimasUnidades(
             @PathVariable String nit,
             @PathVariable Long itemId,
-            @RequestParam(value = "stockActual", required = false) Integer stockActual,
+            @RequestParam(value = "currentStock", required = false) Integer stockActual,
             @Valid @RequestBody(required = false) EvaluarUltimasUnidadesRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Evaluar y marcar prenda como nueva llegada durante el periodo configurado del almacén (SR-RF-60)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PatchMapping("/{nit}/prendas/{itemId}/nueva-llegada")
+    @PatchMapping("/{nit}/items/{itemId}/new-arrival")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarNuevaLlegada(
             @PathVariable String nit,
             @PathVariable Long itemId,
-            @RequestParam(value = "fechaIngreso", required = false) Instant fechaIngreso,
+            @RequestParam(value = "arrivalDate", required = false) Instant fechaIngreso,
             @Valid @RequestBody(required = false) EvaluarNuevaLlegadaRequestDTO body,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
             summary = "Registrar fotografía de la tienda física (SR-RF-74)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PostMapping(value = "/{nit}/fotografias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{nit}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
             @PathVariable String nit,
             @RequestPart("archivo") MultipartFile archivo,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(summary = "Consultar fotografías de la tienda física (SR-RF-74)", security = {})
-    @GetMapping("/{nit}/fotografias")
+    @GetMapping("/{nit}/photos")
     ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(
             @PathVariable String nit);
 
     @Operation(
             summary = "Reordenar fotografías de la tienda física y actualizar portada (SR-RF-74)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @PutMapping("/{nit}/fotografias/orden")
+    @PutMapping("/{nit}/photos/order")
     ResponseEntity<List<FotografiaTiendaResponseDTO>> reordenarFotografias(
             @PathVariable String nit,
             @Valid @RequestBody ReordenarFotografiasRequestDTO request,
@@ -203,9 +189,9 @@ public interface AlmacenApi {
     @Operation(
             summary = "Eliminar fotografía de la tienda física (SR-RF-74)",
             security = {@SecurityRequirement(name = "bearerAuth")})
-    @DeleteMapping("/{nit}/fotografias/{fotoId}")
+    @DeleteMapping("/{nit}/photos/{photoId}")
     ResponseEntity<Void> eliminarFotografia(
             @PathVariable String nit,
-            @PathVariable Long fotoId,
+            @PathVariable("photoId") Long fotoId,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 }

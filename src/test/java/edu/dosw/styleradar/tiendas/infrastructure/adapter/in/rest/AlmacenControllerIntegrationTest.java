@@ -66,7 +66,7 @@ import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFotografiaTiendaUseCa
 import edu.dosw.styleradar.tiendas.infrastructure.exception.GlobalExceptionHandler;
 import edu.dosw.styleradar.tiendas.infrastructure.security.JwtSecurityValidator;
 
-@WebMvcTest(AlmacenController.class)
+@WebMvcTest({AlmacenController.class, UsuarioAlmacenController.class})
 @Import({GlobalExceptionHandler.class, JwtSecurityValidator.class})
 @ActiveProfiles("test")
 @DisplayName("Pruebas de Integración de API REST - Controlador AlmacenController (SR-RF-59 / SR-RF-60 / SR-RF-62-A / SR-RF-74)")
@@ -108,7 +108,7 @@ class AlmacenControllerIntegrationTest {
                 NIT, 3, 15, Instant.now());
         when(consultarUmbralUseCase.consultarConfiguracion(NIT)).thenReturn(respuestaMock);
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+        mockMvc.perform(get("/api/v1/stores/{nit}/catalog-settings", NIT)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
@@ -126,7 +126,7 @@ class AlmacenControllerIntegrationTest {
         when(configurarUmbralUseCase.configurarCatalogo(eq(NIT), any(ConfiguracionCatalogoAlmacenRequestDTO.class), eq(10L)))
                 .thenReturn(respuestaMock);
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/catalog-settings", NIT)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -146,7 +146,7 @@ class AlmacenControllerIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/catalog-settings", NIT)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
@@ -163,7 +163,7 @@ class AlmacenControllerIntegrationTest {
         when(configurarUmbralUseCase.configurarCatalogo(eq(NIT), any(ConfiguracionCatalogoAlmacenRequestDTO.class), eq(999L)))
                 .thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/configuracion-catalogo", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/catalog-settings", NIT)
                         .header("X-User-Id", 999L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -173,7 +173,7 @@ class AlmacenControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Endpoint dedicado: PUT /api/v1/almacenes/{nit}/umbral-ultimas-unidades con umbral válido retorna 200")
+    @DisplayName("Endpoint dedicado: PUT /api/v1/stores/{nit}/low-stock-threshold con umbral válido retorna 200")
     void debeActualizarUmbralEnEndpointDedicado() throws Exception {
         ActualizarUmbralRequestDTO request = new ActualizarUmbralRequestDTO(6);
         ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
@@ -182,7 +182,7 @@ class AlmacenControllerIntegrationTest {
         when(configurarUmbralUseCase.configurarUmbral(eq(NIT), eq(6), eq(10L)))
                 .thenReturn(respuestaMock);
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/umbral-ultimas-unidades", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/low-stock-threshold", NIT)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -191,7 +191,7 @@ class AlmacenControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Endpoint dedicado: PUT /api/v1/almacenes/{nit}/umbral-ultimas-unidades con umbral negativo retorna 400")
+    @DisplayName("Endpoint dedicado: PUT /api/v1/stores/{nit}/low-stock-threshold con umbral negativo retorna 400")
     void debeRechazarUmbralNegativoEnEndpointDedicado() throws Exception {
         String jsonPayload = """
                 {
@@ -199,7 +199,7 @@ class AlmacenControllerIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/umbral-ultimas-unidades", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/low-stock-threshold", NIT)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
@@ -208,13 +208,13 @@ class AlmacenControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Endpoint dedicado: GET /api/v1/almacenes/{nit}/umbral-ultimas-unidades retorna 200")
+    @DisplayName("Endpoint dedicado: GET /api/v1/stores/{nit}/low-stock-threshold retorna 200")
     void debeConsultarUmbralEnEndpointDedicado() throws Exception {
         ConfiguracionCatalogoAlmacenResponseDTO respuestaMock = new ConfiguracionCatalogoAlmacenResponseDTO(
                 NIT, 3, 15, Instant.now());
         when(consultarUmbralUseCase.consultarConfiguracion(NIT)).thenReturn(respuestaMock);
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}/umbral-ultimas-unidades", NIT)
+        mockMvc.perform(get("/api/v1/stores/{nit}/low-stock-threshold", NIT)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.umbralUltimasUnidades").value(3));
@@ -226,7 +226,7 @@ class AlmacenControllerIntegrationTest {
         when(consultarUmbralUseCase.consultarConfiguracion("000000000"))
                 .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}/configuracion-catalogo", "000000000")
+        mockMvc.perform(get("/api/v1/stores/{nit}/catalog-settings", "000000000")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
@@ -240,7 +240,7 @@ class AlmacenControllerIntegrationTest {
                 NIT, 3, 7, Instant.now());
         when(consultarPeriodoUseCase.consultarPeriodo(NIT)).thenReturn(respuestaMock);
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+        mockMvc.perform(get("/api/v1/stores/{nit}/new-arrival-days", NIT)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
@@ -257,7 +257,7 @@ class AlmacenControllerIntegrationTest {
         when(configurarPeriodoUseCase.configurarPeriodo(eq(NIT), eq(14), eq(10L)))
                 .thenReturn(respuestaMock);
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/new-arrival-days", NIT)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -274,7 +274,7 @@ class AlmacenControllerIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/new-arrival-days", NIT)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
@@ -290,7 +290,7 @@ class AlmacenControllerIntegrationTest {
         when(configurarPeriodoUseCase.configurarPeriodo(eq(NIT), eq(10), eq(999L)))
                 .thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
 
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/dias-nueva-llegada", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/new-arrival-days", NIT)
                         .header("X-User-Id", 999L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -305,7 +305,7 @@ class AlmacenControllerIntegrationTest {
         when(consultarPeriodoUseCase.consultarPeriodo("000000000"))
                 .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}/dias-nueva-llegada", "000000000")
+        mockMvc.perform(get("/api/v1/stores/{nit}/new-arrival-days", "000000000")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
@@ -339,7 +339,7 @@ class AlmacenControllerIntegrationTest {
                 eq(100L)
         )).thenReturn(respuestaMock);
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", NIT)
                         .file(file)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isCreated())
@@ -369,7 +369,7 @@ class AlmacenControllerIntegrationTest {
                 eq(100L)
         )).thenThrow(new LimiteFotografiasSuperadoException("El almacén ya cuenta con el número máximo de 6 fotografías"));
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", NIT)
                         .file(file)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isUnprocessableEntity())
@@ -387,7 +387,7 @@ class AlmacenControllerIntegrationTest {
                 new byte[0]
         );
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", NIT)
                         .file(emptyFile)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isBadRequest())
@@ -414,7 +414,7 @@ class AlmacenControllerIntegrationTest {
                 eq(100L)
         )).thenThrow(new ArchivoNoEsImagenException("El archivo debe ser una imagen válida (JPEG, PNG o WEBP)"));
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", NIT)
                         .file(textFile)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isBadRequest())
@@ -441,7 +441,7 @@ class AlmacenControllerIntegrationTest {
                 eq(100L)
         )).thenThrow(new TamanoArchivoExcedidoException("La imagen supera el tamaño máximo de 6 MB"));
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", NIT)
                         .file(file)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isPayloadTooLarge())
@@ -468,7 +468,7 @@ class AlmacenControllerIntegrationTest {
                 eq(999L)
         )).thenThrow(new AccesoDenegadoAlmacenException("El usuario autenticado (999) no tiene permisos para administrar el almacén con NIT " + NIT));
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", NIT)
                         .file(file)
                         .header("X-User-Id", 999L))
                 .andExpect(status().isForbidden())
@@ -495,7 +495,7 @@ class AlmacenControllerIntegrationTest {
                 eq(100L)
         )).thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 999999999"));
 
-        mockMvc.perform(multipart("/api/v1/almacenes/{nit}/fotografias", "999999999")
+        mockMvc.perform(multipart("/api/v1/stores/{nit}/photos", "999999999")
                         .file(file)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isNotFound())
@@ -516,14 +516,14 @@ class AlmacenControllerIntegrationTest {
                 new FotografiaTiendaResponseDTO(1L, NIT, "https://blob/foto1.jpg", 2, false, Instant.now())
         ));
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}/fotografias", NIT)
+        mockMvc.perform(get("/api/v1/stores/{nit}/photos", NIT)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2));
 
         ReordenarFotografiasRequestDTO reorderReq = new ReordenarFotografiasRequestDTO(List.of(2L, 1L));
-        mockMvc.perform(put("/api/v1/almacenes/{nit}/fotografias/orden", NIT)
+        mockMvc.perform(put("/api/v1/stores/{nit}/photos/order", NIT)
                         .header("X-User-Id", 100L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reorderReq)))
@@ -537,13 +537,13 @@ class AlmacenControllerIntegrationTest {
     void debeEliminarFotografiaConHttp204() throws Exception {
         doNothing().when(registrarFotografiaUseCase).eliminarFotografia(NIT, 1L, 100L);
 
-        mockMvc.perform(delete("/api/v1/almacenes/{nit}/fotografias/{fotoId}", NIT, 1L)
+        mockMvc.perform(delete("/api/v1/stores/{nit}/photos/{photoId}", NIT, 1L)
                         .header("X-User-Id", 100L))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @DisplayName("SR-RF-62: POST /api/v1/almacenes, GET /mi-almacen y POST /documentos/rut funcionan y validan duplicados")
+    @DisplayName("SR-RF-62: POST /api/v1/stores, GET /api/v1/users/{userId}/store y POST /documents/rut funcionan y validan duplicados")
     void debeRegistrarAlmacenMiAlmacenSubirRutYRechazarDuplicado() throws Exception {
         RegistrarAlmacenRequestDTO req = RegistrarAlmacenRequestDTO.builder()
                 .nit("900123456-1")
@@ -569,7 +569,7 @@ class AlmacenControllerIntegrationTest {
         when(registrarAlmacenUseCase.subirDocumentoRut(any(), any(), anyLong(), any(), eq(10L), any()))
                 .thenReturn(new DocumentoSubidoResponseDTO("https://blob/rut.pdf", "rut.pdf", "application/pdf", 100L, Instant.now()));
 
-        mockMvc.perform(post("/api/v1/almacenes")
+        mockMvc.perform(post("/api/v1/stores")
                         .header("X-User-Id", 10L)
                         .header("X-User-Roles", "ROLE_TIENDA")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -578,20 +578,25 @@ class AlmacenControllerIntegrationTest {
                 .andExpect(jsonPath("$.nit").value("900123456-1"))
                 .andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"));
 
-        mockMvc.perform(get("/api/v1/almacenes/mi-almacen")
+        mockMvc.perform(get("/api/v1/users/10/store")
                         .header("X-User-Id", 10L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value("900123456-1"));
 
+        mockMvc.perform(get("/api/v1/users/10/store")
+                        .header("X-User-Id", 11L)
+                        .header("X-User-Roles", "ADMIN_ALMACEN"))
+                .andExpect(status().isForbidden());
+
         MockMultipartFile rutFile = new MockMultipartFile(
                 "archivo", "rut.pdf", MediaType.APPLICATION_PDF_VALUE, "%PDF-1.4".getBytes());
-        mockMvc.perform(multipart("/api/v1/almacenes/documentos/rut")
+        mockMvc.perform(multipart("/api/v1/stores/documents/rut")
                         .file(rutFile)
                         .header("X-User-Id", 10L))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.url").value("https://blob/rut.pdf"));
 
-        mockMvc.perform(post("/api/v1/almacenes")
+        mockMvc.perform(post("/api/v1/stores")
                         .header("X-User-Id", 10L)
                         .header("X-User-Roles", "ROLE_TIENDA")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -602,7 +607,7 @@ class AlmacenControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/almacenes y GET /api/v1/almacenes/{nit} deben consultar almacenes reales")
+    @DisplayName("GET /api/v1/stores y GET /api/v1/stores/{nit} deben consultar almacenes reales")
     void debeConsultarAlmacenesYDetallePorNit() throws Exception {
         AlmacenResponseDTO item = new AlmacenResponseDTO(
                 NIT, "Atelier Urbano", "Moda", 4.65, -74.06, 4.8, Set.of(CategoriaAlmacen.CASUAL));
@@ -612,11 +617,11 @@ class AlmacenControllerIntegrationTest {
         when(registrarAlmacenUseCase.consultarAlmacenes(any())).thenReturn(page);
         when(registrarAlmacenUseCase.obtenerPorNit(NIT)).thenReturn(item);
 
-        mockMvc.perform(get("/api/v1/almacenes"))
+        mockMvc.perform(get("/api/v1/stores"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].nit").value(NIT));
 
-        mockMvc.perform(get("/api/v1/almacenes/{nit}", NIT))
+        mockMvc.perform(get("/api/v1/stores/{nit}", NIT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT));
     }
@@ -642,7 +647,7 @@ class AlmacenControllerIntegrationTest {
         when(marcarDistintivoUseCase.evaluarNuevaLlegada(eq(NIT), eq(104L), any(EvaluarNuevaLlegadaRequestDTO.class), eq(10L)))
                 .thenReturn(respNueva);
 
-        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades", NIT, 104L)
+        mockMvc.perform(patch("/api/v1/stores/{nit}/items/{itemId}/low-stock", NIT, 104L)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"stockActual\":2,\"disponible\":true}"))
@@ -650,13 +655,13 @@ class AlmacenControllerIntegrationTest {
                 .andExpect(jsonPath("$.ultimasUnidades").value(true))
                 .andExpect(jsonPath("$.distintivoActivo").value("ULTIMAS_UNIDADES"));
 
-        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/ultimas-unidades", NIT, 104L)
-                        .param("stockActual", "10")
+        mockMvc.perform(patch("/api/v1/stores/{nit}/items/{itemId}/low-stock", NIT, 104L)
+                        .param("currentStock", "10")
                         .header("X-User-Id", 10L))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422));
 
-        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada", NIT, 104L)
+        mockMvc.perform(patch("/api/v1/stores/{nit}/items/{itemId}/new-arrival", NIT, 104L)
                         .header("X-User-Id", 10L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fechaPublicacion\":\"2026-11-10T10:00:00Z\",\"retirada\":false}"))
@@ -664,11 +669,11 @@ class AlmacenControllerIntegrationTest {
                 .andExpect(jsonPath("$.nuevaLlegada").value(true))
                 .andExpect(jsonPath("$.distintivoActivo").value("NUEVA_PRENDA"));
 
-        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada", NIT, 104L)
+        mockMvc.perform(patch("/api/v1/stores/{nit}/items/{itemId}/new-arrival", NIT, 104L)
                         .header("X-User-Id", 10L))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(patch("/api/v1/almacenes/{nit}/prendas/{itemId}/nueva-llegada", NIT, 104L)
+        mockMvc.perform(patch("/api/v1/stores/{nit}/items/{itemId}/new-arrival", NIT, 104L)
                         .header("X-User-Id", 10L))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422));

@@ -45,7 +45,7 @@ public interface FundacionApi {
             @ApiResponse(responseCode = "400", description = "Archivo no es PDF o supera 5 MB", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
             @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
-    @PostMapping(value = "/api/v1/admin/fundaciones/certificados", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/api/v1/admin/foundations/certificates", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<DocumentoSubidoResponseDTO> subirCertificado(
             @Parameter(description = "Archivo PDF del certificado de personería jurídica (máximo 5 MB)") @RequestPart("archivo") MultipartFile archivo,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
@@ -56,7 +56,7 @@ public interface FundacionApi {
     @Operation(
             summary = "Registrar fundación aliada (SR-RF-63)",
             description = "ROLE_ADMIN_STYLERADAR. Registra una fundación aliada con NIT, barrio, certificado de personería jurídica, causas apoyadas y cobertura geográfica.")
-    @PostMapping("/api/v1/admin/fundaciones")
+    @PostMapping("/api/v1/admin/foundations")
     ResponseEntity<FundacionResponseDTO> registrar(
             @Valid @RequestBody FundacionRequestDTO request,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
@@ -67,7 +67,7 @@ public interface FundacionApi {
     @Operation(
             summary = "Listar todas las fundaciones aliadas (SR-RF-63)",
             description = "ROLE_ADMIN_STYLERADAR. Retorna todas las fundaciones registradas en la plataforma.")
-    @GetMapping("/api/v1/admin/fundaciones")
+    @GetMapping("/api/v1/admin/foundations")
     ResponseEntity<List<FundacionResponseDTO>> listarTodas(
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
@@ -77,7 +77,7 @@ public interface FundacionApi {
     @Operation(
             summary = "Consultar detalle de una fundación aliada por ID (SR-RF-64)",
             description = "ROLE_ADMIN_STYLERADAR. Retorna los datos completos de la fundación aliada para precargar el formulario de edición.")
-    @GetMapping("/api/v1/admin/fundaciones/{id}")
+    @GetMapping("/api/v1/admin/foundations/{id}")
     ResponseEntity<FundacionResponseDTO> obtenerPorId(
             @Parameter(description = "Identificador de la fundación", example = "3") @PathVariable Long id,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
@@ -88,7 +88,7 @@ public interface FundacionApi {
     @Operation(
             summary = "Editar fundación aliada (SR-RF-64)",
             description = "ROLE_ADMIN_STYLERADAR. Actualiza la información institucional de una fundación aliada.")
-    @PutMapping("/api/v1/admin/fundaciones/{id}")
+    @PutMapping("/api/v1/admin/foundations/{id}")
     ResponseEntity<FundacionResponseDTO> editar(
             @Parameter(description = "Identificador de la fundación", example = "3") @PathVariable Long id,
             @Valid @RequestBody FundacionRequestDTO request,
@@ -100,11 +100,11 @@ public interface FundacionApi {
     @Operation(
             summary = "Desactivar fundación aliada (SR-RF-65)",
             description = "ROLE_ADMIN_STYLERADAR. Desactiva lógicamente una fundación sin eliminar su historial y publica FundacionDesactivadaEvent.")
-    @PatchMapping("/api/v1/admin/fundaciones/{id}/desactivar")
+    @PatchMapping("/api/v1/admin/foundations/{id}/deactivate")
     ResponseEntity<FundacionResponseDTO> desactivar(
             @Parameter(description = "Identificador de la fundación a desactivar", example = "3") @PathVariable Long id,
             @Parameter(description = "Motivo de la desactivación", example = "Cierre temporal de operaciones por reestructuración")
-            @RequestParam(value = "motivo", required = false) String motivo,
+            @RequestParam(value = "reason", required = false) String motivo,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @Parameter(in = ParameterIn.HEADER, hidden = true)
@@ -113,11 +113,11 @@ public interface FundacionApi {
     @Operation(
             summary = "Reactivar fundación aliada (SR-RF-65)",
             description = "ROLE_ADMIN_STYLERADAR. Reactiva una fundación previamente desactivada, restableciendo su visibilidad en el directorio de donaciones y publicando FundacionReactivadaEvent.")
-    @PatchMapping("/api/v1/admin/fundaciones/{id}/activar")
+    @PatchMapping("/api/v1/admin/foundations/{id}/activate")
     ResponseEntity<FundacionResponseDTO> activar(
             @Parameter(description = "Identificador de la fundación a reactivar", example = "3") @PathVariable Long id,
             @Parameter(description = "Motivo de la reactivación", example = "Reapertura de recepción de donaciones")
-            @RequestParam(value = "motivo", required = false) String motivo,
+            @RequestParam(value = "reason", required = false) String motivo,
             @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @Parameter(in = ParameterIn.HEADER, hidden = true)
@@ -126,7 +126,7 @@ public interface FundacionApi {
     @Operation(
             summary = "Consultar fundaciones aliadas cercanas (SR-RF-43)",
             description = "ROLE_COMPRADOR (rol donante). Retorna únicamente las fundaciones aliadas activas ordenadas por cercanía.")
-    @GetMapping("/api/v1/fundaciones")
+    @GetMapping("/api/v1/foundations")
     ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(
             @Valid @ParameterObject @ModelAttribute ConsultaFundacionesRequestDTO request);
 }

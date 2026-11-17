@@ -11,7 +11,7 @@ import lombok.Data;
 public class ConsultaAlmacenRequestDTO {
 
     @Schema(description = "Categoría comercial opcional del almacén", example = "URBANA")
-    private CategoriaAlmacen categoria;
+    private CategoriaAlmacen category;
 
     @Min(0)
     @Schema(description = "Número de página de base cero", example = "0", defaultValue = "0")

@@ -13,7 +13,7 @@ import edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.doc.Asociacion
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/admin/almacenes")
+@RequestMapping("/api/v1/admin/stores")
 @RequiredArgsConstructor
 public class AsociacionAdministradorAlmacenController implements AsociacionAdministradorAlmacenApi {
 

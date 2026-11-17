@@ -12,7 +12,7 @@ import lombok.Data;
 public class VerificacionConsultaRequestDTO {
 
     @Schema(description = "Filtro opcional por estado real de verificación", example = "PENDIENTE")
-    private EstadoVerificacionAlmacen estado;
+    private EstadoVerificacionAlmacen status;
 
     @NotNull
     @Min(0)
