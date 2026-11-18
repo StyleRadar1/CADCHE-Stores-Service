@@ -539,10 +539,12 @@ class TrazabilidadRequerimientosTiendasTest {
         @Test
         @DisplayName("FA-06: rechazo con motivo vacío o de menos de 10 caracteres → 400 en el campo motivo")
         void fa06() throws Exception {
-            campo(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "")),
-                    "reason", "El rechazo exige un motivo no vacío");
-            campo(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "corto")),
-                    "reason", "El motivo debe tener entre 10 y 1000 caracteres");
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "")),
+                    400, "El rechazo exige un motivo no vacío")
+                    .andExpect(jsonPath("$.errors.reason").value("El rechazo exige un motivo no vacío"));
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "corto")),
+                    400, "El motivo debe tener entre 10 y 1000 caracteres")
+                    .andExpect(jsonPath("$.errors.reason").value("El motivo debe tener entre 10 y 1000 caracteres"));
         }
 
         @Test
@@ -901,8 +903,8 @@ class TrazabilidadRequerimientosTiendasTest {
         void fa09() throws Exception {
             long a = subirFoto("a.png");
             subirFoto("b.png");
-            error(json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("photoIds", List.of(a))), 400,
-                    "El nuevo orden debe incluir todas las fotografías actuales del almacén");
+            campo(json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("photoIds", List.of(a))),
+                    "photoIds", "El nuevo orden debe incluir todas las fotografías actuales del almacén");
         }
     }
 
@@ -1273,6 +1275,94 @@ class TrazabilidadRequerimientosTiendasTest {
             json(HttpMethod.POST, "/api/v1/stores", token(40, "ADMIN_ALMACEN"), almacen("800111222-3")).andExpect(status().isCreated());
             error(json(HttpMethod.GET, "/api/v1/admin/foundations", token(30, "BUYER"), null), 403,
                     "Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas");
+        }
+    }
+
+    @Nested
+    @DisplayName("Análisis v2: código de error de cada flujo alterno")
+    class CodigosV2 {
+
+        private void codigo(ResultActions r, int http, String code, String detail) throws Exception {
+            r.andExpect(status().is(http)).andExpect(jsonPath("$.code").value(code));
+            if (detail != null) {
+                r.andExpect(jsonPath("$.detail").value(detail));
+            }
+        }
+
+        @Test
+        @DisplayName("401 UNAUTHENTICATED con los tres mensajes del documento")
+        void noAutenticado() throws Exception {
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/catalog-settings", null,
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)), 401, "UNAUTHENTICATED",
+                    "Se requiere un token de acceso válido para esta operación");
+            codigo(json(HttpMethod.GET, "/api/v1/admin/foundations", firmar(1, "STYLERADAR_ADMIN", Instant.now().minusSeconds(60)), null),
+                    401, "UNAUTHENTICATED", EXPIRADO);
+        }
+
+        @Test
+        @DisplayName("SR-RF-59/60: ACCESS_DENIED, RESOURCE_NOT_FOUND e INVALID_DATA")
+        void distintivos() throws Exception {
+            registrarAlmacen();
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/catalog-settings", otraTienda,
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)), 403, "ACCESS_DENIED", null);
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/811111111-1/catalog-settings", tienda,
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)), 404, "RESOURCE_NOT_FOUND", null);
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/catalog-settings", tienda,
+                    Map.of("lowStockThreshold", 51, "newArrivalDays", 7)), 400, "INVALID_DATA", INVALID_DATA);
+        }
+
+        @Test
+        @DisplayName("SR-RF-62: CONFLICT, UNPROCESSABLE_OPERATION y BUSINESS_RULE_VIOLATION (motivo y campo no permitido)")
+        void verificacion() throws Exception {
+            registrarAlmacen();
+            String v = "/api/v1/admin/stores/" + NIT + "/verification";
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "REJECTED", "reason", "")), 400,
+                    "BUSINESS_RULE_VIOLATION", "El rechazo exige un motivo no vacío");
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "REJECTED", "reason", "corto")), 400,
+                    "BUSINESS_RULE_VIOLATION", "El motivo debe tener entre 10 y 1000 caracteres");
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "APPROVED", "status", "APPROVED")), 400,
+                    "BUSINESS_RULE_VIOLATION", "Campo no permitido en la decisión de verificación");
+            codigo(json(HttpMethod.POST, v + "/review-request", admin, null), 422, "UNPROCESSABLE_OPERATION",
+                    "El almacén ya se encuentra pendiente de revisión");
+            json(HttpMethod.PATCH, v, admin, Map.of("decision", "APPROVED"));
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "APPROVED")), 409, "CONFLICT", null);
+        }
+
+        @Test
+        @DisplayName("SR-RF-63: CONFLICT y BUSINESS_RULE_VIOLATION sin certificado")
+        void fundaciones() throws Exception {
+            Map<String, Object> f = fundacion("Fundación Abrigo", "900215884-1", 24);
+            f.remove("legalEntityCertificateUrl");
+            codigo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, f), 400, "BUSINESS_RULE_VIOLATION",
+                    "El certificado de personería jurídica en PDF es obligatorio para registrar la fundación aliada");
+            registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            codigo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, fundacion("Fundación Abrigo", "900215885-1", 25)),
+                    409, "CONFLICT", null);
+        }
+
+        @Test
+        @DisplayName("SR-RF-74: BUSINESS_RULE_VIOLATION, FILE_TOO_LARGE, UNPROCESSABLE_OPERATION e INVALID_DATA al reordenar")
+        void fotos() throws Exception {
+            registrarAlmacen();
+            String fotos = "/api/v1/stores/" + NIT + "/photos";
+            codigo(subir(fotos, tienda, "v.png", "image/png", new byte[0]), 400, "BUSINESS_RULE_VIOLATION",
+                    "Se requiere adjuntar un archivo de imagen válido");
+            codigo(subir(fotos, tienda, "d.pdf", "application/pdf", "%PDF".getBytes()), 400, "BUSINESS_RULE_VIOLATION", null);
+            byte[] grande = new byte[6 * 1024 * 1024 + 1];
+            grande[0] = (byte) 0x89;
+            codigo(subir(fotos, tienda, "g.png", "image/png", grande), 413, "FILE_TOO_LARGE", "La imagen supera el tamaño máximo de 6 MB");
+            codigo(json(HttpMethod.DELETE, fotos + "/999999", tienda, null), 400, "BUSINESS_RULE_VIOLATION",
+                    "La fotografía no pertenece a la galería del almacén");
+            long a = objectMapper.readTree(subir(fotos, tienda, "a.png", "image/png", png()).andReturn().getResponse()
+                    .getContentAsString()).get("id").asLong();
+            subir(fotos, tienda, "b.png", "image/png", png());
+            ResultActions r = json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("photoIds", List.of(a)));
+            codigo(r, 400, "INVALID_DATA", INVALID_DATA);
+            r.andExpect(jsonPath("$.errors.photoIds").value("El nuevo orden debe incluir todas las fotografías actuales del almacén"));
+            for (int i = 0; i < 4; i++) {
+                subir(fotos, tienda, "c" + i + ".png", "image/png", png());
+            }
+            codigo(subir(fotos, tienda, "x.png", "image/png", png()), 422, "UNPROCESSABLE_OPERATION", null);
         }
     }
 }

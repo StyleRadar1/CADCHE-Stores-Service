@@ -128,6 +128,13 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
+    @ExceptionHandler(edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleDatoInvalido(
+            edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException exception, HttpServletRequest request) {
+        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
+                request.getRequestURI(), exception.getErrores());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidation(
             MethodArgumentNotValidException exception, HttpServletRequest request) {
@@ -135,6 +142,12 @@ public class GlobalExceptionHandler {
         Object objetivo = exception.getBindingResult().getTarget();
         exception.getBindingResult().getFieldErrors().forEach(error ->
                 validationErrors.putIfAbsent(nombreJson(objetivo, error.getField()), error.getDefaultMessage()));
+        java.util.List<org.springframework.validation.FieldError> errores = exception.getBindingResult().getFieldErrors();
+        if (!errores.isEmpty() && errores.stream().allMatch(e -> "MotivoDeRechazoValido".equals(e.getCode()))) {
+            // SR-RF-62 FA-06 (análisis v2): el motivo de rechazo es una regla de negocio; el campo se marca igual.
+            return buildResponse(CodigoError.BUSINESS_RULE_VIOLATION, errores.get(0).getDefaultMessage(),
+                    request.getRequestURI(), validationErrors);
+        }
         return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
                 request.getRequestURI(), validationErrors);
     }
@@ -163,7 +176,8 @@ public class GlobalExceptionHandler {
             if (cause instanceof IllegalArgumentException iae
                     && iae.getMessage() != null
                     && iae.getMessage().contains("Campo no permitido")) {
-                return buildResponse(CodigoError.INVALID_DATA, iae.getMessage(),
+                // SR-RF-62 FA-07 (análisis v2): BUSINESS_RULE_VIOLATION.
+                return buildResponse(CodigoError.BUSINESS_RULE_VIOLATION, iae.getMessage(),
                         request.getRequestURI(), Map.of());
             }
             cause = cause.getCause();

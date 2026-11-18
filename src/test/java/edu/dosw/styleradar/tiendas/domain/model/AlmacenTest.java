@@ -197,10 +197,10 @@ class AlmacenTest {
         assertThat(almacen.getFotoPortadaUrl()).isEqualTo("https://blob/foto2.jpg");
 
         assertThatThrownBy(() -> almacen.reordenarFotografias(List.of(20L)))
-                .isInstanceOf(ReglaDeNegocioException.class)
+                .isInstanceOf(edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException.class)
                 .hasMessage("El nuevo orden debe incluir todas las fotografías actuales del almacén");
         assertThatThrownBy(() -> almacen.reordenarFotografias(List.of(20L, 99L)))
-                .isInstanceOf(ReglaDeNegocioException.class)
+                .isInstanceOf(edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException.class)
                 .hasMessage("El nuevo orden debe incluir todas las fotografías actuales del almacén");
     }
 

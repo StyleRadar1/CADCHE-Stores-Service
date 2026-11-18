@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaDecididoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaPendienteException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
@@ -270,7 +271,7 @@ public class Almacen {
     public void reordenarFotografias(List<Long> fotoIds) {
         if (fotoIds == null || fotoIds.size() != this.fotos.size()
                 || new HashSet<>(fotoIds).size() != this.fotos.size()) {
-            throw new ReglaDeNegocioException("El nuevo orden debe incluir todas las fotografías actuales del almacén");
+            throw new DatoInvalidoException("photoIds", "El nuevo orden debe incluir todas las fotografías actuales del almacén");
         }
 
         Map<Long, FotografiaTienda> mapaActual = new HashMap<>();
@@ -283,7 +284,7 @@ public class Almacen {
             Long id = fotoIds.get(i);
             FotografiaTienda foto = mapaActual.get(id);
             if (foto == null) {
-                throw new ReglaDeNegocioException("El nuevo orden debe incluir todas las fotografías actuales del almacén");
+                throw new DatoInvalidoException("photoIds", "El nuevo orden debe incluir todas las fotografías actuales del almacén");
             }
             foto.setOrden(i + 1);
             foto.setPortada(i == 0);
