@@ -25,9 +25,9 @@ public class EvaluarNuevaLlegadaRequestDTO {
     @JsonProperty("publishedAt")
     private Instant fechaPublicacion;
 
-    @Builder.Default
-    @Schema(description = "Whether the item was withdrawn from the catalog", example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "Debe indicar si la prenda fue retirada")
+    @Schema(description = "Whether the item was withdrawn from the catalog (required, decision D10)", example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("withdrawn")
-    private Boolean retirada = Boolean.FALSE;
+    private Boolean retirada;
 }
 

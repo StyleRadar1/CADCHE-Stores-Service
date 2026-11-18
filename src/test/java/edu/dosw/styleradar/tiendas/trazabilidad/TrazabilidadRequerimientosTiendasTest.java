@@ -293,6 +293,13 @@ class TrazabilidadRequerimientosTiendasTest {
         }
 
         @Test
+        @DisplayName("D10: available es obligatorio (sin valor por defecto)")
+        void disponibleObligatorio() throws Exception {
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("currentStock", 2)),
+                    "available", "Debe indicar si la prenda está disponible");
+        }
+
+        @Test
         @DisplayName("FA-07: stock vacío o negativo → 400")
         void fa07() throws Exception {
             campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("available", true)),
@@ -374,6 +381,13 @@ class TrazabilidadRequerimientosTiendasTest {
                     "newArrivalDays", "El periodo de nueva llegada no puede superar 60 días");
             campo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/new-arrival-days", tienda, Map.of()),
                     "newArrivalDays", "El periodo en días de nueva llegada es obligatorio");
+        }
+
+        @Test
+        @DisplayName("D10: withdrawn es obligatorio (sin valor por defecto)")
+        void retiradaObligatoria() throws Exception {
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("publishedAt", Instant.now().minus(1, ChronoUnit.DAYS).toString())),
+                    "withdrawn", "Debe indicar si la prenda fue retirada");
         }
 
         @Test

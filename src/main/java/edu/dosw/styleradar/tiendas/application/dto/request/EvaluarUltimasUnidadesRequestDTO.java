@@ -23,9 +23,9 @@ public class EvaluarUltimasUnidadesRequestDTO {
     @JsonProperty("currentStock")
     private Integer stockActual;
 
-    @Builder.Default
-    @Schema(description = "Whether the item can be sold", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "Debe indicar si la prenda está disponible")
+    @Schema(description = "Whether the item can be sold (required, decision D10)", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("available")
-    private Boolean disponible = Boolean.TRUE;
+    private Boolean disponible;
 }
 
