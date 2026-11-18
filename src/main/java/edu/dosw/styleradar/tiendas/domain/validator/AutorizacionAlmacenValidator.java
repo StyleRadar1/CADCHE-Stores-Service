@@ -8,7 +8,7 @@ import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 
 public class AutorizacionAlmacenValidator {
 
-    public static final String ROL_ADMIN_ALMACEN = "ADMIN_ALMACEN";
+    public static final String ROL_ADMIN_ALMACEN = "STORE_ADMIN";
     public static final String ROL_TIENDA = "TIENDA";
 
     public void validarAcceso(String nit, Long usuarioId, AlmacenRepositoryPort repositoryPort) {

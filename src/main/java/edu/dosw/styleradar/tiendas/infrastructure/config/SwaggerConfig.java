@@ -47,13 +47,11 @@ public class SwaggerConfig {
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT")
-                        .description("Token JWT emitido por ms-auth (HS256 / RS256)")))
+                        .description("JWT issued by ms-auth (HS256)")))
                 .servers(servers)
                 .info(new Info()
                         .title("StyleRadar - Stores Service API (ms-tiendas)")
-                        .description("Especificación OpenAPI 3.0 del microservicio de gestión de tiendas y fundaciones aliadas de StyleRadar. "
-                                + "Gobierna los umbrales de últimas unidades (SR-RF-59), días de nueva llegada (SR-RF-60), verificación de almacenes aliados (SR-RF-62), "
-                                + "registro, edición y desactivación de fundaciones aliadas (SR-RF-63, SR-RF-64, SR-RF-65) y galería de hasta 6 fotografías de tienda física (SR-RF-74).")
+                        .description("OpenAPI 3.0 specification of the StyleRadar stores and partner foundations microservice: low-stock threshold (SR-RF-59), new-arrival days (SR-RF-60), store verification (SR-RF-62), registration, edition, deactivation and reactivation of partner foundations (SR-RF-63, SR-RF-64, SR-RF-65) and a gallery of up to 6 physical-store photos (SR-RF-74). Routes, fields, values and error codes are in English; only the user messages inside the JSON are in Spanish.")
                         .version("v1")
                         .contact(new Contact()
                                 .name("Equipo CADche - StyleRadar DOSW")

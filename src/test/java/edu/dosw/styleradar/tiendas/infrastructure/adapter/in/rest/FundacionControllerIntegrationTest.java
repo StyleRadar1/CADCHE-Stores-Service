@@ -72,7 +72,7 @@ class FundacionControllerIntegrationTest {
     @MockBean
     private ReactivarFundacionUseCase reactivarFundacionUseCase;
 
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
 
     @Test
     @DisplayName("Criterio 1: Dado datos completos y certificado, cuando registro la fundación, entonces queda creada como aliada y recibo 201")
@@ -87,7 +87,7 @@ class FundacionControllerIntegrationTest {
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
                 .longitud(-74.0531)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .representanteId(24L)
                 .urlCertificadoPersoneriaJuridica("https://styleradarblob.blob.core.windows.net/fundaciones/cert.pdf")
                 .causasApoyadas("Niñez vulnerable y adultos mayores")
@@ -122,10 +122,10 @@ class FundacionControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nit").value("900215884-1"))
-                .andExpect(jsonPath("$.barrio").value("Chapinero"))
-                .andExpect(jsonPath("$.nombre").value("Fundación Abrigo Solidario"))
-                .andExpect(jsonPath("$.activa").value(true))
-                .andExpect(jsonPath("$.urlCertificadoPersoneriaJuridica").isNotEmpty());
+                .andExpect(jsonPath("$.neighborhood").value("Chapinero"))
+                .andExpect(jsonPath("$.name").value("Fundación Abrigo Solidario"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.legalEntityCertificateUrl").isNotEmpty());
     }
 
     @Test
@@ -139,7 +139,7 @@ class FundacionControllerIntegrationTest {
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
                 .longitud(-74.0531)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(24L)
                 .build();
 
@@ -164,7 +164,7 @@ class FundacionControllerIntegrationTest {
                 .email("existente@fundacion.org")
                 .latitud(4.0)
                 .longitud(-74.0)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(24L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
                 .build();
@@ -178,15 +178,15 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errors/conflict"))
                 .andExpect(jsonPath("$.title").value("Conflict"))
-                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
                 .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Ya existe una fundación aliada registrada con el nombre: Fundación Existente"))
-                .andExpect(jsonPath("$.validationErrors.nombre").exists());
+                .andExpect(jsonPath("$.errors.name").exists());
     }
 
     @Test
@@ -200,13 +200,13 @@ class FundacionControllerIntegrationTest {
                 .email("intento@fundacion.org")
                 .latitud(4.0)
                 .longitud(-74.0)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(24L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
                 .build();
 
         when(useCase.registrar(any(FundacionRequestDTO.class), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas"));
 
         mockMvc.perform(post("/api/v1/admin/foundations")
                         .header("X-User-Roles", "ROLE_COMPRADOR")
@@ -214,7 +214,7 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.message").value("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
+                .andExpect(jsonPath("$.message").value("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas"));
     }
 
     @Test
@@ -238,7 +238,7 @@ class FundacionControllerIntegrationTest {
                 .andExpect(jsonPath("$.nit").value("900215884-1"));
 
         MockMultipartFile certFile = new MockMultipartFile(
-                "archivo", "cert.pdf", MediaType.APPLICATION_PDF_VALUE, "%PDF-1.4".getBytes());
+                "file", "cert.pdf", MediaType.APPLICATION_PDF_VALUE, "%PDF-1.4".getBytes());
         mockMvc.perform(multipart("/api/v1/admin/foundations/certificates")
                         .file(certFile)
                         .header("X-User-Roles", ADMIN_ROLE))
@@ -259,7 +259,7 @@ class FundacionControllerIntegrationTest {
                 .email("info@manosunidas.org")
                 .latitud(4.6710)
                 .longitud(-74.0550)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .representanteId(25L)
                 .horarioAtencion("Lunes a Sábado 07:00 - 18:00")
                 .politicasDonacion("Prendas limpias")
@@ -293,11 +293,11 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.nombre").value("Fundación Manos Unidas Internacional"))
-                .andExpect(jsonPath("$.telefono").value("+57 311 555 6677"))
-                .andExpect(jsonPath("$.horarioAtencion").value("Lunes a Sábado 07:00 - 18:00"))
-                .andExpect(jsonPath("$.politicasDonacion").value("Prendas limpias"))
-                .andExpect(jsonPath("$.representanteId").value(25));
+                .andExpect(jsonPath("$.name").value("Fundación Manos Unidas Internacional"))
+                .andExpect(jsonPath("$.phone").value("+57 311 555 6677"))
+                .andExpect(jsonPath("$.openingHours").value("Lunes a Sábado 07:00 - 18:00"))
+                .andExpect(jsonPath("$.donationPolicies").value("Prendas limpias"))
+                .andExpect(jsonPath("$.representativeId").value(25));
     }
 
     @Test
@@ -311,7 +311,7 @@ class FundacionControllerIntegrationTest {
                 .email("noexiste@fundacion.org")
                 .latitud(4.0)
                 .longitud(-74.0)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(99L)
                 .build();
 
@@ -338,7 +338,7 @@ class FundacionControllerIntegrationTest {
                 .email("correo@valido.org")
                 .latitud(4.0)
                 .longitud(-74.0)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(10L)
                 .build();
 
@@ -363,12 +363,12 @@ class FundacionControllerIntegrationTest {
                 .email("correo@valido.org")
                 .latitud(4.0)
                 .longitud(-74.0)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(10L)
                 .build();
 
         when(editarFundacionUseCase.editar(eq(1L), any(FundacionRequestDTO.class), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas"));
 
         mockMvc.perform(put("/api/v1/admin/foundations/1")
                         .header("X-User-Roles", "ROLE_COMPRADOR")
@@ -389,7 +389,7 @@ class FundacionControllerIntegrationTest {
                 .email("correo@valido.org")
                 .latitud(4.0)
                 .longitud(-74.0)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(10L)
                 .build();
 
@@ -402,9 +402,9 @@ class FundacionControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errors/conflict"))
                 .andExpect(jsonPath("$.title").value("Conflict"))
-                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
                 .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").exists())
@@ -436,22 +436,22 @@ class FundacionControllerIntegrationTest {
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3))
-                .andExpect(jsonPath("$.activa").value(false))
-                .andExpect(jsonPath("$.nombre").value("Fundación Receptora"));
+                .andExpect(jsonPath("$.active").value(false))
+                .andExpect(jsonPath("$.name").value("Fundación Receptora"));
 
         mockMvc.perform(patch("/api/v1/admin/foundations/3/activate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3))
-                .andExpect(jsonPath("$.activa").value(true));
+                .andExpect(jsonPath("$.active").value(true));
 
         mockMvc.perform(patch("/api/v1/admin/foundations/3/activate")
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errors/conflict"))
                 .andExpect(jsonPath("$.title").value("Conflict"))
-                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
                 .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").exists())
@@ -469,9 +469,9 @@ class FundacionControllerIntegrationTest {
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isConflict())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errores/conflicto"))
+                .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errors/conflict"))
                 .andExpect(jsonPath("$.title").value("Conflict"))
-                .andExpect(jsonPath("$.codigo").value("CONFLICTO"))
+                .andExpect(jsonPath("$.code").value("CONFLICT"))
                 .andExpect(jsonPath("$.timestamp").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
                 .andExpect(jsonPath("$.instance").value(org.hamcrest.Matchers.startsWith("/api/v1/admin/foundations")))
                 .andExpect(jsonPath("$.detail").exists())
@@ -496,7 +496,7 @@ class FundacionControllerIntegrationTest {
     @DisplayName("SR-RF-65 API C5: Dado que no soy administrador, cuando llamo a desactivar, recibo 403 Forbidden")
     void debeRetornar403CuandoNoEsAdministradorAlDesactivar() throws Exception {
         when(desactivarFundacionUseCase.desactivar(eq(3L), any(), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas"));
 
         mockMvc.perform(patch("/api/v1/admin/foundations/3/deactivate")
                         .header("X-User-Roles", "ROLE_COMPRADOR"))
@@ -515,14 +515,14 @@ class FundacionControllerIntegrationTest {
                         .param("latitude", "4.6712")
                         .param("longitude", "-74.0531"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Fundación Cercana"));
+                .andExpect(jsonPath("$[0].name").value("Fundación Cercana"));
     }
 
     @org.junit.jupiter.api.Test
-    @org.junit.jupiter.api.DisplayName("Una ruta inexistente responde 404 RECURSO_NO_ENCONTRADO, no 500")
+    @org.junit.jupiter.api.DisplayName("Una ruta inexistente responde 404 RESOURCE_NOT_FOUND, no 500")
     void rutaInexistenteResponde404() throws Exception {
         mockMvc.perform(get("/api/v1/no-existe"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.codigo").value("RECURSO_NO_ENCONTRADO"));
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
     }
 }

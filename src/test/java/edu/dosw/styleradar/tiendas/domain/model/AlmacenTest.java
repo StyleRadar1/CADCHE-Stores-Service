@@ -299,11 +299,11 @@ class AlmacenTest {
     void debeValidarLongitudMotivoAlRechazar() {
         Almacen almacen = Almacen.builder()
                 .nit("900123456-1")
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .urlRutPdf("https://blob/rut.pdf")
                 .build();
 
-        assertThatThrownBy(() -> almacen.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, "Corto", 1L, Instant.now()))
+        assertThatThrownBy(() -> almacen.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, "Corto", 1L, Instant.now()))
                 .isInstanceOf(ReglaDeNegocioException.class)
                 .hasMessageContaining("entre 10 y 1000 caracteres");
     }

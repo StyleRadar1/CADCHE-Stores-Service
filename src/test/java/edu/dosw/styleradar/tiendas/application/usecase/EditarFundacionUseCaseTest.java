@@ -46,7 +46,7 @@ class EditarFundacionUseCaseTest {
     @InjectMocks
     private EditarFundacionUseCaseImpl useCase;
 
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
     private Fundacion fundacionExistente;
     private FundacionRequestDTO requestEdicionValido;
 
@@ -63,7 +63,7 @@ class EditarFundacionUseCaseTest {
                 .email("contacto@manosunidas.org")
                 .latitud(4.6097)
                 .longitud(-74.0817)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(15L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
                 .causasApoyadas("Comedores comunitarios")
@@ -83,7 +83,7 @@ class EditarFundacionUseCaseTest {
                 .email("nuevo@manosunidas.org")
                 .latitud(4.6710)
                 .longitud(-74.0550)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .representanteId(25L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert-actualizado.pdf")
                 .causasApoyadas("Infancia vulnerable")
@@ -152,7 +152,7 @@ class EditarFundacionUseCaseTest {
     @Test
     @DisplayName("Criterio 4: Dado que no soy administrador, cuando llamo al endpoint, entonces recibo 403 (AccesoDenegadoAlmacenException)")
     void debeLanzarExcepcionCuandoNoEsAdmin() {
-        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"))
+        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas"))
                 .when(adminValidator).validarEsAdministradorParaFundaciones("ROLE_COMPRADOR");
 
         assertThrows(AccesoDenegadoAlmacenException.class,

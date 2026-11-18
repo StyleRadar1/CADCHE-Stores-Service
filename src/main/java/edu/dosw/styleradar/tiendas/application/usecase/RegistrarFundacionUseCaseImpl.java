@@ -70,14 +70,14 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
         if (nombreNormalizado != null && repositoryPort.existsByNombreIgnoreCase(nombreNormalizado)) {
             throw new FundacionYaRegistradaException(
                     "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado,
-                    Map.of("nombre", "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado));
+                    Map.of("name", "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado));
         }
 
         if (request.getRepresentanteId() != null && repositoryPort.existsByRepresentanteId(request.getRepresentanteId())) {
             throw new FundacionYaRegistradaException(
                     "El usuario con ID " + request.getRepresentanteId()
                             + " ya se encuentra asignado como representante de otra fundación aliada",
-                    Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
+                    Map.of("representativeId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
         String emailNorm = stripOrNull(request.getEmail());

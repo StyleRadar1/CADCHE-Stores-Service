@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleReglaDeNegocio(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Regla de negocio no satisfecha en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(CodigoError.REGLA_DE_NEGOCIO, exception.getMessage(),
+        return buildResponse(CodigoError.BUSINESS_RULE_VIOLATION, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(
             IllegalArgumentException exception, HttpServletRequest request) {
         log.warn("Argumento inválido en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(CodigoError.DATOS_INVALIDOS, exception.getMessage(),
+        return buildResponse(CodigoError.INVALID_DATA, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleFalloAutenticacion(
             FalloAutenticacionException exception, HttpServletRequest request) {
         log.warn("Falla de autenticación (401) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(CodigoError.NO_AUTENTICADO, exception.getMessage(),
+        return buildResponse(CodigoError.UNAUTHENTICATED, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleAccesoDenegado(
             AccesoDenegadoAlmacenException exception, HttpServletRequest request) {
         log.warn("Acceso denegado (403 BOLA/IDOR) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(CodigoError.ACCESO_DENEGADO, exception.getMessage(),
+        return buildResponse(CodigoError.ACCESS_DENIED, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleRecursoNoEncontrado(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Recurso no encontrado (404) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(CodigoError.RECURSO_NO_ENCONTRADO, exception.getMessage(),
+        return buildResponse(CodigoError.RESOURCE_NOT_FOUND, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -100,7 +100,7 @@ public class GlobalExceptionHandler {
         } else if (exception instanceof FundacionYaRegistradaException ex) {
             validationErrors = ex.getValidationErrors();
         }
-        return buildResponse(CodigoError.CONFLICTO, exception.getMessage(),
+        return buildResponse(CodigoError.CONFLICT, exception.getMessage(),
                 request.getRequestURI(), validationErrors);
     }
 
@@ -111,7 +111,7 @@ public class GlobalExceptionHandler {
                 ? exception.getMessage()
                 : "La imagen supera el tamaño máximo de 6 MB";
         log.warn("Tamaño de archivo excedido (413) en {}: {}", request.getRequestURI(), mensaje);
-        return buildResponse(CodigoError.ARCHIVO_DEMASIADO_GRANDE, mensaje,
+        return buildResponse(CodigoError.FILE_TOO_LARGE, mensaje,
                 request.getRequestURI(), Map.of());
     }
 
@@ -124,7 +124,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleEntidadNoProcesable(
             RuntimeException exception, HttpServletRequest request) {
         log.warn("Operación no procesable (422) en {}: {}", request.getRequestURI(), exception.getMessage());
-        return buildResponse(CodigoError.OPERACION_NO_PROCESABLE, exception.getMessage(),
+        return buildResponse(CodigoError.UNPROCESSABLE_OPERATION, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
@@ -132,9 +132,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleValidation(
             MethodArgumentNotValidException exception, HttpServletRequest request) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
+        Object objetivo = exception.getBindingResult().getTarget();
         exception.getBindingResult().getFieldErrors().forEach(error ->
-                validationErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene datos inválidos",
+                validationErrors.putIfAbsent(nombreJson(objetivo, error.getField()), error.getDefaultMessage()));
+        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
                 request.getRequestURI(), validationErrors);
     }
 
@@ -142,9 +143,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleBindingValidation(
             BindException exception, HttpServletRequest request) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
+        Object objetivo = exception.getBindingResult().getTarget();
         exception.getBindingResult().getFieldErrors().forEach(error ->
-                validationErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene datos inválidos",
+                validationErrors.putIfAbsent(nombreJson(objetivo, error.getField()), error.getDefaultMessage()));
+        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
                 request.getRequestURI(), validationErrors);
     }
 
@@ -161,12 +163,12 @@ public class GlobalExceptionHandler {
             if (cause instanceof IllegalArgumentException iae
                     && iae.getMessage() != null
                     && iae.getMessage().contains("Campo no permitido")) {
-                return buildResponse(CodigoError.DATOS_INVALIDOS, iae.getMessage(),
+                return buildResponse(CodigoError.INVALID_DATA, iae.getMessage(),
                         request.getRequestURI(), Map.of());
             }
             cause = cause.getCause();
         }
-        return buildResponse(CodigoError.DATOS_INVALIDOS, "La solicitud contiene parámetros inválidos",
+        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene parámetros inválidos",
                 request.getRequestURI(), Map.of());
     }
 
@@ -174,21 +176,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleAlmacenamientoNoDisponible(
             AlmacenamientoNoDisponibleException exception, HttpServletRequest request) {
         log.error("Almacenamiento de archivos no disponible en {}", request.getRequestURI());
-        return buildResponse(CodigoError.SERVICIO_NO_DISPONIBLE, exception.getMessage(),
+        return buildResponse(CodigoError.SERVICE_UNAVAILABLE, exception.getMessage(),
                 request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleRutaInexistente(
             NoResourceFoundException exception, HttpServletRequest request) {
-        return buildResponse(CodigoError.RECURSO_NO_ENCONTRADO, "La ruta solicitada no existe",
+        return buildResponse(CodigoError.RESOURCE_NOT_FOUND, "La ruta solicitada no existe",
                 request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponseDTO> handleMethodNotSupported(
             HttpRequestMethodNotSupportedException exception, HttpServletRequest request) {
-        return buildResponse(CodigoError.METODO_NO_PERMITIDO, "El método HTTP no está permitido para esta ruta",
+        return buildResponse(CodigoError.METHOD_NOT_ALLOWED, "El método HTTP no está permitido para esta ruta",
                 request.getRequestURI(), Map.of());
     }
 
@@ -196,7 +198,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleUnexpected(
             Exception exception, HttpServletRequest request) {
         log.error("Error no controlado al procesar la ruta {}", request.getRequestURI(), exception);
-        return buildResponse(CodigoError.ERROR_INTERNO,
+        return buildResponse(CodigoError.INTERNAL_ERROR,
                 "Ocurrió un error interno. Intente nuevamente más tarde.",
                 request.getRequestURI(), Map.of());
     }
@@ -209,5 +211,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status)
                 .contentType(MediaType.valueOf(ErrorResponseDTO.MEDIA_TYPE))
                 .body(errorResponse);
+    }
+
+    /**
+     * Nombre del campo tal como viaja en el JSON (en inglés, según {@code @JsonProperty}); así {@code errors}
+     * usa las mismas claves que el cuerpo de la petición.
+     */
+    static String nombreJson(Object objetivo, String campo) {
+        if (objetivo == null || campo == null) {
+            return campo;
+        }
+        for (Class<?> tipo = objetivo.getClass(); tipo != null && tipo != Object.class; tipo = tipo.getSuperclass()) {
+            try {
+                com.fasterxml.jackson.annotation.JsonProperty propiedad =
+                        tipo.getDeclaredField(campo).getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+                return propiedad != null && !propiedad.value().isBlank() ? propiedad.value() : campo;
+            } catch (NoSuchFieldException ignorado) {
+                // Se busca en la superclase.
+            }
+        }
+        return campo;
     }
 }

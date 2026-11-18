@@ -1,34 +1,36 @@
 package edu.dosw.styleradar.tiendas.application.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Resultado de evaluación y marcación de distintivos de catálogo del almacén: Últimas unidades (SR-RF-59) y Nueva llegada (SR-RF-60)")
+@Schema(description = "Result of the store catalog badge evaluation: low stock (SR-RF-59) and new arrival (SR-RF-60)")
 public record DistintivoPrendaAlmacenResponseDTO(
-        @Schema(description = "NIT del almacén propietario de la prenda", example = "900123456-1")
+        @Schema(description = "NIT of the store that owns the item", example = "900123456-1")
         String nit,
 
-        @Schema(description = "Identificador del ítem de catálogo en el almacén", example = "104")
+        @Schema(description = "Catalog item identifier in the store", example = "104")
         Long itemId,
 
-        @Schema(description = "Indica si la prenda quedó marcada con el distintivo 'Últimas unidades' al alcanzar el umbral del almacén (SR-RF-59)", example = "true")
-        boolean ultimasUnidades,
+        @Schema(description = "Whether the item got the low-stock badge after reaching the store threshold (SR-RF-59)", example = "true")
+        @JsonProperty("lowStock") boolean ultimasUnidades,
 
-        @Schema(description = "Umbral configurado en el almacén para activar el distintivo 'Últimas unidades' (por defecto <= 3 unidades)", example = "3")
-        Integer umbralUltimasUnidades,
+        @Schema(description = "Store threshold for the low-stock badge (default 3 units)", example = "3")
+        @JsonProperty("lowStockThreshold") Integer umbralUltimasUnidades,
 
-        @Schema(description = "Indica si la prenda quedó marcada con el distintivo 'Nueva llegada' dentro del periodo configurado (SR-RF-60)", example = "true")
-        boolean nuevaLlegada,
+        @Schema(description = "Whether the item got the new-arrival badge within the configured period (SR-RF-60)", example = "true")
+        @JsonProperty("newArrival") boolean nuevaLlegada,
 
-        @Schema(description = "Días de vigencia configurados en el almacén para el distintivo 'Nueva llegada' (por defecto 7 días)", example = "7")
-        Integer diasNuevaLlegada,
+        @Schema(description = "Store window in days for the new-arrival badge (default 7 days)", example = "7")
+        @JsonProperty("newArrivalDays") Integer diasNuevaLlegada,
 
-        @Schema(description = "Distintivo principal aplicado a la prenda (ULTIMAS_UNIDADES, NUEVA_PRENDA, DISPONIBLE)", example = "ULTIMAS_UNIDADES")
-        String distintivoActivo,
+        @Schema(description = "Visible badge of the item: LOW_STOCK, NEW_ARRIVAL or NONE", example = "LOW_STOCK")
+        @JsonProperty("activeBadge") String distintivoActivo,
 
-        @Schema(description = "Fecha y hora UTC de actualización del distintivo", example = "2026-11-03T01:45:00Z")
-        Instant fechaActualizacion
+        @Schema(description = "UTC date and time the badge was calculated", example = "2026-11-03T01:45:00Z")
+        @JsonProperty("updatedAt") Instant fechaActualizacion
 ) {
 }
 

@@ -18,47 +18,47 @@ import lombok.Value;
  */
 @Value
 @Builder
-@Schema(description = "Error en formato ProblemDetail (RFC 9457) con las extensiones del contrato StyleRadar")
+@Schema(description = "Error in ProblemDetail format (RFC 9457) with the StyleRadar extensions. Only detail/message and the per-field messages are in Spanish")
 public class ErrorResponseDTO {
 
     /** Formato de fecha del contrato: AAAA-MM-DDThh:mm:ss, sin fracciones de segundo. */
     public static final String FORMATO_FECHA = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String MEDIA_TYPE = "application/problem+json";
-    public static final String TIPO_BASE = "https://api.styleradar.com/errores/";
+    public static final String TIPO_BASE = "https://api.styleradar.com/errors/";
 
-    @Schema(description = "URI que identifica el tipo de problema (RFC 9457)", example = "https://api.styleradar.com/errores/datos-invalidos")
+    @Schema(description = "URI identifying the problem type: https://api.styleradar.com/errors/{code in lower case with hyphens}", example = "https://api.styleradar.com/errors/invalid-data")
     String type;
 
-    @Schema(description = "Resumen del problema: nombre del estado HTTP (RFC 9457)", example = "Bad Request")
+    @Schema(description = "HTTP status name (RFC 9457)", example = "Bad Request")
     String title;
 
-    @Schema(description = "Código de estado HTTP", example = "400")
+    @Schema(description = "HTTP status code", example = "400")
     int status;
 
-    @Schema(description = "Explicación del problema para esta ocurrencia (RFC 9457)", example = "La solicitud contiene datos inválidos")
+    @Schema(description = "Problem explanation for the user (Spanish)", example = "La solicitud contiene datos inválidos")
     String detail;
 
-    @Schema(description = "Ruta de la solicitud que produjo el problema (RFC 9457)", example = "/api/v1/stores")
+    @Schema(description = "Request path that produced the problem", example = "/api/v1/stores")
     String instance;
 
-    @Schema(description = "Código de error del catálogo; el front elige el texto por este valor", example = "DATOS_INVALIDOS")
-    CodigoError codigo;
+    @Schema(description = "Fixed error code; the front end picks the text to show with it", example = "INVALID_DATA")
+    CodigoError code;
 
-    @Schema(description = "Fecha y hora en que ocurrió el error", example = "2026-11-03T01:30:00")
+    @Schema(description = "Date and time of the error (compatibility alias)", example = "2026-11-03T01:30:00")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = FORMATO_FECHA)
     LocalDateTime timestamp;
 
-    @Schema(description = "Alias de title (compatibilidad)", example = "Bad Request")
+    @Schema(description = "Alias of title (compatibility)", example = "Bad Request")
     String error;
 
-    @Schema(description = "Alias de detail (compatibilidad)", example = "La solicitud contiene datos inválidos")
+    @Schema(description = "Alias of detail (compatibility)", example = "La solicitud contiene datos inválidos")
     String message;
 
-    @Schema(description = "Alias de instance (compatibilidad)", example = "/api/v1/stores")
+    @Schema(description = "Alias of instance (compatibility)", example = "/api/v1/stores")
     String path;
 
-    @Schema(description = "Errores de validación por campo cuando aplica", example = "{}")
-    Map<String, String> validationErrors;
+    @Schema(description = "Per-field messages (Spanish) when an input field breaks its rule", example = "{}")
+    Map<String, String> errors;
 
     /**
      * Construye el problema con los campos RFC 9457, sus alias de compatibilidad y el código del catálogo.
@@ -71,12 +71,12 @@ public class ErrorResponseDTO {
                 .status(codigo.estadoHttp())
                 .detail(detalle)
                 .instance(ruta)
-                .codigo(codigo)
+                .code(codigo)
                 .timestamp(LocalDateTime.now())
                 .error(titulo)
                 .message(detalle)
                 .path(ruta)
-                .validationErrors(validationErrors == null ? Map.of() : validationErrors)
+                .errors(validationErrors == null ? Map.of() : validationErrors)
                 .build();
     }
 }

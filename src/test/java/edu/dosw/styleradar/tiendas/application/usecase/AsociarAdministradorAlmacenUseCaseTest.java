@@ -46,7 +46,7 @@ class AsociarAdministradorAlmacenUseCaseTest {
     private AsociarAdministradorAlmacenUseCaseImpl useCase;
 
     private static final String NIT = "900123456-1";
-    private static final String ADMIN = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN = "ROLE_STYLERADAR_ADMIN";
 
     @Test
     @DisplayName("Debe asociar administrador de forma idempotente y listar administradores vinculados al NIT")
@@ -63,11 +63,11 @@ class AsociarAdministradorAlmacenUseCaseTest {
         when(repositoryPort.guardarAsociacionAdministrador(NIT, 15L, 2L)).thenReturn(vinculo);
         when(repositoryPort.listarAdministradoresPorNit(NIT)).thenReturn(List.of(vinculo));
 
-        AdministradorAlmacenResponseDTO creado = useCase.asociar(NIT, 15L, 2L, "ROLE_ADMIN_STYLERADAR");
+        AdministradorAlmacenResponseDTO creado = useCase.asociar(NIT, 15L, 2L, "ROLE_STYLERADAR_ADMIN");
         assertThat(creado.id()).isEqualTo(10L);
         assertThat(creado.usuarioId()).isEqualTo(15L);
         assertThat(creado.asignadoPorId()).isEqualTo(2L);
-        verify(adminValidator).validarEsAdministradorStyleRadar("ROLE_ADMIN_STYLERADAR");
+        verify(adminValidator).validarEsAdministradorStyleRadar("ROLE_STYLERADAR_ADMIN");
 
         List<AdministradorAlmacenResponseDTO> lista = useCase.listarAdministradores(NIT, 15L, null);
         assertThat(lista).hasSize(1);
@@ -83,7 +83,7 @@ class AsociarAdministradorAlmacenUseCaseTest {
                 .isInstanceOf(ReglaDeNegocioException.class);
         assertThatThrownBy(() -> useCase.asociar("000000000", 15L, 2L, ADMIN))
                 .isInstanceOf(AlmacenNoEncontradoException.class);
-        assertThatThrownBy(() -> useCase.listarAdministradores("000000000", 15L, "ROLE_ADMIN_STYLERADAR"))
+        assertThatThrownBy(() -> useCase.listarAdministradores("000000000", 15L, "ROLE_STYLERADAR_ADMIN"))
                 .isInstanceOf(AlmacenNoEncontradoException.class);
     }
 

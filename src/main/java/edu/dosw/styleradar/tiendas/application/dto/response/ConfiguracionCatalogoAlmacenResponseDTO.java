@@ -1,22 +1,24 @@
 package edu.dosw.styleradar.tiendas.application.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Configuración vigente de umbrales de stock y días de nueva llegada de un almacén (SR-RF-59 / SR-RF-60)")
+@Schema(description = "Current stock threshold and new-arrival days of a store (SR-RF-59 / SR-RF-60)")
 public record ConfiguracionCatalogoAlmacenResponseDTO(
-        @Schema(description = "NIT del almacén aliado", example = "900123456-1")
+        @Schema(description = "NIT of the partner store", example = "900123456-1")
         String nit,
 
-        @Schema(description = "Umbral configurado para identificar prendas como ULTIMAS_UNIDADES (SR-RF-59)", example = "3")
-        Integer umbralUltimasUnidades,
+        @Schema(description = "Threshold used to flag items as LOW_STOCK (SR-RF-59)", example = "3")
+        @JsonProperty("lowStockThreshold") Integer umbralUltimasUnidades,
 
-        @Schema(description = "Ventana en días configurada para identificar prendas como NUEVA_PRENDA (SR-RF-60)", example = "7")
-        Integer diasNuevaLlegada,
+        @Schema(description = "Window in days used to flag items as NEW_ARRIVAL (SR-RF-60)", example = "7")
+        @JsonProperty("newArrivalDays") Integer diasNuevaLlegada,
 
-        @Schema(description = "Fecha y hora UTC de la última actualización", example = "2026-11-03T01:40:00Z")
-        Instant fechaActualizacion
+        @Schema(description = "UTC date and time of the last update", example = "2026-11-03T01:40:00Z")
+        @JsonProperty("updatedAt") Instant fechaActualizacion
 ) {
 }
 

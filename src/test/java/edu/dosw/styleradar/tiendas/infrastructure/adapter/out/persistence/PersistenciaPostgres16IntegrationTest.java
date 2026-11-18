@@ -73,23 +73,23 @@ class PersistenciaPostgres16IntegrationTest {
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND version IS NOT NULL", Integer.class);
 
         assertThat(version).startsWith("16.");
-        assertThat(migraciones).isEqualTo(6);
+        assertThat(migraciones).isEqualTo(7);
     }
 
     @Test
     @DisplayName("Guarda almacenes, asocia administradores (BOLA) y pagina por estado con orden estable")
     void almacenesAdministradoresYPaginacion() {
         almacenes.save(Almacen.builder().nit("900111222-3").nombreComercial("Zeta Moda")
-                .categorias(Set.of(CategoriaAlmacen.CASUAL)).estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .categorias(Set.of(CategoriaAlmacen.CASUAL)).estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .build());
         almacenes.save(Almacen.builder().nit("900333444-5").nombreComercial("Alfa Ropa")
-                .categorias(Set.of(CategoriaAlmacen.DEPORTIVA)).estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .categorias(Set.of(CategoriaAlmacen.SPORTY)).estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .build());
         almacenes.save(Almacen.builder().nit("900555666-7").nombreComercial("Pendiente SAS").build());
         almacenes.asociarAdministrador("900111222-3", 42L);
 
         Pagina<Almacen> aprobados = almacenes.findByEstadoVerificacion(
-                EstadoVerificacionAlmacen.APROBADO, new SolicitudPagina(0, 10));
+                EstadoVerificacionAlmacen.APPROVED, new SolicitudPagina(0, 10));
 
         assertThat(aprobados.map(Almacen::getNombreComercial).contenido()).containsExactly("Alfa Ropa", "Zeta Moda");
         assertThat(aprobados.totalElementos()).isEqualTo(2);
@@ -107,13 +107,13 @@ class PersistenciaPostgres16IntegrationTest {
                 .nombre("Fundación Abrigar").nit("901234567-8").barrio("Chapinero")
                 .direccion("Calle 45 # 13-20").email("contacto@abrigar.org")
                 .latitud(4.64).longitud(-74.06).representanteId(30L)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .build());
 
         assertThat(guardada.getId()).isNotNull();
         assertThat(fundaciones.findById(guardada.getId())).get()
                 .satisfies(f -> assertThat(f.getCategoriasAceptadas())
-                        .containsExactlyInAnyOrder(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO));
+                        .containsExactlyInAnyOrder(TipoPrenda.TOP, TipoPrenda.FOOTWEAR));
         assertThat(fundaciones.existsByNombreIgnoreCase("fundación abrigar")).isTrue();
         assertThat(fundaciones.existsByNitIgnoreCase("901234567-8")).isTrue();
         assertThat(fundaciones.existsByRepresentanteId(30L)).isTrue();

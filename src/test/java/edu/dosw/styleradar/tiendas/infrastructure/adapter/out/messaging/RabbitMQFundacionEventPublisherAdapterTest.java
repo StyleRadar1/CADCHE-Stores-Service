@@ -69,11 +69,11 @@ class RabbitMQFundacionEventPublisherAdapterTest {
         verify(rabbitTemplate).convertAndSend(
                 eq(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES),
                 eq(RabbitMQConfig.DEFAULT_ROUTING_KEY_DESACTIVADA),
-                eq(evento));
+                eq(RabbitMQFundacionEventPublisherAdapter.cuerpo(evento)));
         verify(rabbitTemplate).convertAndSend(
                 eq(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES),
                 eq(RabbitMQConfig.DEFAULT_ROUTING_KEY_REACTIVADA),
-                eq(eventoReactivada));
+                eq(RabbitMQFundacionEventPublisherAdapter.cuerpo(eventoReactivada)));
     }
 
     @Test
@@ -95,5 +95,25 @@ class RabbitMQFundacionEventPublisherAdapterTest {
                 10L, "Fundación Esperanza", 22L, Instant.now(), "Reapertura");
         assertNotNull(ev.getEventoId());
         assertNotNull(evRe.getEventoId());
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("Análisis v2: routing keys foundation.deactivated / foundation.reactivated y campos en inglés")
+    void eventosEnIngles() {
+        org.assertj.core.api.Assertions.assertThat(RabbitMQConfig.DEFAULT_ROUTING_KEY_DESACTIVADA).isEqualTo("foundation.deactivated");
+        org.assertj.core.api.Assertions.assertThat(RabbitMQConfig.DEFAULT_ROUTING_KEY_REACTIVADA).isEqualTo("foundation.reactivated");
+        edu.dosw.styleradar.tiendas.domain.event.FundacionDesactivadaEvent d = new edu.dosw.styleradar.tiendas.domain.event.FundacionDesactivadaEvent();
+        d.setFundacionId(7L);
+        d.setNombreFundacion("Fundación Abrigo");
+        d.setRepresentanteId(24L);
+        d.setFechaDesactivacion(java.time.Instant.parse("2026-11-17T10:00:00Z"));
+        d.setMotivo("Cierre");
+        org.assertj.core.api.Assertions.assertThat(RabbitMQFundacionEventPublisherAdapter.cuerpo(d))
+                .containsOnlyKeys("eventId", "foundationId", "foundationName", "representativeId", "deactivatedAt", "reason")
+                .containsEntry("foundationId", 7L).containsEntry("reason", "Cierre");
+        edu.dosw.styleradar.tiendas.domain.event.FundacionReactivadaEvent r = new edu.dosw.styleradar.tiendas.domain.event.FundacionReactivadaEvent();
+        r.setFundacionId(7L);
+        org.assertj.core.api.Assertions.assertThat(RabbitMQFundacionEventPublisherAdapter.cuerpo(r))
+                .containsOnlyKeys("eventId", "foundationId", "foundationName", "representativeId", "reactivatedAt", "reason");
     }
 }

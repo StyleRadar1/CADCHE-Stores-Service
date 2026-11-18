@@ -71,9 +71,9 @@ class AutorizacionAlmacenValidatorTest {
     @DisplayName("SR-RF-62-A FA-02: Debe validar que el usuario tenga rol de tienda o administrador de almacén")
     void debeValidarRolTienda() {
         assertThatCode(() -> validator.validarRolTienda("ROLE_TIENDA")).doesNotThrowAnyException();
-        assertThatCode(() -> validator.validarRolTienda("ROLE_ADMIN_ALMACEN")).doesNotThrowAnyException();
+        assertThatCode(() -> validator.validarRolTienda("ROLE_STORE_ADMIN")).doesNotThrowAnyException();
         assertThatCode(() -> validator.validarRolTienda("TIENDA")).doesNotThrowAnyException();
-        assertThatCode(() -> validator.validarRolTienda("ADMIN_ALMACEN")).doesNotThrowAnyException();
+        assertThatCode(() -> validator.validarRolTienda("STORE_ADMIN")).doesNotThrowAnyException();
 
         assertThatThrownBy(() -> validator.validarRolTienda("ROLE_COMPRADOR"))
                 .isInstanceOf(AccesoDenegadoAlmacenException.class)

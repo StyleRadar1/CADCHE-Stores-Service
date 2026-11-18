@@ -102,12 +102,12 @@ class OwaspTop10SecurityTest {
 
             assertThatThrownBy(() -> adminValidator.validarEsAdministradorStyleRadar("ROLE_COMPRADOR"))
                     .isInstanceOf(AccesoDenegadoAlmacenException.class)
-                    .hasMessageContaining("Se requiere el rol ROLE_ADMIN_STYLERADAR");
+                    .hasMessageContaining("Se requiere el rol ROLE_STYLERADAR_ADMIN");
 
-            assertThatThrownBy(() -> adminValidator.validarEsAdministradorStyleRadar("ROLE_ADMIN_ALMACEN"))
+            assertThatThrownBy(() -> adminValidator.validarEsAdministradorStyleRadar("ROLE_STORE_ADMIN"))
                     .isInstanceOf(AccesoDenegadoAlmacenException.class);
 
-            assertThatCode(() -> adminValidator.validarEsAdministradorStyleRadar("ROLE_ADMIN_STYLERADAR"))
+            assertThatCode(() -> adminValidator.validarEsAdministradorStyleRadar("ROLE_STYLERADAR_ADMIN"))
                     .doesNotThrowAnyException();
         }
     }
@@ -266,12 +266,12 @@ class OwaspTop10SecurityTest {
             Almacen almacenSinRut = Almacen.builder()
                     .nit("900123456-1")
                     .nombreComercial("Tienda Sin Rut")
-                    .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                    .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                     .urlRutPdf(null)
                     .build();
 
             assertThatThrownBy(() -> almacenSinRut.decidirVerificacion(
-                    DecisionVerificacionAlmacen.APROBADO, "Aprobación", 1L, Instant.now()))
+                    DecisionVerificacionAlmacen.APPROVED, "Aprobación", 1L, Instant.now()))
                     .isInstanceOf(RutRequeridoParaAprobacionException.class);
         }
 
@@ -281,11 +281,11 @@ class OwaspTop10SecurityTest {
             Almacen almacen = Almacen.builder()
                     .nit("900123456-1")
                     .nombreComercial("Tienda")
-                    .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                    .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                     .build();
 
             assertThatThrownBy(() -> almacen.decidirVerificacion(
-                    DecisionVerificacionAlmacen.RECHAZADO, "   ", 1L, Instant.now()))
+                    DecisionVerificacionAlmacen.REJECTED, "   ", 1L, Instant.now()))
                     .isInstanceOf(ReglaDeNegocioException.class)
                     .hasMessageContaining("motivo");
         }
@@ -303,13 +303,13 @@ class OwaspTop10SecurityTest {
         void test_A07_AuthenticationFailures_ExpiredAndTamperedTokensRejected() {
             JwtSecurityValidator jwtValidator = new JwtSecurityValidator(TokensDePrueba.SECRETO_DEV, null);
 
-            String tokenExpirado = TokensDePrueba.token(1L, java.util.List.of("ADMIN_STYLERADAR"), -50);
+            String tokenExpirado = TokensDePrueba.token(1L, java.util.List.of("STYLERADAR_ADMIN"), -50);
             assertThatThrownBy(() -> jwtValidator.validar(tokenExpirado))
                     .isInstanceOf(FalloAutenticacionException.class)
                     .hasMessageContaining("ha expirado");
 
             String tokenFirmaFalsa = TokensDePrueba.token(
-                    TokensDePrueba.SECRETO_AJENO, 1L, java.util.List.of("ADMIN_STYLERADAR"), 3600);
+                    TokensDePrueba.SECRETO_AJENO, 1L, java.util.List.of("STYLERADAR_ADMIN"), 3600);
             assertThatThrownBy(() -> jwtValidator.validar(tokenFirmaFalsa))
                     .isInstanceOf(FalloAutenticacionException.class)
                     .hasMessageContaining("inválida o ha sido alterada");

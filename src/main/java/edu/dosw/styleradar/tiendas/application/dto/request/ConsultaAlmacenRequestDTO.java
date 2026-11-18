@@ -7,19 +7,19 @@ import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 @Data
-@Schema(description = "Parámetros de paginación y filtro opcional por categoría comercial para consultar almacenes aliados")
+@Schema(description = "Pagination and optional category filter to query approved stores")
 public class ConsultaAlmacenRequestDTO {
 
-    @Schema(description = "Categoría comercial opcional del almacén", example = "URBANA")
+    @Schema(description = "Optional store category", example = "CASUAL")
     private CategoriaAlmacen category;
 
     @Min(0)
-    @Schema(description = "Número de página de base cero", example = "0", defaultValue = "0")
+    @Schema(description = "Zero-based page number", example = "0", defaultValue = "0")
     private int page = 0;
 
     @Min(1)
     @Max(100)
-    @Schema(description = "Cantidad de almacenes por página (entre 1 y 100)", example = "20", defaultValue = "20")
+    @Schema(description = "Stores per page (1 to 100)", example = "20", defaultValue = "20")
     private int size = 20;
 }
 

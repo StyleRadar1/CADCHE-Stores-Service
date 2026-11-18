@@ -56,13 +56,13 @@ class VerificacionAlmacenControllerIntegrationTest {
     private VerificarAlmacenUseCase useCase;
 
     private static final String NIT = "900123456-1";
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
 
     @Test
-    @DisplayName("Criterio 1: Dado un almacén pendiente con NIT y RUT, cuando lo apruebo, entonces responde HTTP 200 y queda registrado como APROBADO")
+    @DisplayName("Criterio 1: Dado un almacén pendiente con NIT y RUT, cuando lo apruebo, entonces responde HTTP 200 y queda registrado como APPROVED")
     void debeAprobarAlmacenPendienteConRutRetornando200() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
         request.setMotivo("NIT y personería jurídica verificados correctamente");
 
         VerificacionAlmacenResponseDTO response = new VerificacionAlmacenResponseDTO(
@@ -75,7 +75,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 -74.0602,
                 4.8,
                 Set.of(CategoriaAlmacen.CASUAL),
-                EstadoVerificacionAlmacen.APROBADO,
+                EstadoVerificacionAlmacen.APPROVED,
                 false,
                 Instant.now(),
                 1L,
@@ -93,16 +93,16 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
-                .andExpect(jsonPath("$.estadoVerificacion").value("APROBADO"))
-                .andExpect(jsonPath("$.motivoVerificacion").value("NIT y personería jurídica verificados correctamente"))
-                .andExpect(jsonPath("$.urlRutPdf").value("https://styleradarblob.blob.core.windows.net/documentos-rut/" + NIT + "/rut.pdf"));
+                .andExpect(jsonPath("$.verificationStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.verificationReason").value("NIT y personería jurídica verificados correctamente"))
+                .andExpect(jsonPath("$.rutPdfUrl").value("https://styleradarblob.blob.core.windows.net/documentos-rut/" + NIT + "/rut.pdf"));
     }
 
     @Test
-    @DisplayName("Criterio 1b: Dado un almacén pendiente con NIT y RUT, cuando lo rechazo con motivo, responde HTTP 200 con estado RECHAZADO")
+    @DisplayName("Criterio 1b: Dado un almacén pendiente con NIT y RUT, cuando lo rechazo con motivo, responde HTTP 200 con estado REJECTED")
     void debeRechazarAlmacenPendienteConMotivoRetornando200() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
+        request.setDecision(DecisionVerificacionAlmacen.REJECTED);
         request.setMotivo("El RUT adjunto no coincide con la razón social reportada");
 
         VerificacionAlmacenResponseDTO response = new VerificacionAlmacenResponseDTO(
@@ -115,7 +115,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 -74.0602,
                 4.8,
                 Set.of(CategoriaAlmacen.CASUAL),
-                EstadoVerificacionAlmacen.RECHAZADO,
+                EstadoVerificacionAlmacen.REJECTED,
                 false,
                 Instant.now(),
                 1L,
@@ -133,15 +133,15 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
-                .andExpect(jsonPath("$.estadoVerificacion").value("RECHAZADO"))
-                .andExpect(jsonPath("$.motivoVerificacion").value("El RUT adjunto no coincide con la razón social reportada"));
+                .andExpect(jsonPath("$.verificationStatus").value("REJECTED"))
+                .andExpect(jsonPath("$.verificationReason").value("El RUT adjunto no coincide con la razón social reportada"));
     }
 
     @Test
     @DisplayName("Criterio 2: Dado un almacén sin RUT, cuando intento aprobarlo, entonces recibo HTTP 422 (Unprocessable Entity)")
     void debeRetornar422CuandoAlmacenNoTieneRutParaAprobacion() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
         request.setMotivo("Aprobando sin documento legal");
 
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
@@ -161,10 +161,10 @@ class VerificacionAlmacenControllerIntegrationTest {
     @DisplayName("Criterio 3: Dado un almacén ya decidido, cuando lo decido otra vez, entonces recibo HTTP 409 (Conflict)")
     void debeRetornar409CuandoAlmacenYaFueDecididoPreviamente() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
 
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
-                .thenThrow(new AlmacenYaDecididoException("El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APROBADO"));
+                .thenThrow(new AlmacenYaDecididoException("El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APPROVED"));
 
         mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", ADMIN_ROLE)
@@ -173,17 +173,17 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.message").value("El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APROBADO"));
+                .andExpect(jsonPath("$.message").value("El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APPROVED"));
     }
 
     @Test
     @DisplayName("Criterio 4: Dado que no soy administrador, cuando llamo al endpoint, entonces recibo HTTP 403 (Forbidden)")
     void debeRetornar403CuandoNoEsAdministradorStyleRadar() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
 
         when(useCase.decidir(eq(NIT), any(DecisionVerificacionRequestDTO.class), eq(99L), eq("ROLE_COMPRADOR")))
-                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados"));
+                .thenThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_STYLERADAR_ADMIN para verificar almacenes aliados"));
 
         mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
                         .header("X-User-Roles", "ROLE_COMPRADOR")
@@ -192,14 +192,14 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.message").value("Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados"));
+                .andExpect(jsonPath("$.message").value("Se requiere el rol ROLE_STYLERADAR_ADMIN para verificar almacenes aliados"));
     }
 
     @Test
     @DisplayName("Criterio 5: Dado un almacén inexistente, cuando lo decido, entonces recibo HTTP 404 (Not Found)")
     void debeRetornar404CuandoAlmacenNoExiste() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
 
         when(useCase.decidir(eq("000000000"), any(DecisionVerificacionRequestDTO.class), eq(1L), eq(ADMIN_ROLE)))
                 .thenThrow(new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: 000000000"));
@@ -218,7 +218,7 @@ class VerificacionAlmacenControllerIntegrationTest {
     @DisplayName("Negativo y B-3.2: Debe retornar HTTP 400 cuando el rechazo no tiene motivo o el motivo tiene menos de 10 caracteres o campos no permitidos")
     void debeRetornar400CuandoRechazoCareceDeMotivoOMotivoCortoOCampoExtra() throws Exception {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
+        request.setDecision(DecisionVerificacionAlmacen.REJECTED);
         request.setMotivo("");
 
         mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
@@ -230,7 +230,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 .andExpect(jsonPath("$.status").value(400));
 
         DecisionVerificacionRequestDTO requestCorto = new DecisionVerificacionRequestDTO();
-        requestCorto.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
+        requestCorto.setDecision(DecisionVerificacionAlmacen.REJECTED);
         requestCorto.setMotivo("Corto");
 
         mockMvc.perform(patch("/api/v1/admin/stores/{nit}/verification", NIT)
@@ -245,7 +245,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"decision\":\"APROBADO\",\"campoExtra\":\"noPermitido\"}"))
+                        .content("{\"decision\":\"APPROVED\",\"campoExtra\":\"noPermitido\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("Campo no permitido en la decisión de verificación"));
@@ -264,7 +264,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 -74.0602,
                 4.8,
                 Set.of(CategoriaAlmacen.CASUAL),
-                EstadoVerificacionAlmacen.PENDIENTE,
+                EstadoVerificacionAlmacen.PENDING,
                 false,
                 null,
                 null,
@@ -279,9 +279,9 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .header("X-User-Roles", ADMIN_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nit").value(NIT))
-                .andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"))
-                .andExpect(jsonPath("$.representante").value("Usuario #10"))
-                .andExpect(jsonPath("$.urlRutPdf").isNotEmpty());
+                .andExpect(jsonPath("$.verificationStatus").value("PENDING"))
+                .andExpect(jsonPath("$.representative").value("Usuario #10"))
+                .andExpect(jsonPath("$.rutPdfUrl").isNotEmpty());
     }
 
     @Test
@@ -312,7 +312,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                 -74.0602,
                 4.8,
                 Set.of(CategoriaAlmacen.CASUAL),
-                EstadoVerificacionAlmacen.PENDIENTE,
+                EstadoVerificacionAlmacen.PENDING,
                 false,
                 null,
                 null,
@@ -326,7 +326,7 @@ class VerificacionAlmacenControllerIntegrationTest {
                         .header("X-User-Roles", ADMIN_ROLE)
                         .header("X-User-Id", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"));
+                .andExpect(jsonPath("$.verificationStatus").value("PENDING"));
     }
 
     @Test

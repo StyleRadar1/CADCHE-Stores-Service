@@ -47,7 +47,7 @@ public class Almacen {
     private Instant fechaActualizacionCatalogo;
 
     @Builder.Default
-    private EstadoVerificacionAlmacen estadoVerificacion = EstadoVerificacionAlmacen.PENDIENTE;
+    private EstadoVerificacionAlmacen estadoVerificacion = EstadoVerificacionAlmacen.PENDING;
 
     private String urlRutPdf;
 
@@ -184,15 +184,15 @@ public class Almacen {
     }
 
     public void decidirVerificacion(DecisionVerificacionAlmacen decision, String motivo, Long adminId, Instant fecha) {
-        if (this.estadoVerificacion != EstadoVerificacionAlmacen.PENDIENTE) {
+        if (this.estadoVerificacion != EstadoVerificacionAlmacen.PENDING) {
             throw new AlmacenYaDecididoException("El almacén con NIT " + nit
                     + " ya fue decidido previamente. Estado actual: " + estadoVerificacion);
         }
-        if (decision == DecisionVerificacionAlmacen.APROBADO && (this.urlRutPdf == null || this.urlRutPdf.isBlank())) {
+        if (decision == DecisionVerificacionAlmacen.APPROVED && (this.urlRutPdf == null || this.urlRutPdf.isBlank())) {
             throw new RutRequeridoParaAprobacionException("No es posible aprobar el almacén con NIT " + nit
                     + " porque no cuenta con el documento RUT adjunto en PDF");
         }
-        if (decision == DecisionVerificacionAlmacen.RECHAZADO) {
+        if (decision == DecisionVerificacionAlmacen.REJECTED) {
             if (motivo == null || motivo.isBlank()) {
                 throw new ReglaDeNegocioException("El rechazo exige un motivo no vacío");
             }
@@ -201,19 +201,19 @@ public class Almacen {
                 throw new ReglaDeNegocioException("El motivo debe tener entre 10 y 1000 caracteres");
             }
         }
-        this.estadoVerificacion = decision == DecisionVerificacionAlmacen.APROBADO
-                ? EstadoVerificacionAlmacen.APROBADO
-                : EstadoVerificacionAlmacen.RECHAZADO;
+        this.estadoVerificacion = decision == DecisionVerificacionAlmacen.APPROVED
+                ? EstadoVerificacionAlmacen.APPROVED
+                : EstadoVerificacionAlmacen.REJECTED;
         this.fechaDecisionVerificacion = fecha != null ? fecha : Instant.now();
         this.administradorDecisionId = adminId;
         this.motivoVerificacion = motivo != null ? motivo.strip() : null;
     }
 
     public void solicitarRevision() {
-        if (this.estadoVerificacion == EstadoVerificacionAlmacen.PENDIENTE) {
+        if (this.estadoVerificacion == EstadoVerificacionAlmacen.PENDING) {
             throw new AlmacenYaPendienteException("El almacén ya se encuentra pendiente de revisión");
         }
-        this.estadoVerificacion = EstadoVerificacionAlmacen.PENDIENTE;
+        this.estadoVerificacion = EstadoVerificacionAlmacen.PENDING;
     }
 
     public FotografiaTienda agregarFotografia(String url, Instant fecha) {

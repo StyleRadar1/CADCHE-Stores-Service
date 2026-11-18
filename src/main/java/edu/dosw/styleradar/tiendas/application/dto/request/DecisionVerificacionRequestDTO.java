@@ -1,5 +1,7 @@
 package edu.dosw.styleradar.tiendas.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -11,27 +13,28 @@ import lombok.Data;
 
 @Data
 @MotivoDeRechazoValido
-@Schema(description = "Decisión administrativa para aprobar o rechazar la vinculación pendiente de un almacén aliado (SR-RF-62)")
+@Schema(description = "Admin decision to approve or reject a pending store (SR-RF-62)")
 public class DecisionVerificacionRequestDTO {
 
     @NotNull
-    @Schema(description = "Decisión final sobre la solicitud pendiente", example = "APROBADO", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Final decision on the pending request", example = "APPROVED", requiredMode = Schema.RequiredMode.REQUIRED)
     private DecisionVerificacionAlmacen decision;
 
     @Size(max = 1000, message = "El motivo debe tener entre 10 y 1000 caracteres")
-    @Schema(description = "Motivo de la decisión; obligatorio cuando la decisión es RECHAZADO (entre 10 y 1000 caracteres)", example = "Datos y RUT verificados correctamente")
+    @Schema(description = "Reason for the decision; required when the decision is REJECTED (10 to 1000 characters)", example = "Datos y RUT verificados correctamente")
+    @JsonProperty("reason")
     private String motivo;
 
     @JsonIgnore
     @Schema(hidden = true)
     public boolean isMotivoValido() {
-        return decision != DecisionVerificacionAlmacen.RECHAZADO || (motivo != null && !motivo.isBlank());
+        return decision != DecisionVerificacionAlmacen.REJECTED || (motivo != null && !motivo.isBlank());
     }
 
     @JsonIgnore
     @Schema(hidden = true)
     public boolean isMotivoLongitudValida() {
-        if (decision != DecisionVerificacionAlmacen.RECHAZADO || motivo == null || motivo.isBlank()) {
+        if (decision != DecisionVerificacionAlmacen.REJECTED || motivo == null || motivo.isBlank()) {
             return true;
         }
         int len = motivo.strip().length();

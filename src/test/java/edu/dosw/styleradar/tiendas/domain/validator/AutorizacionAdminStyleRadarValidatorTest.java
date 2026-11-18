@@ -22,18 +22,18 @@ class AutorizacionAdminStyleRadarValidatorTest {
     }
 
     @Test
-    @DisplayName("Debe permitir acceso con ROLE_ADMIN_STYLERADAR")
+    @DisplayName("Debe permitir acceso con ROLE_STYLERADAR_ADMIN")
     void debePermitirAccesoConRoleAdmin() {
-        assertDoesNotThrow(() -> validator.validarEsAdministradorStyleRadar("ROLE_ADMIN_STYLERADAR"));
-        assertDoesNotThrow(() -> validator.validarEsAdministradorStyleRadar("ROLE_USER,ROLE_ADMIN_STYLERADAR"));
-        assertDoesNotThrow(() -> validator.validarEsAdministradorParaFundaciones("ROLE_ADMIN_STYLERADAR"));
-        assertDoesNotThrow(() -> validator.validarEsAdministradorParaFundaciones("ADMIN_STYLERADAR"));
+        assertDoesNotThrow(() -> validator.validarEsAdministradorStyleRadar("ROLE_STYLERADAR_ADMIN"));
+        assertDoesNotThrow(() -> validator.validarEsAdministradorStyleRadar("ROLE_USER,ROLE_STYLERADAR_ADMIN"));
+        assertDoesNotThrow(() -> validator.validarEsAdministradorParaFundaciones("ROLE_STYLERADAR_ADMIN"));
+        assertDoesNotThrow(() -> validator.validarEsAdministradorParaFundaciones("STYLERADAR_ADMIN"));
     }
 
     @Test
-    @DisplayName("Debe permitir acceso con formato corto ADMIN_STYLERADAR")
+    @DisplayName("Debe permitir acceso con formato corto STYLERADAR_ADMIN")
     void debePermitirAccesoConFormatoCorto() {
-        assertDoesNotThrow(() -> validator.validarEsAdministradorStyleRadar("ADMIN_STYLERADAR"));
+        assertDoesNotThrow(() -> validator.validarEsAdministradorStyleRadar("STYLERADAR_ADMIN"));
     }
 
     @Test
@@ -47,7 +47,7 @@ class AutorizacionAdminStyleRadarValidatorTest {
     @DisplayName("Criterio 4b: Debe denegar acceso con rol de administrador de almacén (no es Admin StyleRadar)")
     void debeDenegarAccesoConRolAdminAlmacen() {
         assertThrows(AccesoDenegadoAlmacenException.class, () ->
-                validator.validarEsAdministradorStyleRadar("ROLE_ADMIN_ALMACEN"));
+                validator.validarEsAdministradorStyleRadar("ROLE_STORE_ADMIN"));
     }
 
     @Test
@@ -64,7 +64,7 @@ class AutorizacionAdminStyleRadarValidatorTest {
     void debeEmitirMensajeDeFundacionesCuandoNoEsAdmin() {
         AccesoDenegadoAlmacenException ex = assertThrows(AccesoDenegadoAlmacenException.class, () ->
                 validator.validarEsAdministradorParaFundaciones("ROLE_COMPRADOR"));
-        assertEquals("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas", ex.getMessage());
+        assertEquals("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas", ex.getMessage());
 
         assertThrows(FalloAutenticacionException.class, () ->
                 validator.validarEsAdministradorParaFundaciones(null));

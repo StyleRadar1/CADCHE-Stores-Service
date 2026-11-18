@@ -1,5 +1,7 @@
 package edu.dosw.styleradar.tiendas.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -13,13 +15,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Solicitud para actualizar exclusivamente el umbral de últimas unidades de un almacén aliado (SR-RF-59)")
+@Schema(description = "Request to update only the low-stock threshold of a store (SR-RF-59)")
 public class ActualizarUmbralRequestDTO {
 
     @NotNull(message = "El umbral de últimas unidades es obligatorio")
     @Min(value = 0, message = "El umbral de últimas unidades no puede ser negativo")
     @Max(value = 50, message = "El umbral de últimas unidades no puede superar 50")
-    @Schema(description = "Cantidad máxima de unidades disponibles en inventario para considerar la prenda como ULTIMAS_UNIDADES", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Maximum units in stock for the item to be considered LOW_STOCK", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("lowStockThreshold")
     private Integer umbralUltimasUnidades;
 }
 
