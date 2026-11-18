@@ -16,7 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Stores", description = "StyleRadar partner stores")
+@Tag(name = "Stores", description = "Store registration with RUT in PDF (SR-RF-62-A / SR-RF-62), store lookup, catalog badge settings and evaluation (SR-RF-59, SR-RF-60) and physical-store photos (SR-RF-74)")
 public interface UsuarioAlmacenApi {
 
     @Operation(
