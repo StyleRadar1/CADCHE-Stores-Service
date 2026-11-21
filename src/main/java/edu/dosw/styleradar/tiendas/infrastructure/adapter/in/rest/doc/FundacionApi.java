@@ -124,8 +124,8 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Consultar fundaciones aliadas cercanas (SR-RF-43)",
-            description = "ROLE_BUYER (donor). Returns only active partner foundations sorted by distance.")
+            summary = "List active partner foundations (SR-RF-43)",
+            description = "Public. Returns only active partner foundations. With latitude and longitude they are sorted by distance; without them, by name. Optional type filter.")
     @GetMapping("/api/v1/foundations")
     ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(
             @Valid @ParameterObject @ModelAttribute ConsultaFundacionesRequestDTO request);

@@ -1282,6 +1282,26 @@ class TrazabilidadRequerimientosTiendasTest {
         }
 
         @Test
+        @DisplayName("Anexo: GET /api/v1/foundations es público, sin parámetros obligatorios y solo con fundaciones activas")
+        void fundacionesPublicas() throws Exception {
+            long lejana = registrarFundacion("Fundación Zeta", "900215884-1", 24);
+            registrarFundacion("Fundación Alfa", "900215885-1", 25);
+            long inactiva = registrarFundacion("Fundación Beta", "900215886-1", 26);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + inactiva + "/deactivate", admin, null).andExpect(status().isOk());
+            jdbc.update("UPDATE fundaciones SET latitud = 10.0, longitud = -70.0 WHERE id = ?", lejana);
+            json(HttpMethod.GET, "/api/v1/foundations", null, null)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$[0].name").value("Fundación Alfa"))
+                    .andExpect(jsonPath("$[1].name").value("Fundación Zeta"));
+            json(HttpMethod.GET, "/api/v1/foundations?latitude=10.0&longitude=-70.0", null, null)
+                    .andExpect(jsonPath("$[0].name").value("Fundación Zeta"));
+            json(HttpMethod.GET, "/api/v1/foundations?type=DRESS", null, null).andExpect(jsonPath("$.length()").value(0));
+            error(json(HttpMethod.GET, "/api/v1/foundations?latitude=4.6", null, null), 400,
+                    "Debe enviar la latitud y la longitud juntas");
+        }
+
+        @Test
         @DisplayName("Roles en inglés en el JWT (STORE_ADMIN, STYLERADAR_ADMIN) y compatibilidad con tokens anteriores")
         void roles() throws Exception {
             json(HttpMethod.GET, "/api/v1/admin/foundations", token(1, "STYLERADAR_ADMIN"), null).andExpect(status().isOk());

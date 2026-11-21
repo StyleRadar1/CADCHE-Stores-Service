@@ -198,6 +198,10 @@ class RegistrarFundacionUseCaseTest {
         assertEquals(2, resultado.size());
         assertEquals("Cercana", resultado.get(0).getNombre());
         assertEquals("Lejana", resultado.get(1).getNombre());
-        assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(null));
+        // Sin coordenadas lista las activas por nombre; con solo una coordenada es un error.
+        assertEquals(List.of("Cercana", "Lejana"),
+                useCase.consultarCercanas(null).stream().map(FundacionResponseDTO::getNombre).toList());
+        assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(
+                ConsultaFundacionesRequestDTO.builder().latitude(4.6).build()));
     }
 }
