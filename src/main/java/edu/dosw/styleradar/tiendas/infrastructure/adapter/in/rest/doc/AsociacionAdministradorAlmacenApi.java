@@ -20,51 +20,50 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Administradores de almacén", description = "Asociación y consulta de usuarios ADMIN_ALMACEN autorizados por NIT para prevenir vulnerabilidades BOLA/IDOR (SR-RF-62 / SR-RNF-01)")
+@Tag(name = "Store administrators", description = "Association and lookup of STORE_ADMIN users authorized per NIT to prevent BOLA/IDOR")
 @SecurityRequirement(name = "bearerAuth")
 public interface AsociacionAdministradorAlmacenApi {
 
     @Operation(
-            summary = "Asociar administrador autorizado a un NIT existente",
-            description = "Solo ROLE_ADMIN_STYLERADAR con cuenta activa. Vincula de forma idempotente un usuario existente con rol ADMIN_ALMACEN "
-                    + "a un almacén existente identificado por su NIT.")
+            summary = "Associate an authorized administrator to an existing NIT",
+            description = "Only ROLE_STYLERADAR_ADMIN with an active account. Idempotently links an existing STORE_ADMIN user to an existing store identified by its NIT.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Asociación persistida o ya existente"),
-            @ApiResponse(responseCode = "400", description = "Identificador inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o cuenta suspendida", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Requiere ROLE_ADMIN_STYLERADAR", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Usuario o almacén inexistente", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "409", description = "Conflicto concurrente o de integridad", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Usuario objetivo sin rol ADMIN_ALMACEN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Fallo técnico", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "200", description = "Association stored or already existing"),
+            @ApiResponse(responseCode = "400", description = "Invalid identifier", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "JWT missing, invalid or account suspended", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Requires ROLE_STYLERADAR_ADMIN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "User or store not found", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "Concurrency or integrity conflict", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "422", description = "Target user does not have the STORE_ADMIN role", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Technical failure", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PutMapping("/{nit}/administrators/{userId}")
     ResponseEntity<AdministradorAlmacenResponseDTO> asociar(
-            @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit,
-            @Parameter(description = "Identificador del usuario con rol ADMIN_ALMACEN", example = "15") @PathVariable("userId") Long usuarioId,
-            @Parameter(in = ParameterIn.HEADER, description = "ID del administrador StyleRadar", example = "1")
+            @Parameter(description = "Store NIT", example = "900123456-1") @PathVariable String nit,
+            @Parameter(description = "Identifier of the STORE_ADMIN user", example = "15") @PathVariable("userId") Long usuarioId,
+            @Parameter(in = ParameterIn.HEADER, description = "StyleRadar admin ID", example = "1")
             @RequestHeader(value = "X-User-Id", required = false) Long adminId,
-            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario (Requiere ROLE_ADMIN_STYLERADAR)", example = "ROLE_ADMIN_STYLERADAR")
+            @Parameter(in = ParameterIn.HEADER, description = "User roles (requires ROLE_STYLERADAR_ADMIN)", example = "ROLE_STYLERADAR_ADMIN")
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @Parameter(in = ParameterIn.HEADER, hidden = true)
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Consultar administradores autorizados de un almacén por NIT",
-            description = "ROLE_ADMIN_STYLERADAR o ROLE_ADMIN_ALMACEN propietario. Retorna la lista de administradores autorizados vinculados al NIT para validación de propiedad (prevención BOLA/IDOR).")
+            summary = "List the authorized administrators of a store by NIT",
+            description = "ROLE_STYLERADAR_ADMIN or the owning ROLE_STORE_ADMIN. Returns the administrators linked to the NIT for ownership checks (BOLA/IDOR prevention).")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de administradores autorizados del NIT"),
-            @ApiResponse(responseCode = "401", description = "JWT ausente, inválido o expirado", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Sin permisos sobre el NIT consultado", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Almacén inexistente", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "200", description = "Authorized administrators of the NIT"),
+            @ApiResponse(responseCode = "401", description = "JWT missing, invalid or expired", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "No permission over the requested NIT", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Store not found", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping("/{nit}/administrators")
     ResponseEntity<List<AdministradorAlmacenResponseDTO>> listarAdministradores(
-            @Parameter(description = "NIT del almacén", example = "900123456-1") @PathVariable String nit,
-            @Parameter(in = ParameterIn.HEADER, description = "ID del usuario autenticado", example = "15")
+            @Parameter(description = "Store NIT", example = "900123456-1") @PathVariable String nit,
+            @Parameter(in = ParameterIn.HEADER, description = "Authenticated user ID", example = "15")
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @Parameter(in = ParameterIn.HEADER, description = "Roles del usuario", example = "ROLE_ADMIN_STYLERADAR")
+            @Parameter(in = ParameterIn.HEADER, description = "User roles", example = "ROLE_STYLERADAR_ADMIN")
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @Parameter(in = ParameterIn.HEADER, hidden = true)
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);

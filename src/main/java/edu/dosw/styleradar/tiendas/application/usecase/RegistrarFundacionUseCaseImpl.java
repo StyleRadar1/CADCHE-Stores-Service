@@ -19,6 +19,7 @@ import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaExcepti
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.Fundacion;
+import edu.dosw.styleradar.tiendas.domain.model.TipoPrenda;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.FundacionRepositoryPort;
@@ -70,14 +71,14 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
         if (nombreNormalizado != null && repositoryPort.existsByNombreIgnoreCase(nombreNormalizado)) {
             throw new FundacionYaRegistradaException(
                     "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado,
-                    Map.of("nombre", "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado));
+                    Map.of("name", "Ya existe una fundación aliada registrada con el nombre: " + nombreNormalizado));
         }
 
         if (request.getRepresentanteId() != null && repositoryPort.existsByRepresentanteId(request.getRepresentanteId())) {
             throw new FundacionYaRegistradaException(
                     "El usuario con ID " + request.getRepresentanteId()
                             + " ya se encuentra asignado como representante de otra fundación aliada",
-                    Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
+                    Map.of("representativeId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
         String emailNorm = stripOrNull(request.getEmail());
@@ -152,18 +153,22 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
     @Override
     @Transactional(readOnly = true)
     public List<FundacionResponseDTO> consultarCercanas(ConsultaFundacionesRequestDTO request) {
-        if (request == null || request.getLatitude() == null || request.getLongitude() == null) {
-            throw new ReglaDeNegocioException("Las coordenadas geográficas de latitud y longitud son obligatorias");
+        Double latitud = request == null ? null : request.getLatitude();
+        Double longitud = request == null ? null : request.getLongitude();
+        if ((latitud == null) != (longitud == null)) {
+            throw new ReglaDeNegocioException("Debe enviar la latitud y la longitud juntas");
         }
+        TipoPrenda tipo = request == null ? null : request.getType();
+        Comparator<Fundacion> orden = latitud == null
+                ? Comparator.comparing(f -> f.getNombre() == null ? "" : f.getNombre(), String.CASE_INSENSITIVE_ORDER)
+                : Comparator.comparingDouble(f -> calcularDistanciaKm(latitud, longitud,
+                        f.getLatitud() != null ? f.getLatitud() : 0.0,
+                        f.getLongitud() != null ? f.getLongitud() : 0.0));
         return repositoryPort.findAll().stream()
                 .filter(Fundacion::isActiva)
-                .filter(f -> request.getType() == null
-                        || (f.getCategoriasAceptadas() != null && f.getCategoriasAceptadas().contains(request.getType())))
-                .sorted(Comparator.comparingDouble(f -> calcularDistanciaKm(
-                        request.getLatitude(),
-                        request.getLongitude(),
-                        f.getLatitud() != null ? f.getLatitud() : 0.0,
-                        f.getLongitud() != null ? f.getLongitud() : 0.0)))
+                .filter(f -> tipo == null
+                        || (f.getCategoriasAceptadas() != null && f.getCategoriasAceptadas().contains(tipo)))
+                .sorted(orden)
                 .map(this::toResponseDTO)
                 .toList();
     }

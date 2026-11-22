@@ -50,7 +50,7 @@ class VerificarAlmacenUseCaseTest {
 
     private Almacen almacenPendiente;
     private static final String NIT = "900123456-1";
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
 
     @BeforeEach
     void setUp() {
@@ -60,7 +60,7 @@ class VerificarAlmacenUseCaseTest {
                 .descripcion("Tienda urbana")
                 .correoContacto("contacto@atelierurbano.co")
                 .telefono("+57 601 312 4455")
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .urlRutPdf("https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut.pdf")
                 .categorias(Set.of(CategoriaAlmacen.CASUAL))
                 .build();
@@ -70,7 +70,7 @@ class VerificarAlmacenUseCaseTest {
     @DisplayName("Debe aprobar almacén pendiente exitosamente")
     void debeAprobarAlmacenPendienteExitosamente() {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
         request.setMotivo("NIT y RUT validados");
 
         when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenPendiente));
@@ -80,7 +80,7 @@ class VerificarAlmacenUseCaseTest {
 
         verify(adminValidator).validarEsAdministradorStyleRadar(ADMIN_ROLE);
         verify(repositoryPort).save(any(Almacen.class));
-        assertEquals(EstadoVerificacionAlmacen.APROBADO, response.estadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.APPROVED, response.estadoVerificacion());
         assertEquals("NIT y RUT validados", response.motivoVerificacion());
         assertEquals(5L, response.administradorDecisionId());
     }
@@ -89,7 +89,7 @@ class VerificarAlmacenUseCaseTest {
     @DisplayName("Debe rechazar almacén pendiente con motivo exitosamente")
     void debeRechazarAlmacenPendienteExitosamente() {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.RECHAZADO);
+        request.setDecision(DecisionVerificacionAlmacen.REJECTED);
         request.setMotivo("RUT desactualizado ante la DIAN");
 
         when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenPendiente));
@@ -97,7 +97,7 @@ class VerificarAlmacenUseCaseTest {
 
         VerificacionAlmacenResponseDTO response = useCase.decidir(NIT, request, 5L, ADMIN_ROLE);
 
-        assertEquals(EstadoVerificacionAlmacen.RECHAZADO, response.estadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.REJECTED, response.estadoVerificacion());
         assertEquals("RUT desactualizado ante la DIAN", response.motivoVerificacion());
     }
 
@@ -105,7 +105,7 @@ class VerificarAlmacenUseCaseTest {
     @DisplayName("Criterio 5: Dado un almacén inexistente, cuando lo decido, entonces lanza AlmacenNoEncontradoException (404)")
     void debeLanzar404CuandoAlmacenNoExiste() {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
 
         when(repositoryPort.findByNit("000000000")).thenReturn(Optional.empty());
 
@@ -117,7 +117,7 @@ class VerificarAlmacenUseCaseTest {
     @DisplayName("Criterio 4: Debe propagar AccesoDenegadoAlmacenException (403) si no es administrador")
     void debePropagar403CuandoNoEsAdministrador() {
         DecisionVerificacionRequestDTO request = new DecisionVerificacionRequestDTO();
-        request.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        request.setDecision(DecisionVerificacionAlmacen.APPROVED);
 
         org.mockito.Mockito.doThrow(new AccesoDenegadoAlmacenException("Requiere rol ADMIN"))
                 .when(adminValidator).validarEsAdministradorStyleRadar("ROLE_COMPRADOR");
@@ -135,18 +135,18 @@ class VerificarAlmacenUseCaseTest {
 
         assertNotNull(response);
         assertEquals(NIT, response.nit());
-        assertEquals(EstadoVerificacionAlmacen.PENDIENTE, response.estadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.PENDING, response.estadoVerificacion());
     }
 
     @Test
     @DisplayName("Debe consultar almacenes paginados con filtro de estado")
     void debeConsultarAlmacenesPaginadosConFiltro() {
         VerificacionConsultaRequestDTO consulta = new VerificacionConsultaRequestDTO();
-        consulta.setStatus(EstadoVerificacionAlmacen.PENDIENTE);
+        consulta.setStatus(EstadoVerificacionAlmacen.PENDING);
         consulta.setPage(0);
         consulta.setSize(10);
 
-        when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.PENDIENTE), any()))
+        when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.PENDING), any()))
                 .thenReturn(new Pagina<>(List.of(almacenPendiente), 0, 10, 1, 1));
 
         PageResponseDTO<VerificacionAlmacenResponseDTO> response = useCase.consultar(consulta, ADMIN_ROLE);
@@ -170,12 +170,12 @@ class VerificarAlmacenUseCaseTest {
     @Test
     @DisplayName("Debe solicitar reapertura de revisión para almacén ya decidido")
     void debeSolicitarReaperturaDeRevision() {
-        almacenPendiente.setEstadoVerificacion(EstadoVerificacionAlmacen.RECHAZADO);
+        almacenPendiente.setEstadoVerificacion(EstadoVerificacionAlmacen.REJECTED);
         when(repositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacenPendiente));
         when(repositoryPort.save(any(Almacen.class))).thenAnswer(inv -> inv.getArgument(0));
 
         VerificacionAlmacenResponseDTO response = useCase.solicitarRevision(NIT, 1L, ADMIN_ROLE);
 
-        assertEquals(EstadoVerificacionAlmacen.PENDIENTE, response.estadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.PENDING, response.estadoVerificacion());
     }
 }

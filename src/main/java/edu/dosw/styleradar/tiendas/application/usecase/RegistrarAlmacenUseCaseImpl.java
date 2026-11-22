@@ -57,7 +57,7 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
 
     /**
      * SR-RF-62-A: solo una Tienda autenticada registra su almacén. Sin identidad responde 401 y con otro rol 403;
-     * el almacén nace PENDIENTE y queda asociado a quien lo registra.
+     * el almacén nace PENDING y queda asociado a quien lo registra.
      */
     @Override
     @Transactional
@@ -70,7 +70,7 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
         if (repositoryPort.existeAlmacenParaUsuario(usuarioId)) {
             throw new AlmacenYaRegistradoException(
                     "El usuario ya administra un almacén",
-                    Map.of("usuarioId", "El usuario ya administra un almacén"));
+                    Map.of("userId", "El usuario ya administra un almacén"));
         }
 
         String nitNormalizado = stripOrNull(request.getNit());
@@ -88,7 +88,7 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
                 .categorias(request.getCategorias() != null ? new HashSet<>(request.getCategorias()) : new HashSet<>())
                 .umbralUltimasUnidades(UmbralUltimasUnidades.VALOR_POR_DEFECTO)
                 .diasNuevaLlegada(PeriodoNuevaLlegada.VALOR_POR_DEFECTO)
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .urlRutPdf(stripOrNull(request.getUrlRutPdf()))
                 .build();
 
@@ -171,7 +171,7 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
                         "Parámetros de paginación inválidos para la consulta de almacenes")
                 : new SolicitudPagina(0, 20);
 
-        Pagina<Almacen> page = repositoryPort.findByEstadoVerificacion(EstadoVerificacionAlmacen.APROBADO, solicitud);
+        Pagina<Almacen> page = repositoryPort.findByEstadoVerificacion(EstadoVerificacionAlmacen.APPROVED, solicitud);
 
         List<AlmacenResponseDTO> content = page.contenido().stream()
                 .filter(a -> request == null

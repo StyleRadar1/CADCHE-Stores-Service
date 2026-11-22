@@ -77,11 +77,11 @@ import io.jsonwebtoken.security.Keys;
 class TrazabilidadRequerimientosTiendasTest {
 
     private static final String SECRETO = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
-    private static final String DATOS_INVALIDOS = "La solicitud contiene datos inválidos";
+    private static final String INVALID_DATA = "La solicitud contiene datos inválidos";
     private static final String EXPIRADO = "El token de autenticación ha expirado";
     private static final String FIRMA = "La firma criptográfica del token es inválida o ha sido alterada";
     private static final String SIN_PERMISO_FUNDACIONES =
-            "Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas";
+            "Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas";
     private static final String NIT = "900123456-1";
 
     @Container
@@ -105,10 +105,10 @@ class TrazabilidadRequerimientosTiendasTest {
     @MockBean
     private FundacionEventPublisherPort eventos;
 
-    private final String tienda = token(20, "ADMIN_ALMACEN");
-    private final String otraTienda = token(21, "ADMIN_ALMACEN");
-    private final String admin = token(1, "ADMIN_STYLERADAR");
-    private final String comprador = token(30, "COMPRADOR");
+    private final String tienda = token(20, "STORE_ADMIN");
+    private final String otraTienda = token(21, "STORE_ADMIN");
+    private final String admin = token(1, "STYLERADAR_ADMIN");
+    private final String comprador = token(30, "BUYER");
 
     @BeforeEach
     void limpiar() {
@@ -148,7 +148,7 @@ class TrazabilidadRequerimientosTiendasTest {
     }
 
     private ResultActions subir(String ruta, String tok, String nombre, String tipo, byte[] contenido) throws Exception {
-        return mockMvc.perform(multipart(ruta).file(new MockMultipartFile("archivo", nombre, tipo, contenido))
+        return mockMvc.perform(multipart(ruta).file(new MockMultipartFile("file", nombre, tipo, contenido))
                 .header("Authorization", "Bearer " + tok));
     }
 
@@ -165,13 +165,13 @@ class TrazabilidadRequerimientosTiendasTest {
 
     private static void campo(ResultActions r, String campo, String mensaje) throws Exception {
         r.andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(DATOS_INVALIDOS))
-                .andExpect(jsonPath("$.validationErrors." + campo).value(mensaje));
+                .andExpect(jsonPath("$.message").value(INVALID_DATA))
+                .andExpect(jsonPath("$.errors." + campo).value(mensaje));
     }
 
     /** Las dos variantes del 401 del Word: token vencido y firma alterada. */
     private void fa01(HttpMethod metodo, String ruta, Object cuerpo) throws Exception {
-        error(json(metodo, ruta, firmar(20, "ADMIN_STYLERADAR", Instant.now().minusSeconds(60)), cuerpo), 401, EXPIRADO);
+        error(json(metodo, ruta, firmar(20, "STYLERADAR_ADMIN", Instant.now().minusSeconds(60)), cuerpo), 401, EXPIRADO);
         String alterado = admin.substring(0, admin.length() - 3) + (admin.endsWith("AAA") ? "BBB" : "AAA");
         error(json(metodo, ruta, alterado, cuerpo), 401, FIRMA);
         error(json(metodo, ruta, null, cuerpo), 401, null);
@@ -180,10 +180,10 @@ class TrazabilidadRequerimientosTiendasTest {
     private Map<String, Object> almacen(String nit) {
         Map<String, Object> a = new HashMap<>();
         a.put("nit", nit);
-        a.put("nombreComercial", "Atelier Urbano");
-        a.put("correoContacto", "contacto@atelier.co");
-        a.put("categorias", List.of("CASUAL"));
-        a.put("urlRutPdf", "https://blob/rut.pdf");
+        a.put("tradeName", "Atelier Urbano");
+        a.put("contactEmail", "contacto@atelier.co");
+        a.put("categories", List.of("CASUAL"));
+        a.put("rutPdfUrl", "https://blob/rut.pdf");
         return a;
     }
 
@@ -193,16 +193,16 @@ class TrazabilidadRequerimientosTiendasTest {
 
     private Map<String, Object> fundacion(String nombre, String nit, long representante) {
         Map<String, Object> f = new HashMap<>();
-        f.put("nombre", nombre);
+        f.put("name", nombre);
         f.put("nit", nit);
-        f.put("barrio", "Chapinero");
-        f.put("direccion", "Calle 85 # 15-32");
+        f.put("neighborhood", "Chapinero");
+        f.put("address", "Calle 85 # 15-32");
         f.put("email", "contacto@fundacion.org");
-        f.put("latitud", 4.67);
-        f.put("longitud", -74.05);
-        f.put("categoriasAceptadas", List.of("SUPERIOR"));
-        f.put("representanteId", representante);
-        f.put("urlCertificadoPersoneriaJuridica", "https://blob/certificado.pdf");
+        f.put("latitude", 4.67);
+        f.put("longitude", -74.05);
+        f.put("acceptedCategories", List.of("TOP"));
+        f.put("representativeId", representante);
+        f.put("legalEntityCertificateUrl", "https://blob/certificado.pdf");
         return f;
     }
 
@@ -237,39 +237,39 @@ class TrazabilidadRequerimientosTiendasTest {
 
         private JsonNode calcular(int stock, boolean disponible) throws Exception {
             return objectMapper.readTree(json(HttpMethod.PATCH, prenda, tienda,
-                    Map.of("stockActual", stock, "disponible", disponible))
+                    Map.of("currentStock", stock, "available", disponible))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         }
 
         @Test
         @DisplayName("RN-03: umbral por defecto 3 y se guarda entre 0 y 50")
         void rn03() throws Exception {
-            json(HttpMethod.GET, config, tienda, null).andExpect(jsonPath("$.umbralUltimasUnidades").value(3));
-            json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", 50, "diasNuevaLlegada", 7))
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.umbralUltimasUnidades").value(50));
+            json(HttpMethod.GET, config, tienda, null).andExpect(jsonPath("$.lowStockThreshold").value(3));
+            json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", 50, "newArrivalDays", 7))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.lowStockThreshold").value(50));
         }
 
         @Test
-        @DisplayName("RN-01 y RN-02: distintivo si 1 ≤ stock ≤ umbral; stock 0 o no disponible → NINGUNO (agotado prevalece)")
+        @DisplayName("RN-01 y RN-02: distintivo si 1 ≤ stock ≤ umbral; stock 0 o no disponible → NONE (agotado prevalece)")
         void rn01Rn02() throws Exception {
-            assertThat(calcular(3, true).get("distintivoActivo").asText()).isEqualTo("ULTIMAS_UNIDADES");
-            assertThat(calcular(1, true).get("ultimasUnidades").asBoolean()).isTrue();
-            assertThat(calcular(4, true).get("distintivoActivo").asText()).isEqualTo("NINGUNO");
-            assertThat(calcular(0, true).get("distintivoActivo").asText()).isEqualTo("NINGUNO");
-            assertThat(calcular(2, false).get("distintivoActivo").asText()).isEqualTo("NINGUNO");
+            assertThat(calcular(3, true).get("activeBadge").asText()).isEqualTo("LOW_STOCK");
+            assertThat(calcular(1, true).get("lowStock").asBoolean()).isTrue();
+            assertThat(calcular(4, true).get("activeBadge").asText()).isEqualTo("NONE");
+            assertThat(calcular(0, true).get("activeBadge").asText()).isEqualTo("NONE");
+            assertThat(calcular(2, false).get("activeBadge").asText()).isEqualTo("NONE");
         }
 
         @Test
         @DisplayName("FA-01: sesión vencida o firma alterada → 401")
         void fa01() throws Exception {
             TrazabilidadRequerimientosTiendasTest.this.fa01(HttpMethod.PUT, config,
-                    Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 7));
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7));
         }
 
         @Test
         @DisplayName("FA-02 y RN-04: almacén que no administra → 403")
         void fa02() throws Exception {
-            error(json(HttpMethod.PUT, config, otraTienda, Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 7)),
+            error(json(HttpMethod.PUT, config, otraTienda, Map.of("lowStockThreshold", 3, "newArrivalDays", 7)),
                     403, "El usuario autenticado (21) no tiene permisos para administrar el almacén con NIT " + NIT);
         }
 
@@ -277,28 +277,35 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("FA-03: almacén inexistente → 404")
         void fa03() throws Exception {
             error(json(HttpMethod.PUT, "/api/v1/stores/811111111-1/catalog-settings", tienda,
-                    Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 7)),
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)),
                     404, "No se encontró ningún almacén registrado con el NIT: 811111111-1");
         }
 
         @Test
         @DisplayName("FA-04, FA-05 y FA-06: umbral vacío, negativo o mayor que 50 → 400")
         void fa04a06() throws Exception {
-            campo(json(HttpMethod.PUT, config, tienda, Map.of("diasNuevaLlegada", 7)),
-                    "umbralUltimasUnidades", "El umbral de últimas unidades es obligatorio");
-            campo(json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", -1, "diasNuevaLlegada", 7)),
-                    "umbralUltimasUnidades", "El umbral de últimas unidades no puede ser negativo");
-            campo(json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", 51, "diasNuevaLlegada", 7)),
-                    "umbralUltimasUnidades", "El umbral de últimas unidades no puede superar 50");
+            campo(json(HttpMethod.PUT, config, tienda, Map.of("newArrivalDays", 7)),
+                    "lowStockThreshold", "El umbral de últimas unidades es obligatorio");
+            campo(json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", -1, "newArrivalDays", 7)),
+                    "lowStockThreshold", "El umbral de últimas unidades no puede ser negativo");
+            campo(json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", 51, "newArrivalDays", 7)),
+                    "lowStockThreshold", "El umbral de últimas unidades no puede superar 50");
+        }
+
+        @Test
+        @DisplayName("D10: available es obligatorio (sin valor por defecto)")
+        void disponibleObligatorio() throws Exception {
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("currentStock", 2)),
+                    "available", "Debe indicar si la prenda está disponible");
         }
 
         @Test
         @DisplayName("FA-07: stock vacío o negativo → 400")
         void fa07() throws Exception {
-            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("disponible", true)),
-                    "stockActual", "El stock actual es obligatorio");
-            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("stockActual", -1, "disponible", true)),
-                    "stockActual", "El stock actual no puede ser negativo");
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("available", true)),
+                    "currentStock", "El stock actual es obligatorio");
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("currentStock", -1, "available", true)),
+                    "currentStock", "El stock actual no puede ser negativo");
         }
     }
 
@@ -318,41 +325,41 @@ class TrazabilidadRequerimientosTiendasTest {
 
         private String calcular(Instant publicacion, boolean retirada) throws Exception {
             return objectMapper.readTree(json(HttpMethod.PATCH, prenda, tienda,
-                    Map.of("fechaPublicacion", publicacion.toString(), "retirada", retirada))
+                    Map.of("publishedAt", publicacion.toString(), "withdrawn", retirada))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
-                    .get("distintivoActivo").asText();
+                    .get("activeBadge").asText();
         }
 
         @Test
         @DisplayName("RN-03: periodo por defecto 7 días; entre 1 y 60")
         void rn03() throws Exception {
-            json(HttpMethod.GET, config, tienda, null).andExpect(jsonPath("$.diasNuevaLlegada").value(7));
-            json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 60))
+            json(HttpMethod.GET, config, tienda, null).andExpect(jsonPath("$.newArrivalDays").value(7));
+            json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", 3, "newArrivalDays", 60))
                     .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("RN-01 y RN-02: nueva durante el periodo; al día siguiente o retirada → NINGUNO")
+        @DisplayName("RN-01 y RN-02: nueva durante el periodo; al día siguiente o retirada → NONE")
         void rn01Rn02() throws Exception {
             Instant ahora = Instant.now();
-            assertThat(calcular(ahora.minus(6, ChronoUnit.DAYS), false)).isEqualTo("NUEVA_PRENDA");
-            assertThat(calcular(ahora.minus(7, ChronoUnit.DAYS).plus(1, ChronoUnit.MINUTES), false)).isEqualTo("NUEVA_PRENDA");
-            assertThat(calcular(ahora.minus(8, ChronoUnit.DAYS), false)).isEqualTo("NINGUNO");
-            assertThat(calcular(ahora.minus(1, ChronoUnit.DAYS), true)).isEqualTo("NINGUNO");
+            assertThat(calcular(ahora.minus(6, ChronoUnit.DAYS), false)).isEqualTo("NEW_ARRIVAL");
+            assertThat(calcular(ahora.minus(7, ChronoUnit.DAYS).plus(1, ChronoUnit.MINUTES), false)).isEqualTo("NEW_ARRIVAL");
+            assertThat(calcular(ahora.minus(8, ChronoUnit.DAYS), false)).isEqualTo("NONE");
+            assertThat(calcular(ahora.minus(1, ChronoUnit.DAYS), true)).isEqualTo("NONE");
         }
 
         @Test
         @DisplayName("FA-01: sesión vencida o firma alterada → 401")
         void fa01() throws Exception {
             TrazabilidadRequerimientosTiendasTest.this.fa01(HttpMethod.PUT, config,
-                    Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 7));
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7));
         }
 
         @Test
         @DisplayName("FA-02 y RN-04: almacén que no administra → 403")
         void fa02() throws Exception {
             error(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/new-arrival-days", otraTienda,
-                    Map.of("diasNuevaLlegada", 14)), 403,
+                    Map.of("newArrivalDays", 14)), 403,
                     "El usuario autenticado (21) no tiene permisos para administrar el almacén con NIT " + NIT);
         }
 
@@ -360,30 +367,37 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("FA-03: almacén inexistente → 404")
         void fa03() throws Exception {
             error(json(HttpMethod.PUT, "/api/v1/stores/811111111-1/new-arrival-days", tienda,
-                    Map.of("diasNuevaLlegada", 14)), 404, "No se encontró ningún almacén registrado con el NIT: 811111111-1");
+                    Map.of("newArrivalDays", 14)), 404, "No se encontró ningún almacén registrado con el NIT: 811111111-1");
         }
 
         @Test
         @DisplayName("FA-04, FA-05 y FA-06: periodo vacío, menor que 1 o mayor que 60 → 400")
         void fa04a06() throws Exception {
-            campo(json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", 3)),
-                    "diasNuevaLlegada", "El periodo en días de nueva llegada es obligatorio");
-            campo(json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 0)),
-                    "diasNuevaLlegada", "El periodo de nueva llegada debe ser de al menos 1 día");
-            campo(json(HttpMethod.PUT, config, tienda, Map.of("umbralUltimasUnidades", 3, "diasNuevaLlegada", 61)),
-                    "diasNuevaLlegada", "El periodo de nueva llegada no puede superar 60 días");
+            campo(json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", 3)),
+                    "newArrivalDays", "El periodo en días de nueva llegada es obligatorio");
+            campo(json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", 3, "newArrivalDays", 0)),
+                    "newArrivalDays", "El periodo de nueva llegada debe ser de al menos 1 día");
+            campo(json(HttpMethod.PUT, config, tienda, Map.of("lowStockThreshold", 3, "newArrivalDays", 61)),
+                    "newArrivalDays", "El periodo de nueva llegada no puede superar 60 días");
             campo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/new-arrival-days", tienda, Map.of()),
-                    "diasNuevaLlegada", "El periodo en días de nueva llegada es obligatorio");
+                    "newArrivalDays", "El periodo en días de nueva llegada es obligatorio");
+        }
+
+        @Test
+        @DisplayName("D10: withdrawn es obligatorio (sin valor por defecto)")
+        void retiradaObligatoria() throws Exception {
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("publishedAt", Instant.now().minus(1, ChronoUnit.DAYS).toString())),
+                    "withdrawn", "Debe indicar si la prenda fue retirada");
         }
 
         @Test
         @DisplayName("FA-07: fecha de publicación vacía o futura → 400")
         void fa07() throws Exception {
-            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("retirada", false)),
-                    "fechaPublicacion", "La fecha de publicación es obligatoria");
+            campo(json(HttpMethod.PATCH, prenda, tienda, Map.of("withdrawn", false)),
+                    "publishedAt", "La fecha de publicación es obligatoria");
             campo(json(HttpMethod.PATCH, prenda, tienda,
-                    Map.of("fechaPublicacion", Instant.now().plus(2, ChronoUnit.DAYS).toString(), "retirada", false)),
-                    "fechaPublicacion", "La fecha de publicación no puede ser futura");
+                    Map.of("publishedAt", Instant.now().plus(2, ChronoUnit.DAYS).toString(), "withdrawn", false)),
+                    "publishedAt", "La fecha de publicación no puede ser futura");
         }
     }
 
@@ -394,13 +408,13 @@ class TrazabilidadRequerimientosTiendasTest {
     class RegistrarAlmacen {
 
         @Test
-        @DisplayName("Flujo básico, RN-01 y RN-04: el almacén nace PENDIENTE, con RUT y asociado a la Tienda")
+        @DisplayName("Flujo básico, RN-01 y RN-04: el almacén nace PENDING, con RUT y asociado a la Tienda")
         void flujoBasico() throws Exception {
             json(HttpMethod.POST, "/api/v1/stores", tienda, almacen(NIT))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"))
-                    .andExpect(jsonPath("$.urlRutPdf").value("https://blob/rut.pdf"))
-                    .andExpect(jsonPath("$.representante").isNotEmpty());
+                    .andExpect(jsonPath("$.verificationStatus").value("PENDING"))
+                    .andExpect(jsonPath("$.rutPdfUrl").value("https://blob/rut.pdf"))
+                    .andExpect(jsonPath("$.representative").isNotEmpty());
             json(HttpMethod.GET, "/api/v1/users/20/store", tienda, null)
                     .andExpect(status().isOk()).andExpect(jsonPath("$.nit").value(NIT));
         }
@@ -424,7 +438,7 @@ class TrazabilidadRequerimientosTiendasTest {
             registrarAlmacen();
             error(json(HttpMethod.POST, "/api/v1/stores", otraTienda, almacen(NIT)),
                     409, "Ya existe un almacén registrado con el NIT: " + NIT)
-                    .andExpect(jsonPath("$.validationErrors.nit").exists());
+                    .andExpect(jsonPath("$.errors.nit").exists());
         }
 
         @Test
@@ -441,17 +455,17 @@ class TrazabilidadRequerimientosTiendasTest {
             Map<String, Object> vacio = new HashMap<>();
             ResultActions r = json(HttpMethod.POST, "/api/v1/stores", tienda, vacio);
             campo(r, "nit", "El NIT del almacén es obligatorio");
-            campo(r, "nombreComercial", "El nombre comercial es obligatorio");
-            campo(r, "correoContacto", "El correo de contacto es obligatorio");
-            campo(r, "categorias", "Debe indicar al menos una categoría comercial");
-            campo(r, "urlRutPdf", "La URL o referencia del documento RUT en PDF es obligatoria para verificar la personería jurídica");
+            campo(r, "tradeName", "El nombre comercial es obligatorio");
+            campo(r, "contactEmail", "El correo de contacto es obligatorio");
+            campo(r, "categories", "Debe indicar al menos una categoría comercial");
+            campo(r, "rutPdfUrl", "La URL o referencia del documento RUT en PDF es obligatoria para verificar la personería jurídica");
             Map<String, Object> malo = almacen("90012ABC");
-            malo.put("nombreComercial", "A");
-            malo.put("correoContacto", "sin-arroba");
+            malo.put("tradeName", "A");
+            malo.put("contactEmail", "sin-arroba");
             r = json(HttpMethod.POST, "/api/v1/stores", tienda, malo);
             campo(r, "nit", "El NIT debe tener un formato válido (ej. 900123456-1)");
-            campo(r, "nombreComercial", "El nombre comercial debe tener entre 2 y 120 caracteres");
-            campo(r, "correoContacto", "El correo de contacto debe tener un formato válido");
+            campo(r, "tradeName", "El nombre comercial debe tener entre 2 y 120 caracteres");
+            campo(r, "contactEmail", "El correo de contacto debe tener un formato válido");
         }
 
         @Test
@@ -482,35 +496,35 @@ class TrazabilidadRequerimientosTiendasTest {
         @Test
         @DisplayName("Flujo básico y RN-01: el Admin aprueba y queda quién decidió; listado paginado por estado")
         void flujoBasico() throws Exception {
-            json(HttpMethod.GET, "/api/v1/admin/stores/verifications?status=PENDIENTE&page=0&size=20", admin, null)
+            json(HttpMethod.GET, "/api/v1/admin/stores/verifications?status=PENDING&page=0&size=20", admin, null)
                     .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].nit").value(NIT))
                     .andExpect(jsonPath("$.totalElements").value(1));
-            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APROBADO"))
+            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APPROVED"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.estadoVerificacion").value("APROBADO"))
-                    .andExpect(jsonPath("$.administradorDecisionId").value(1));
+                    .andExpect(jsonPath("$.verificationStatus").value("APPROVED"))
+                    .andExpect(jsonPath("$.decisionAdminId").value(1));
         }
 
         @Test
         @DisplayName("RN-02 y RN-05: rechazar con motivo de 10 a 1000 caracteres deja el motivo")
         void rn02Rn05() throws Exception {
-            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "RECHAZADO", "motivo", "La cámara de comercio está vencida."))
+            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "La cámara de comercio está vencida."))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.estadoVerificacion").value("RECHAZADO"))
-                    .andExpect(jsonPath("$.motivoVerificacion").value("La cámara de comercio está vencida."));
+                    .andExpect(jsonPath("$.verificationStatus").value("REJECTED"))
+                    .andExpect(jsonPath("$.verificationReason").value("La cámara de comercio está vencida."));
         }
 
         @Test
         @DisplayName("FA-01: sesión vencida o firma alterada → 401")
         void fa01() throws Exception {
-            TrazabilidadRequerimientosTiendasTest.this.fa01(HttpMethod.PATCH, verificacion, Map.of("decision", "APROBADO"));
+            TrazabilidadRequerimientosTiendasTest.this.fa01(HttpMethod.PATCH, verificacion, Map.of("decision", "APPROVED"));
         }
 
         @Test
         @DisplayName("FA-02: usuario sin rol Admin → 403")
         void fa02() throws Exception {
-            error(json(HttpMethod.PATCH, verificacion, tienda, Map.of("decision", "APROBADO")),
-                    403, "Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados");
+            error(json(HttpMethod.PATCH, verificacion, tienda, Map.of("decision", "APPROVED")),
+                    403, "Se requiere el rol ROLE_STYLERADAR_ADMIN para verificar almacenes aliados");
         }
 
         @Test
@@ -523,43 +537,45 @@ class TrazabilidadRequerimientosTiendasTest {
         @Test
         @DisplayName("FA-04 y RN-04: decisión ya tomada → 409")
         void fa04() throws Exception {
-            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APROBADO")).andExpect(status().isOk());
-            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "RECHAZADO", "motivo", "Motivo suficiente")),
-                    409, "El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APROBADO");
+            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APPROVED")).andExpect(status().isOk());
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "Motivo suficiente")),
+                    409, "El almacén con NIT " + NIT + " ya fue decidido previamente. Estado actual: APPROVED");
         }
 
         @Test
         @DisplayName("FA-05 y RN-03: aprobar sin RUT → 422")
         void fa05() throws Exception {
             jdbc.update("UPDATE almacenes SET url_rut_pdf = NULL WHERE nit = ?", NIT);
-            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APROBADO")), 422,
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APPROVED")), 422,
                     "No es posible aprobar el almacén con NIT " + NIT + " porque no cuenta con el documento RUT adjunto en PDF");
         }
 
         @Test
         @DisplayName("FA-06: rechazo con motivo vacío o de menos de 10 caracteres → 400 en el campo motivo")
         void fa06() throws Exception {
-            campo(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "RECHAZADO", "motivo", "")),
-                    "motivo", "El rechazo exige un motivo no vacío");
-            campo(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "RECHAZADO", "motivo", "corto")),
-                    "motivo", "El motivo debe tener entre 10 y 1000 caracteres");
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "")),
+                    400, "El rechazo exige un motivo no vacío")
+                    .andExpect(jsonPath("$.errors.reason").value("El rechazo exige un motivo no vacío"));
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "REJECTED", "reason", "corto")),
+                    400, "El motivo debe tener entre 10 y 1000 caracteres")
+                    .andExpect(jsonPath("$.errors.reason").value("El motivo debe tener entre 10 y 1000 caracteres"));
         }
 
         @Test
         @DisplayName("FA-07: campos distintos a la decisión y el motivo → 400")
         void fa07() throws Exception {
-            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APROBADO", "estado", "APROBADO")),
+            error(json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APPROVED", "estado", "APPROVED")),
                     400, "Campo no permitido en la decisión de verificación");
         }
 
         @Test
-        @DisplayName("FA-08: retirar verificación de una tienda pendiente → 422; decidida vuelve a PENDIENTE")
+        @DisplayName("FA-08: retirar verificación de una tienda pendiente → 422; decidida vuelve a PENDING")
         void fa08() throws Exception {
             error(json(HttpMethod.POST, verificacion + "/review-request", admin, null),
                     422, "El almacén ya se encuentra pendiente de revisión");
-            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APROBADO"));
+            json(HttpMethod.PATCH, verificacion, admin, Map.of("decision", "APPROVED"));
             json(HttpMethod.POST, verificacion + "/review-request", admin, null)
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.estadoVerificacion").value("PENDIENTE"));
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.verificationStatus").value("PENDING"));
         }
     }
 
@@ -568,31 +584,31 @@ class TrazabilidadRequerimientosTiendasTest {
     /** Validaciones comunes de los datos de la fundación (FA-04 a FA-14 de RF-63 y FA-05 a FA-14 de RF-64). */
     private void validacionesFundacion(HttpMethod metodo, String ruta) throws Exception {
         ResultActions r = json(metodo, ruta, admin, Map.of());
-        campo(r, "nombre", "El nombre es obligatorio");
+        campo(r, "name", "El nombre es obligatorio");
         campo(r, "nit", "El NIT es obligatorio");
-        campo(r, "barrio", "El barrio es obligatorio");
-        campo(r, "direccion", "La dirección es obligatoria");
+        campo(r, "neighborhood", "El barrio es obligatorio");
+        campo(r, "address", "La dirección es obligatoria");
         campo(r, "email", "El email es obligatorio");
-        campo(r, "latitud", "La latitud es obligatoria");
-        campo(r, "longitud", "La longitud es obligatoria");
-        campo(r, "categoriasAceptadas", "Debe aceptar al menos una categoría de prenda");
-        campo(r, "representanteId", "El ID del usuario representante es obligatorio");
+        campo(r, "latitude", "La latitud es obligatoria");
+        campo(r, "longitude", "La longitud es obligatoria");
+        campo(r, "acceptedCategories", "Debe aceptar al menos una categoría de prenda");
+        campo(r, "representativeId", "El ID del usuario representante es obligatorio");
         Map<String, Object> malo = fundacion("Fun", "9002", 40);
-        malo.put("barrio", "b".repeat(81));
-        malo.put("direccion", "d".repeat(201));
+        malo.put("neighborhood", "b".repeat(81));
+        malo.put("address", "d".repeat(201));
         malo.put("email", "sin-arroba");
-        malo.put("latitud", 91);
-        malo.put("longitud", -181);
+        malo.put("latitude", 91);
+        malo.put("longitude", -181);
         r = json(metodo, ruta, admin, malo);
-        campo(r, "nombre", "El nombre debe tener entre 4 y 120 caracteres");
+        campo(r, "name", "El nombre debe tener entre 4 y 120 caracteres");
         campo(r, "nit", "El NIT debe tener un formato válido (ej. 900215884-1)");
-        campo(r, "barrio", "El barrio no puede superar 80 caracteres");
-        campo(r, "direccion", "La dirección no puede superar 200 caracteres");
+        campo(r, "neighborhood", "El barrio no puede superar 80 caracteres");
+        campo(r, "address", "La dirección no puede superar 200 caracteres");
         campo(r, "email", "El email no tiene un formato válido");
-        campo(r, "latitud", "La latitud debe estar entre -90 y 90");
-        campo(r, "longitud", "La longitud debe estar entre -180 y 180");
+        campo(r, "latitude", "La latitud debe estar entre -90 y 90");
+        campo(r, "longitude", "La longitud debe estar entre -180 y 180");
         malo = fundacion("x".repeat(121), "900215884-1", 40);
-        campo(json(metodo, ruta, admin, malo), "nombre", "El nombre debe tener entre 4 y 120 caracteres");
+        campo(json(metodo, ruta, admin, malo), "name", "El nombre debe tener entre 4 y 120 caracteres");
     }
 
     @Nested
@@ -606,10 +622,10 @@ class TrazabilidadRequerimientosTiendasTest {
         void flujoBasico() throws Exception {
             json(HttpMethod.POST, ruta, admin, fundacion("Fundación Abrigo", "900215884-1", 24))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.activa").value(true))
+                    .andExpect(jsonPath("$.active").value(true))
                     .andExpect(jsonPath("$.nit").value("900215884-1"))
-                    .andExpect(jsonPath("$.barrio").value("Chapinero"))
-                    .andExpect(jsonPath("$.fechaRegistro").isNotEmpty());
+                    .andExpect(jsonPath("$.neighborhood").value("Chapinero"))
+                    .andExpect(jsonPath("$.registeredAt").isNotEmpty());
         }
 
         @Test
@@ -630,20 +646,20 @@ class TrazabilidadRequerimientosTiendasTest {
             registrarFundacion("Fundación Abrigo", "900215884-1", 24);
             error(json(HttpMethod.POST, ruta, admin, fundacion("Fundación Abrigo", "900215885-1", 25)),
                     409, "Ya existe una fundación aliada registrada con el nombre: Fundación Abrigo")
-                    .andExpect(jsonPath("$.validationErrors.nombre").exists());
+                    .andExpect(jsonPath("$.errors.name").exists());
             error(json(HttpMethod.POST, ruta, admin, fundacion("Otra Fundación", "900215885-1", 24)),
                     409, "El usuario con ID 24 ya se encuentra asignado como representante de otra fundación aliada")
-                    .andExpect(jsonPath("$.validationErrors.representanteId").exists());
+                    .andExpect(jsonPath("$.errors.representativeId").exists());
             error(json(HttpMethod.POST, ruta, admin, fundacion("Otra Fundación", "900215884-1", 25)),
                     409, "Ya existe una fundación aliada registrada con el NIT: 900215884-1")
-                    .andExpect(jsonPath("$.validationErrors.nit").exists());
+                    .andExpect(jsonPath("$.errors.nit").exists());
         }
 
         @Test
         @DisplayName("FA-04 y RN-04: sin certificado de personería jurídica → 400")
         void fa04() throws Exception {
             Map<String, Object> sinCertificado = fundacion("Fundación Abrigo", "900215884-1", 24);
-            sinCertificado.remove("urlCertificadoPersoneriaJuridica");
+            sinCertificado.remove("legalEntityCertificateUrl");
             error(json(HttpMethod.POST, ruta, admin, sinCertificado), 400,
                     "El certificado de personería jurídica en PDF es obligatorio para registrar la fundación aliada");
         }
@@ -676,9 +692,9 @@ class TrazabilidadRequerimientosTiendasTest {
                     .andReturn().getResponse().getContentAsString();
             json(HttpMethod.PUT, ruta, admin, fundacion("Fundación Segunda Editada", "900215886-1", 26))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.nombre").value("Fundación Segunda Editada"))
-                    .andExpect(jsonPath("$.activa").value(true))
-                    .andExpect(jsonPath("$.fechaRegistro").value(objectMapper.readTree(antes).get("fechaRegistro").asText()));
+                    .andExpect(jsonPath("$.name").value("Fundación Segunda Editada"))
+                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$.registeredAt").value(objectMapper.readTree(antes).get("registeredAt").asText()));
         }
 
         @Test
@@ -708,10 +724,10 @@ class TrazabilidadRequerimientosTiendasTest {
                     409, "Ya existe otra fundación aliada registrada con el nombre: Fundación Abrigo");
             error(json(HttpMethod.PUT, ruta, admin, fundacion("Fundación Segunda", "900215886-1", 24)),
                     409, "El usuario con ID 24 ya se encuentra asignado como representante de otra fundación aliada")
-                    .andExpect(jsonPath("$.validationErrors.representanteId").exists());
+                    .andExpect(jsonPath("$.errors.representativeId").exists());
             error(json(HttpMethod.PUT, ruta, admin, fundacion("Fundación Segunda", "900215884-1", 26)),
                     409, "Ya existe una fundación aliada registrada con el NIT: 900215884-1")
-                    .andExpect(jsonPath("$.validationErrors.nit").exists());
+                    .andExpect(jsonPath("$.errors.nit").exists());
         }
 
         @Test
@@ -738,7 +754,7 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("Flujo básico, RN-01 a RN-03 y RN-05: desactivar y reactivar publican sus eventos con todos los campos")
         void flujoBasico() throws Exception {
             json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", admin, null)
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.activa").value(false));
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
             ArgumentCaptor<FundacionDesactivadaEvent> desactivada = ArgumentCaptor.forClass(FundacionDesactivadaEvent.class);
             verify(eventos).publicarFundacionDesactivada(desactivada.capture());
             assertThat(desactivada.getValue().getEventoId()).isNotBlank();
@@ -748,7 +764,7 @@ class TrazabilidadRequerimientosTiendasTest {
 
             mockMvc.perform(patch("/api/v1/admin/foundations/" + id + "/activate").param("reason", "Revisión superada")
                             .header("Authorization", "Bearer " + admin))
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.activa").value(true));
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.active").value(true));
             ArgumentCaptor<FundacionReactivadaEvent> reactivada = ArgumentCaptor.forClass(FundacionReactivadaEvent.class);
             verify(eventos).publicarFundacionReactivada(reactivada.capture());
             assertThat(reactivada.getValue().getMotivo()).isEqualTo("Revisión superada");
@@ -820,25 +836,25 @@ class TrazabilidadRequerimientosTiendasTest {
                 ids.add(subirFoto("f" + i + ".png"));
             }
             json(HttpMethod.GET, fotos, tienda, null)
-                    .andExpect(jsonPath("$[0].portada").value(true)).andExpect(jsonPath("$[0].orden").value(1))
-                    .andExpect(jsonPath("$[1].portada").value(false));
+                    .andExpect(jsonPath("$[0].cover").value(true)).andExpect(jsonPath("$[0].position").value(1))
+                    .andExpect(jsonPath("$[1].cover").value(false));
             List<Long> invertido = new ArrayList<>(ids);
             java.util.Collections.reverse(invertido);
-            json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("fotoIds", invertido))
+            json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("photoIds", invertido))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value(invertido.get(0)))
-                    .andExpect(jsonPath("$[0].portada").value(true));
+                    .andExpect(jsonPath("$[0].cover").value(true));
             json(HttpMethod.DELETE, fotos + "/" + invertido.get(0), tienda, null).andExpect(status().isNoContent());
             json(HttpMethod.GET, fotos, tienda, null)
                     .andExpect(jsonPath("$.length()").value(5))
                     .andExpect(jsonPath("$[0].id").value(invertido.get(1)))
-                    .andExpect(jsonPath("$[0].portada").value(true));
+                    .andExpect(jsonPath("$[0].cover").value(true));
         }
 
         @Test
         @DisplayName("FA-01: sesión vencida o firma alterada → 401")
         void fa01() throws Exception {
-            TrazabilidadRequerimientosTiendasTest.this.fa01(HttpMethod.PUT, fotos + "/order", Map.of("fotoIds", List.of(1)));
+            TrazabilidadRequerimientosTiendasTest.this.fa01(HttpMethod.PUT, fotos + "/order", Map.of("photoIds", List.of(1)));
         }
 
         @Test
@@ -901,8 +917,8 @@ class TrazabilidadRequerimientosTiendasTest {
         void fa09() throws Exception {
             long a = subirFoto("a.png");
             subirFoto("b.png");
-            error(json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("fotoIds", List.of(a))), 400,
-                    "El nuevo orden debe incluir todas las fotografías actuales del almacén");
+            campo(json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("photoIds", List.of(a))),
+                    "photoIds", "El nuevo orden debe incluir todas las fotografías actuales del almacén");
         }
     }
 
@@ -926,7 +942,7 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("0.2: todo error trae timestamp, status, error, message, path y validationErrors")
         void formatoDeError() throws Exception {
             JsonNode e = cuerpo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, Map.of()));
-            campos(e, "timestamp", "status", "error", "message", "path", "validationErrors");
+            campos(e, "timestamp", "status", "error", "message", "path", "errors");
             assertThat(e.get("error").asText()).isEqualTo("Bad Request");
             assertThat(e.get("path").asText()).isEqualTo("/api/v1/admin/foundations");
             JsonNode n = cuerpo(json(HttpMethod.GET, "/api/v1/admin/foundations/999999", admin, null));
@@ -940,7 +956,7 @@ class TrazabilidadRequerimientosTiendasTest {
             error(json(HttpMethod.GET, "/api/v1/admin/stores/verifications", null, null), 401, null);
             error(json(HttpMethod.GET, "/api/v1/users/20/store", null, null), 401, null);
             error(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/low-stock-threshold", null,
-                    Map.of("umbralUltimasUnidades", 3)), 401, null);
+                    Map.of("lowStockThreshold", 3)), 401, null);
         }
 
         @Test
@@ -968,17 +984,17 @@ class TrazabilidadRequerimientosTiendasTest {
             registrarAlmacen();
             String base = "/api/v1/stores/" + NIT;
             JsonNode c = cuerpo(json(HttpMethod.PUT, base + "/catalog-settings", tienda,
-                    Map.of("umbralUltimasUnidades", 5, "diasNuevaLlegada", 14)).andExpect(status().isOk()));
-            campos(c, "nit", "umbralUltimasUnidades", "diasNuevaLlegada", "fechaActualizacion");
+                    Map.of("lowStockThreshold", 5, "newArrivalDays", 14)).andExpect(status().isOk()));
+            campos(c, "nit", "lowStockThreshold", "newArrivalDays", "updatedAt");
             assertThat(c.get("nit").asText()).isEqualTo(NIT);
-            assertThat(c.get("fechaActualizacion").asText()).matches(FECHA_UTC);
-            json(HttpMethod.PUT, base + "/low-stock-threshold", tienda, Map.of("umbralUltimasUnidades", 9))
+            assertThat(c.get("updatedAt").asText()).matches(FECHA_UTC);
+            json(HttpMethod.PUT, base + "/low-stock-threshold", tienda, Map.of("lowStockThreshold", 9))
                     .andExpect(status().isOk());
             json(HttpMethod.GET, base + "/catalog-settings", tienda, null)
-                    .andExpect(jsonPath("$.umbralUltimasUnidades").value(9))
-                    .andExpect(jsonPath("$.diasNuevaLlegada").value(14));
-            campo(json(HttpMethod.PUT, base + "/low-stock-threshold", tienda, Map.of("umbralUltimasUnidades", 51)),
-                    "umbralUltimasUnidades", "El umbral de últimas unidades no puede superar 50");
+                    .andExpect(jsonPath("$.lowStockThreshold").value(9))
+                    .andExpect(jsonPath("$.newArrivalDays").value(14));
+            campo(json(HttpMethod.PUT, base + "/low-stock-threshold", tienda, Map.of("lowStockThreshold", 51)),
+                    "lowStockThreshold", "El umbral de últimas unidades no puede superar 50");
         }
 
         @Test
@@ -986,22 +1002,22 @@ class TrazabilidadRequerimientosTiendasTest {
         void distintivo() throws Exception {
             registrarAlmacen();
             String base = "/api/v1/stores/" + NIT;
-            json(HttpMethod.PUT, base + "/catalog-settings", tienda, Map.of("umbralUltimasUnidades", 5, "diasNuevaLlegada", 14));
+            json(HttpMethod.PUT, base + "/catalog-settings", tienda, Map.of("lowStockThreshold", 5, "newArrivalDays", 14));
             JsonNode u = cuerpo(json(HttpMethod.PATCH, base + "/items/7/low-stock", tienda,
-                    Map.of("stockActual", 5, "disponible", true)).andExpect(status().isOk()));
-            campos(u, "nit", "itemId", "ultimasUnidades", "umbralUltimasUnidades", "nuevaLlegada", "diasNuevaLlegada",
-                    "distintivoActivo", "fechaActualizacion");
+                    Map.of("currentStock", 5, "available", true)).andExpect(status().isOk()));
+            campos(u, "nit", "itemId", "lowStock", "lowStockThreshold", "newArrival", "newArrivalDays",
+                    "activeBadge", "updatedAt");
             assertThat(u.get("itemId").asLong()).isEqualTo(7);
-            assertThat(u.get("umbralUltimasUnidades").asInt()).isEqualTo(5);
-            assertThat(u.get("distintivoActivo").asText()).isEqualTo("ULTIMAS_UNIDADES");
-            assertThat(u.get("fechaActualizacion").asText()).matches(FECHA_UTC);
+            assertThat(u.get("lowStockThreshold").asInt()).isEqualTo(5);
+            assertThat(u.get("activeBadge").asText()).isEqualTo("LOW_STOCK");
+            assertThat(u.get("updatedAt").asText()).matches(FECHA_UTC);
             JsonNode n = cuerpo(json(HttpMethod.PATCH, base + "/items/8/new-arrival", tienda,
-                    Map.of("fechaPublicacion", Instant.now().minus(13, ChronoUnit.DAYS).toString(), "retirada", false)));
-            assertThat(n.get("nuevaLlegada").asBoolean()).isTrue();
-            assertThat(n.get("diasNuevaLlegada").asInt()).isEqualTo(14);
-            assertThat(n.get("distintivoActivo").asText()).isEqualTo("NUEVA_PRENDA");
+                    Map.of("publishedAt", Instant.now().minus(13, ChronoUnit.DAYS).toString(), "withdrawn", false)));
+            assertThat(n.get("newArrival").asBoolean()).isTrue();
+            assertThat(n.get("newArrivalDays").asInt()).isEqualTo(14);
+            assertThat(n.get("activeBadge").asText()).isEqualTo("NEW_ARRIVAL");
             error(json(HttpMethod.PATCH, base + "/items/7/low-stock", otraTienda,
-                    Map.of("stockActual", 1, "disponible", true)), 403, null);
+                    Map.of("currentStock", 1, "available", true)), 403, null);
         }
 
         @Test
@@ -1010,12 +1026,12 @@ class TrazabilidadRequerimientosTiendasTest {
             registrarAlmacen();
             JsonNode f = cuerpo(subir("/api/v1/stores/" + NIT + "/photos", tienda, "f.png", "image/png", png())
                     .andExpect(status().isCreated()));
-            campos(f, "id", "almacenNit", "url", "orden", "portada", "fechaRegistro");
-            assertThat(f.get("almacenNit").asText()).isEqualTo(NIT);
-            assertThat(f.get("orden").asInt()).isEqualTo(1);
-            assertThat(f.get("fechaRegistro").asText()).matches(FECHA_UTC);
+            campos(f, "id", "storeNit", "url", "position", "cover", "registeredAt");
+            assertThat(f.get("storeNit").asText()).isEqualTo(NIT);
+            assertThat(f.get("position").asInt()).isEqualTo(1);
+            assertThat(f.get("registeredAt").asText()).matches(FECHA_UTC);
             json(HttpMethod.GET, "/api/v1/stores/" + NIT + "/photos", comprador, null)
-                    .andExpect(status().isOk()).andExpect(jsonPath("$[0].portada").value(true));
+                    .andExpect(status().isOk()).andExpect(jsonPath("$[0].cover").value(true));
             subir("/api/v1/stores/" + NIT + "/photos", tienda, "w.webp", "image/webp",
                     new byte[] {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P'}).andExpect(status().isCreated());
             subir("/api/v1/stores/" + NIT + "/photos", tienda, "j.jpg", "image/jpeg",
@@ -1026,26 +1042,26 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("3A.2 y 3A.4: campos opcionales del almacén con sus límites y categorías fuera del catálogo")
         void opcionalesAlmacen() throws Exception {
             Map<String, Object> a = almacen(NIT);
-            a.put("descripcion", "d".repeat(501));
-            a.put("telefono", "1".repeat(31));
-            a.put("latitud", 91);
-            a.put("longitud", 181);
+            a.put("description", "d".repeat(501));
+            a.put("phone", "1".repeat(31));
+            a.put("latitude", 91);
+            a.put("longitude", 181);
             ResultActions r = json(HttpMethod.POST, "/api/v1/stores", tienda, a);
-            campo(r, "descripcion", "La descripción no puede superar 500 caracteres");
-            campo(r, "telefono", "El teléfono no puede superar 30 caracteres");
-            campo(r, "latitud", "La latitud debe estar entre -90 y 90");
-            campo(r, "longitud", "La longitud debe estar entre -180 y 180");
+            campo(r, "description", "La descripción no puede superar 500 caracteres");
+            campo(r, "phone", "El teléfono no puede superar 30 caracteres");
+            campo(r, "latitude", "La latitud debe estar entre -90 y 90");
+            campo(r, "longitude", "La longitud debe estar entre -180 y 180");
             Map<String, Object> malaCategoria = almacen(NIT);
-            malaCategoria.put("categorias", List.of("ROPA_INTERIOR"));
+            malaCategoria.put("categories", List.of("ROPA_INTERIOR"));
             error(json(HttpMethod.POST, "/api/v1/stores", tienda, malaCategoria), 400, null);
             Map<String, Object> completo = almacen(NIT);
-            completo.put("descripcion", "Moda urbana");
-            completo.put("telefono", "+57 300 000 0000");
-            completo.put("latitud", 4.65);
-            completo.put("longitud", -74.06);
-            completo.put("categorias", List.of("CASUAL", "FORMAL", "DEPORTIVA", "VINTAGE", "ACCESORIOS"));
+            completo.put("description", "Moda urbana");
+            completo.put("phone", "+57 300 000 0000");
+            completo.put("latitude", 4.65);
+            completo.put("longitude", -74.06);
+            completo.put("categories", List.of("CASUAL", "FORMAL", "SPORTY", "VINTAGE", "ACCESSORIES"));
             json(HttpMethod.POST, "/api/v1/stores", tienda, completo).andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.categorias.length()").value(5));
+                    .andExpect(jsonPath("$.categories.length()").value(5));
         }
 
         @Test
@@ -1058,7 +1074,7 @@ class TrazabilidadRequerimientosTiendasTest {
             assertThat(p.get("first").asBoolean()).isTrue();
             assertThat(p.get("last").asBoolean()).isTrue();
             assertThat(p.get("size").asInt()).isEqualTo(20);
-            json(HttpMethod.GET, "/api/v1/admin/stores/verifications?status=APROBADO", admin, null)
+            json(HttpMethod.GET, "/api/v1/admin/stores/verifications?status=APPROVED", admin, null)
                     .andExpect(jsonPath("$.totalElements").value(0));
             error(json(HttpMethod.GET, "/api/v1/admin/stores/verifications?size=101", admin, null), 400, null);
             error(json(HttpMethod.GET, "/api/v1/admin/stores/verifications?size=0", admin, null), 400, null);
@@ -1070,14 +1086,14 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("3.3 y B-3.3: el almacén trae todos los campos del contrato, incluido el representante")
         void camposAlmacen() throws Exception {
             registrarAlmacen();
-            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin, Map.of("decision", "APROBADO"));
+            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin, Map.of("decision", "APPROVED"));
             JsonNode a = cuerpo(json(HttpMethod.GET, "/api/v1/admin/stores/" + NIT + "/verification", admin, null)
                     .andExpect(status().isOk()));
-            campos(a, "nit", "nombreComercial", "descripcion", "telefono", "correoContacto", "latitud", "longitud",
-                    "reputacion", "categorias", "estadoVerificacion", "legadoSinVerificacion", "fechaDecisionVerificacion",
-                    "administradorDecisionId", "motivoVerificacion", "urlRutPdf", "representante");
-            assertThat(a.get("representante").asText()).contains("20");
-            assertThat(a.get("fechaDecisionVerificacion").asText()).matches(FECHA_UTC);
+            campos(a, "nit", "tradeName", "description", "phone", "contactEmail", "latitude", "longitude",
+                    "rating", "categories", "verificationStatus", "legacyUnverified", "verificationDecidedAt",
+                    "decisionAdminId", "verificationReason", "rutPdfUrl", "representative");
+            assertThat(a.get("representative").asText()).contains("20");
+            assertThat(a.get("verificationDecidedAt").asText()).matches(FECHA_UTC);
         }
 
         @Test
@@ -1085,8 +1101,8 @@ class TrazabilidadRequerimientosTiendasTest {
         void motivoLargo() throws Exception {
             registrarAlmacen();
             campo(json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin,
-                    Map.of("decision", "RECHAZADO", "motivo", "m".repeat(1001))),
-                    "motivo", "El motivo debe tener entre 10 y 1000 caracteres");
+                    Map.of("decision", "REJECTED", "reason", "m".repeat(1001))),
+                    "reason", "El motivo debe tener entre 10 y 1000 caracteres");
         }
 
         @Test
@@ -1103,21 +1119,21 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("4.1 y 4.3: listar fundaciones devuelve una lista con todos los campos y fechaRegistro en UTC")
         void listarFundaciones() throws Exception {
             Map<String, Object> f = fundacion("Fundación Abrigo Solidario", "900215884-1", 24);
-            f.put("descripcion", "Recolección de prendas");
-            f.put("telefono", "+57 601 742 8899");
-            f.put("causasApoyadas", "Niñez");
-            f.put("horarioAtencion", "L-V 8-17");
-            f.put("politicasDonacion", "Prendas limpias");
-            f.put("categoriasAceptadas", List.of("SUPERIOR", "INFERIOR", "CALZADO", "VESTIDO", "ACCESORIO"));
+            f.put("description", "Recolección de prendas");
+            f.put("phone", "+57 601 742 8899");
+            f.put("supportedCauses", "Niñez");
+            f.put("openingHours", "L-V 8-17");
+            f.put("donationPolicies", "Prendas limpias");
+            f.put("acceptedCategories", List.of("TOP", "BOTTOM", "FOOTWEAR", "DRESS", "ACCESSORY"));
             json(HttpMethod.POST, "/api/v1/admin/foundations", admin, f).andExpect(status().isCreated());
             JsonNode lista = cuerpo(json(HttpMethod.GET, "/api/v1/admin/foundations", admin, null).andExpect(status().isOk()));
             assertThat(lista.isArray()).isTrue();
             JsonNode x = lista.get(0);
-            campos(x, "id", "nombre", "descripcion", "direccion", "telefono", "email", "nit", "barrio", "latitud", "longitud",
-                    "categoriasAceptadas", "representanteId", "urlCertificadoPersoneriaJuridica", "causasApoyadas",
-                    "horarioAtencion", "politicasDonacion", "activa", "fechaRegistro");
-            assertThat(x.get("categoriasAceptadas").size()).isEqualTo(5);
-            assertThat(x.get("fechaRegistro").asText()).matches(FECHA_UTC);
+            campos(x, "id", "name", "description", "address", "phone", "email", "nit", "neighborhood", "latitude", "longitude",
+                    "acceptedCategories", "representativeId", "legalEntityCertificateUrl", "supportedCauses",
+                    "openingHours", "donationPolicies", "active", "registeredAt");
+            assertThat(x.get("acceptedCategories").size()).isEqualTo(5);
+            assertThat(x.get("registeredAt").asText()).matches(FECHA_UTC);
             error(json(HttpMethod.GET, "/api/v1/admin/foundations", tienda, null), 403, SIN_PERMISO_FUNDACIONES);
         }
 
@@ -1125,21 +1141,21 @@ class TrazabilidadRequerimientosTiendasTest {
         @DisplayName("4.2: límites de los campos opcionales de la fundación, URL de 300 y categoría fuera del catálogo")
         void opcionalesFundacion() throws Exception {
             Map<String, Object> f = fundacion("Fundación Abrigo", "900215884-1", 24);
-            f.put("descripcion", "d".repeat(501));
-            f.put("telefono", "1".repeat(31));
-            f.put("urlCertificadoPersoneriaJuridica", "https://" + "u".repeat(300));
-            f.put("causasApoyadas", "c".repeat(251));
-            f.put("horarioAtencion", "h".repeat(151));
-            f.put("politicasDonacion", "p".repeat(501));
+            f.put("description", "d".repeat(501));
+            f.put("phone", "1".repeat(31));
+            f.put("legalEntityCertificateUrl", "https://" + "u".repeat(300));
+            f.put("supportedCauses", "c".repeat(251));
+            f.put("openingHours", "h".repeat(151));
+            f.put("donationPolicies", "p".repeat(501));
             ResultActions r = json(HttpMethod.POST, "/api/v1/admin/foundations", admin, f);
-            campo(r, "descripcion", "La descripción no puede superar 500 caracteres");
-            campo(r, "telefono", "El teléfono no puede superar 30 caracteres");
-            campo(r, "urlCertificadoPersoneriaJuridica", "La URL del certificado no puede superar 300 caracteres");
-            campo(r, "causasApoyadas", "Las causas apoyadas no pueden superar 250 caracteres");
-            campo(r, "horarioAtencion", "El horario de atención no puede superar 150 caracteres");
-            campo(r, "politicasDonacion", "Las políticas de donación no pueden superar 500 caracteres");
+            campo(r, "description", "La descripción no puede superar 500 caracteres");
+            campo(r, "phone", "El teléfono no puede superar 30 caracteres");
+            campo(r, "legalEntityCertificateUrl", "La URL del certificado no puede superar 300 caracteres");
+            campo(r, "supportedCauses", "Las causas apoyadas no pueden superar 250 caracteres");
+            campo(r, "openingHours", "El horario de atención no puede superar 150 caracteres");
+            campo(r, "donationPolicies", "Las políticas de donación no pueden superar 500 caracteres");
             Map<String, Object> mala = fundacion("Fundación Abrigo", "900215884-1", 24);
-            mala.put("categoriasAceptadas", List.of("SOMBRERO"));
+            mala.put("acceptedCategories", List.of("SOMBRERO"));
             error(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, mala), 400, null);
             Map<String, Object> sinTelefono = fundacion("Fundación Abrigo", "900215884-1", 24);
             json(HttpMethod.POST, "/api/v1/admin/foundations", admin, sinTelefono).andExpect(status().isCreated());
@@ -1163,6 +1179,224 @@ class TrazabilidadRequerimientosTiendasTest {
             assertThat(r.getValue().getRepresentanteId()).isEqualTo(24L);
             assertThat(r.getValue().getFechaReactivacion()).isNotNull();
             assertThat(r.getValue().getMotivo()).isNotBlank();
+        }
+    }
+
+    // ---------------------------------------------------------------- Análisis de requerimientos v2 (17/11/2026)
+
+    @Nested
+    @DisplayName("Análisis v2: rutas, campos, valores y códigos en inglés; mensajes en español")
+    class AnalisisV2 {
+
+        private JsonNode cuerpo(ResultActions r) throws Exception {
+            return objectMapper.readTree(r.andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        @Test
+        @DisplayName("Almacén: campos en inglés y verificationStatus PENDING; categorías SPORTY y ACCESSORIES")
+        void almacenV2() throws Exception {
+            Map<String, Object> a = almacen(NIT);
+            a.put("categories", List.of("SPORTY", "ACCESSORIES"));
+            JsonNode b = cuerpo(json(HttpMethod.POST, "/api/v1/stores", tienda, a).andExpect(status().isCreated()));
+            assertThat(b.fieldNames()).toIterable().contains("nit", "tradeName", "description", "phone", "contactEmail",
+                    "latitude", "longitude", "rating", "categories", "verificationStatus", "verificationDecidedAt",
+                    "decisionAdminId", "verificationReason", "rutPdfUrl", "legacyUnverified")
+                    .doesNotContain("nombreComercial", "estadoVerificacion", "urlRutPdf", "categorias");
+            assertThat(b.get("verificationStatus").asText()).isEqualTo("PENDING");
+            assertThat(b.get("categories").toString()).contains("SPORTY", "ACCESSORIES");
+        }
+
+        @Test
+        @DisplayName("Verificación: decision APPROVED/REJECTED con reason; listado con ?status=")
+        void verificacion() throws Exception {
+            registrarAlmacen();
+            json(HttpMethod.GET, "/api/v1/admin/stores/verifications?status=PENDING", admin, null)
+                    .andExpect(jsonPath("$.totalElements").value(1));
+            JsonNode b = cuerpo(json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin,
+                    Map.of("decision", "REJECTED", "reason", "La cámara de comercio está vencida.")).andExpect(status().isOk()));
+            assertThat(b.get("verificationStatus").asText()).isEqualTo("REJECTED");
+            assertThat(b.get("verificationReason").asText()).isEqualTo("La cámara de comercio está vencida.");
+        }
+
+        @Test
+        @DisplayName("Distintivos: lowStockThreshold, newArrivalDays, activeBadge LOW_STOCK/NEW_ARRIVAL/NONE")
+        void distintivos() throws Exception {
+            registrarAlmacen();
+            String base = "/api/v1/stores/" + NIT;
+            JsonNode c = cuerpo(json(HttpMethod.GET, base + "/catalog-settings", tienda, null));
+            assertThat(c.fieldNames()).toIterable().containsExactlyInAnyOrder("nit", "lowStockThreshold", "newArrivalDays", "updatedAt");
+            JsonNode u = cuerpo(json(HttpMethod.PATCH, base + "/items/7/low-stock", tienda, Map.of("currentStock", 2, "available", true)));
+            assertThat(u.fieldNames()).toIterable().containsExactlyInAnyOrder("nit", "itemId", "lowStock", "lowStockThreshold",
+                    "newArrival", "newArrivalDays", "activeBadge", "updatedAt");
+            assertThat(u.get("activeBadge").asText()).isEqualTo("LOW_STOCK");
+            assertThat(cuerpo(json(HttpMethod.PATCH, base + "/items/7/low-stock", tienda, Map.of("currentStock", 0, "available", true)))
+                    .get("activeBadge").asText()).isEqualTo("NONE");
+            assertThat(cuerpo(json(HttpMethod.PATCH, base + "/items/8/new-arrival", tienda,
+                    Map.of("publishedAt", Instant.now().minus(1, ChronoUnit.DAYS).toString(), "withdrawn", false)))
+                    .get("activeBadge").asText()).isEqualTo("NEW_ARRIVAL");
+        }
+
+        @Test
+        @DisplayName("Fundación: campos en inglés, acceptedCategories TOP/BOTTOM/FOOTWEAR/DRESS/ACCESSORY")
+        void fundacionV2() throws Exception {
+            Map<String, Object> f = fundacion("Fundación Abrigo", "900215884-1", 24);
+            f.put("acceptedCategories", List.of("TOP", "BOTTOM", "FOOTWEAR", "DRESS", "ACCESSORY"));
+            JsonNode b = cuerpo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, f).andExpect(status().isCreated()));
+            assertThat(b.fieldNames()).toIterable().containsExactlyInAnyOrder("id", "name", "nit", "neighborhood", "description",
+                    "address", "phone", "email", "latitude", "longitude", "acceptedCategories", "representativeId",
+                    "legalEntityCertificateUrl", "supportedCauses", "openingHours", "donationPolicies", "active", "registeredAt");
+            assertThat(b.get("acceptedCategories")).hasSize(5);
+            Map<String, Object> mala = fundacion("Fundación Dos", "900215885-1", 25);
+            mala.put("acceptedCategories", List.of("SUPERIOR"));
+            error(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, mala), 400, null);
+        }
+
+        @Test
+        @DisplayName("Fotos: campo file en multipart y salida id, storeNit, url, position, cover, registeredAt")
+        void fotosV2() throws Exception {
+            registrarAlmacen();
+            JsonNode b = cuerpo(mockMvc.perform(multipart("/api/v1/stores/" + NIT + "/photos")
+                    .file(new MockMultipartFile("file", "f.png", "image/png", png()))
+                    .header("Authorization", "Bearer " + tienda)).andExpect(status().isCreated()));
+            assertThat(b.fieldNames()).toIterable().containsExactlyInAnyOrder("id", "storeNit", "url", "position", "cover", "registeredAt");
+            assertThat(b.get("cover").asBoolean()).isTrue();
+        }
+
+        @Test
+        @DisplayName("ProblemDetail: type /errors/{code}, code y errors en inglés; detail y mensajes por campo en español")
+        void problemDetail() throws Exception {
+            JsonNode e = cuerpo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, Map.of()));
+            assertThat(e.get("type").asText()).isEqualTo("https://api.styleradar.com/errors/invalid-data");
+            assertThat(e.get("code").asText()).isEqualTo("INVALID_DATA");
+            assertThat(e.get("detail").asText()).isEqualTo(INVALID_DATA);
+            assertThat(e.get("errors").get("name").asText()).isEqualTo("El nombre es obligatorio");
+            assertThat(e.get("errors").get("neighborhood").asText()).isEqualTo("El barrio es obligatorio");
+            assertThat(e.get("errors").get("representativeId").asText()).isEqualTo("El ID del usuario representante es obligatorio");
+            assertThat(e.fieldNames()).toIterable().doesNotContain("codigo", "validationErrors");
+            assertThat(cuerpo(json(HttpMethod.GET, "/api/v1/admin/foundations/999999", admin, null)).get("code").asText())
+                    .isEqualTo("RESOURCE_NOT_FOUND");
+            assertThat(cuerpo(json(HttpMethod.GET, "/api/v1/admin/foundations", tienda, null)).get("code").asText())
+                    .isEqualTo("ACCESS_DENIED");
+            assertThat(cuerpo(json(HttpMethod.GET, "/api/v1/admin/foundations", null, null)).get("code").asText())
+                    .isEqualTo("UNAUTHENTICATED");
+        }
+
+        @Test
+        @DisplayName("Anexo: GET /api/v1/foundations es público, sin parámetros obligatorios y solo con fundaciones activas")
+        void fundacionesPublicas() throws Exception {
+            long lejana = registrarFundacion("Fundación Zeta", "900215884-1", 24);
+            registrarFundacion("Fundación Alfa", "900215885-1", 25);
+            long inactiva = registrarFundacion("Fundación Beta", "900215886-1", 26);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + inactiva + "/deactivate", admin, null).andExpect(status().isOk());
+            jdbc.update("UPDATE fundaciones SET latitud = 10.0, longitud = -70.0 WHERE id = ?", lejana);
+            json(HttpMethod.GET, "/api/v1/foundations", null, null)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$[0].name").value("Fundación Alfa"))
+                    .andExpect(jsonPath("$[1].name").value("Fundación Zeta"));
+            json(HttpMethod.GET, "/api/v1/foundations?latitude=10.0&longitude=-70.0", null, null)
+                    .andExpect(jsonPath("$[0].name").value("Fundación Zeta"));
+            json(HttpMethod.GET, "/api/v1/foundations?type=DRESS", null, null).andExpect(jsonPath("$.length()").value(0));
+            error(json(HttpMethod.GET, "/api/v1/foundations?latitude=4.6", null, null), 400,
+                    "Debe enviar la latitud y la longitud juntas");
+        }
+
+        @Test
+        @DisplayName("Roles en inglés en el JWT (STORE_ADMIN, STYLERADAR_ADMIN) y compatibilidad con tokens anteriores")
+        void roles() throws Exception {
+            json(HttpMethod.GET, "/api/v1/admin/foundations", token(1, "STYLERADAR_ADMIN"), null).andExpect(status().isOk());
+            json(HttpMethod.GET, "/api/v1/admin/foundations", token(1, "ADMIN_STYLERADAR"), null).andExpect(status().isOk());
+            json(HttpMethod.POST, "/api/v1/stores", token(40, "ADMIN_ALMACEN"), almacen("800111222-3")).andExpect(status().isCreated());
+            error(json(HttpMethod.GET, "/api/v1/admin/foundations", token(30, "BUYER"), null), 403,
+                    "Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas");
+        }
+    }
+
+    @Nested
+    @DisplayName("Análisis v2: código de error de cada flujo alterno")
+    class CodigosV2 {
+
+        private void codigo(ResultActions r, int http, String code, String detail) throws Exception {
+            r.andExpect(status().is(http)).andExpect(jsonPath("$.code").value(code));
+            if (detail != null) {
+                r.andExpect(jsonPath("$.detail").value(detail));
+            }
+        }
+
+        @Test
+        @DisplayName("401 UNAUTHENTICATED con los tres mensajes del documento")
+        void noAutenticado() throws Exception {
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/catalog-settings", null,
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)), 401, "UNAUTHENTICATED",
+                    "Se requiere un token de acceso válido para esta operación");
+            codigo(json(HttpMethod.GET, "/api/v1/admin/foundations", firmar(1, "STYLERADAR_ADMIN", Instant.now().minusSeconds(60)), null),
+                    401, "UNAUTHENTICATED", EXPIRADO);
+        }
+
+        @Test
+        @DisplayName("SR-RF-59/60: ACCESS_DENIED, RESOURCE_NOT_FOUND e INVALID_DATA")
+        void distintivos() throws Exception {
+            registrarAlmacen();
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/catalog-settings", otraTienda,
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)), 403, "ACCESS_DENIED", null);
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/811111111-1/catalog-settings", tienda,
+                    Map.of("lowStockThreshold", 3, "newArrivalDays", 7)), 404, "RESOURCE_NOT_FOUND", null);
+            codigo(json(HttpMethod.PUT, "/api/v1/stores/" + NIT + "/catalog-settings", tienda,
+                    Map.of("lowStockThreshold", 51, "newArrivalDays", 7)), 400, "INVALID_DATA", INVALID_DATA);
+        }
+
+        @Test
+        @DisplayName("SR-RF-62: CONFLICT, UNPROCESSABLE_OPERATION y BUSINESS_RULE_VIOLATION (motivo y campo no permitido)")
+        void verificacion() throws Exception {
+            registrarAlmacen();
+            String v = "/api/v1/admin/stores/" + NIT + "/verification";
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "REJECTED", "reason", "")), 400,
+                    "BUSINESS_RULE_VIOLATION", "El rechazo exige un motivo no vacío");
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "REJECTED", "reason", "corto")), 400,
+                    "BUSINESS_RULE_VIOLATION", "El motivo debe tener entre 10 y 1000 caracteres");
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "APPROVED", "status", "APPROVED")), 400,
+                    "BUSINESS_RULE_VIOLATION", "Campo no permitido en la decisión de verificación");
+            codigo(json(HttpMethod.POST, v + "/review-request", admin, null), 422, "UNPROCESSABLE_OPERATION",
+                    "El almacén ya se encuentra pendiente de revisión");
+            json(HttpMethod.PATCH, v, admin, Map.of("decision", "APPROVED"));
+            codigo(json(HttpMethod.PATCH, v, admin, Map.of("decision", "APPROVED")), 409, "CONFLICT", null);
+        }
+
+        @Test
+        @DisplayName("SR-RF-63: CONFLICT y BUSINESS_RULE_VIOLATION sin certificado")
+        void fundaciones() throws Exception {
+            Map<String, Object> f = fundacion("Fundación Abrigo", "900215884-1", 24);
+            f.remove("legalEntityCertificateUrl");
+            codigo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, f), 400, "BUSINESS_RULE_VIOLATION",
+                    "El certificado de personería jurídica en PDF es obligatorio para registrar la fundación aliada");
+            registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            codigo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, fundacion("Fundación Abrigo", "900215885-1", 25)),
+                    409, "CONFLICT", null);
+        }
+
+        @Test
+        @DisplayName("SR-RF-74: BUSINESS_RULE_VIOLATION, FILE_TOO_LARGE, UNPROCESSABLE_OPERATION e INVALID_DATA al reordenar")
+        void fotos() throws Exception {
+            registrarAlmacen();
+            String fotos = "/api/v1/stores/" + NIT + "/photos";
+            codigo(subir(fotos, tienda, "v.png", "image/png", new byte[0]), 400, "BUSINESS_RULE_VIOLATION",
+                    "Se requiere adjuntar un archivo de imagen válido");
+            codigo(subir(fotos, tienda, "d.pdf", "application/pdf", "%PDF".getBytes()), 400, "BUSINESS_RULE_VIOLATION", null);
+            byte[] grande = new byte[6 * 1024 * 1024 + 1];
+            grande[0] = (byte) 0x89;
+            codigo(subir(fotos, tienda, "g.png", "image/png", grande), 413, "FILE_TOO_LARGE", "La imagen supera el tamaño máximo de 6 MB");
+            codigo(json(HttpMethod.DELETE, fotos + "/999999", tienda, null), 400, "BUSINESS_RULE_VIOLATION",
+                    "La fotografía no pertenece a la galería del almacén");
+            long a = objectMapper.readTree(subir(fotos, tienda, "a.png", "image/png", png()).andReturn().getResponse()
+                    .getContentAsString()).get("id").asLong();
+            subir(fotos, tienda, "b.png", "image/png", png());
+            ResultActions r = json(HttpMethod.PUT, fotos + "/order", tienda, Map.of("photoIds", List.of(a)));
+            codigo(r, 400, "INVALID_DATA", INVALID_DATA);
+            r.andExpect(jsonPath("$.errors.photoIds").value("El nuevo orden debe incluir todas las fotografías actuales del almacén"));
+            for (int i = 0; i < 4; i++) {
+                subir(fotos, tienda, "c" + i + ".png", "image/png", png());
+            }
+            codigo(subir(fotos, tienda, "x.png", "image/png", png()), 422, "UNPROCESSABLE_OPERATION", null);
         }
     }
 }

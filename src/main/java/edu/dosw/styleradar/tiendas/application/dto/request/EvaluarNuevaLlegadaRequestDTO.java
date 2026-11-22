@@ -1,5 +1,7 @@
 package edu.dosw.styleradar.tiendas.application.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,16 +16,18 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Datos de publicación para evaluar el distintivo de nueva llegada de una prenda (SR-RF-60)")
+@Schema(description = "Publication data to evaluate the new-arrival badge of an item")
 public class EvaluarNuevaLlegadaRequestDTO {
 
     @NotNull(message = "La fecha de publicación es obligatoria")
     @PastOrPresent(message = "La fecha de publicación no puede ser futura")
-    @Schema(description = "Fecha y hora UTC de publicación de la prenda (ISO-8601)", example = "2026-11-10T10:00:00Z", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "UTC date and time the item was published (ISO-8601)", example = "2026-11-10T10:00:00Z", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("publishedAt")
     private Instant fechaPublicacion;
 
-    @Builder.Default
-    @Schema(description = "Indica si la prenda fue retirada del catálogo", example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Boolean retirada = Boolean.FALSE;
+    @NotNull(message = "Debe indicar si la prenda fue retirada")
+    @Schema(description = "Whether the item was withdrawn from the catalog (required, decision D10)", example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("withdrawn")
+    private Boolean retirada;
 }
 

@@ -1,25 +1,27 @@
 package edu.dosw.styleradar.tiendas.application.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Asociación persistida entre un usuario ADMIN_ALMACEN y un NIT de almacén")
+@Schema(description = "Stored association between a STORE_ADMIN user and a store NIT")
 public record AdministradorAlmacenResponseDTO(
-        @Schema(description = "Identificador del registro de asociación", example = "10")
+        @Schema(description = "Association record identifier", example = "10")
         Long id,
 
-        @Schema(description = "Identificador del usuario con rol ADMIN_ALMACEN", example = "15")
-        Long usuarioId,
+        @Schema(description = "Identifier of the STORE_ADMIN user", example = "15")
+        @JsonProperty("userId") Long usuarioId,
 
-        @Schema(description = "NIT del almacén asociado", example = "900123456-1")
-        String almacenNit,
+        @Schema(description = "NIT of the associated store", example = "900123456-1")
+        @JsonProperty("storeNit") String almacenNit,
 
-        @Schema(description = "Administrador StyleRadar que hizo la asignación (tomado del JWT); null si el vínculo nació del registro del almacén", example = "1", nullable = true)
-        Long asignadoPorId,
+        @Schema(description = "StyleRadar admin who made the assignment (from the JWT); null when the link was created by the store registration", example = "1", nullable = true)
+        @JsonProperty("assignedById") Long asignadoPorId,
 
-        @Schema(description = "Fecha y hora UTC de la primera asignación", example = "2026-11-02T20:00:00Z")
-        Instant fechaAsignacion
+        @Schema(description = "UTC date and time of the first assignment", example = "2026-11-02T20:00:00Z")
+        @JsonProperty("assignedAt") Instant fechaAsignacion
 ) {
 }
 

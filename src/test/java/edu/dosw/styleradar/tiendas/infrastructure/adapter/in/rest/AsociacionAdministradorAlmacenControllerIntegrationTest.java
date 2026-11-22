@@ -44,21 +44,21 @@ class AsociacionAdministradorAlmacenControllerIntegrationTest {
         AdministradorAlmacenResponseDTO dto = new AdministradorAlmacenResponseDTO(
                 10L, 15L, NIT, 1L, Instant.now());
 
-        when(useCase.asociar(eq(NIT), eq(15L), eq(1L), eq("ROLE_ADMIN_STYLERADAR"))).thenReturn(dto);
-        when(useCase.listarAdministradores(eq(NIT), eq(15L), eq("ROLE_ADMIN_STYLERADAR"))).thenReturn(List.of(dto));
+        when(useCase.asociar(eq(NIT), eq(15L), eq(1L), eq("ROLE_STYLERADAR_ADMIN"))).thenReturn(dto);
+        when(useCase.listarAdministradores(eq(NIT), eq(15L), eq("ROLE_STYLERADAR_ADMIN"))).thenReturn(List.of(dto));
 
         mockMvc.perform(put("/api/v1/admin/stores/{nit}/administrators/{userId}", NIT, 15L)
                         .header("X-User-Id", 1L)
-                        .header("X-User-Roles", "ROLE_ADMIN_STYLERADAR"))
+                        .header("X-User-Roles", "ROLE_STYLERADAR_ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.usuarioId").value(15))
-                .andExpect(jsonPath("$.almacenNit").value(NIT));
+                .andExpect(jsonPath("$.userId").value(15))
+                .andExpect(jsonPath("$.storeNit").value(NIT));
 
         mockMvc.perform(get("/api/v1/admin/stores/{nit}/administrators", NIT)
                         .header("X-User-Id", 15L)
-                        .header("X-User-Roles", "ROLE_ADMIN_STYLERADAR"))
+                        .header("X-User-Roles", "ROLE_STYLERADAR_ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].usuarioId").value(15));
+                .andExpect(jsonPath("$[0].userId").value(15));
     }
 }
 

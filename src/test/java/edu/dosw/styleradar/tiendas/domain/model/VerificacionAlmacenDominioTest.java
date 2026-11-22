@@ -30,7 +30,7 @@ class VerificacionAlmacenDominioTest {
                 .descripcion("Tienda de moda circular")
                 .correoContacto("contacto@atelierurbano.co")
                 .telefono("+57 601 312 4455")
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .urlRutPdf("https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut.pdf")
                 .categorias(Set.of(CategoriaAlmacen.CASUAL))
                 .build();
@@ -41,7 +41,7 @@ class VerificacionAlmacenDominioTest {
                 .descripcion("Tienda sin soporte legal")
                 .correoContacto("info@sinrut.co")
                 .telefono("+57 601 999 0000")
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .urlRutPdf(null)
                 .categorias(Set.of(CategoriaAlmacen.FORMAL))
                 .build();
@@ -51,9 +51,9 @@ class VerificacionAlmacenDominioTest {
     @DisplayName("Criterio 1: Debe aprobar almacén pendiente con NIT y RUT válido")
     void debeAprobarAlmacenPendienteConRut() {
         Instant ahora = Instant.now();
-        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APROBADO, "RUT y NIT verificados", 10L, ahora);
+        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APPROVED, "RUT y NIT verificados", 10L, ahora);
 
-        assertEquals(EstadoVerificacionAlmacen.APROBADO, almacenPendienteConRut.getEstadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.APPROVED, almacenPendienteConRut.getEstadoVerificacion());
         assertEquals("RUT y NIT verificados", almacenPendienteConRut.getMotivoVerificacion());
         assertEquals(10L, almacenPendienteConRut.getAdministradorDecisionId());
         assertEquals(ahora, almacenPendienteConRut.getFechaDecisionVerificacion());
@@ -63,9 +63,9 @@ class VerificacionAlmacenDominioTest {
     @DisplayName("Criterio 1b: Debe rechazar almacén pendiente con motivo explicativo")
     void debeRechazarAlmacenPendienteConMotivo() {
         Instant ahora = Instant.now();
-        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, "Actividad económica del RUT no coincide", 10L, ahora);
+        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, "Actividad económica del RUT no coincide", 10L, ahora);
 
-        assertEquals(EstadoVerificacionAlmacen.RECHAZADO, almacenPendienteConRut.getEstadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.REJECTED, almacenPendienteConRut.getEstadoVerificacion());
         assertEquals("Actividad económica del RUT no coincide", almacenPendienteConRut.getMotivoVerificacion());
         assertEquals(10L, almacenPendienteConRut.getAdministradorDecisionId());
         assertNotNull(almacenPendienteConRut.getFechaDecisionVerificacion());
@@ -75,7 +75,7 @@ class VerificacionAlmacenDominioTest {
     @DisplayName("Criterio 2: Dado un almacén sin RUT, cuando intento aprobarlo, entonces lanza RutRequeridoParaAprobacionException (422)")
     void debeLanzarExcepcionAlAprobarAlmacenSinRut() {
         assertThrows(RutRequeridoParaAprobacionException.class, () ->
-                almacenPendienteSinRut.decidirVerificacion(DecisionVerificacionAlmacen.APROBADO, "Aprobación sin RUT", 10L, Instant.now()));
+                almacenPendienteSinRut.decidirVerificacion(DecisionVerificacionAlmacen.APPROVED, "Aprobación sin RUT", 10L, Instant.now()));
     }
 
     @Test
@@ -83,51 +83,51 @@ class VerificacionAlmacenDominioTest {
     void debeLanzarExcepcionAlAprobarAlmacenConRutEnBlanco() {
         almacenPendienteSinRut.setUrlRutPdf("   ");
         assertThrows(RutRequeridoParaAprobacionException.class, () ->
-                almacenPendienteSinRut.decidirVerificacion(DecisionVerificacionAlmacen.APROBADO, "Aprobación", 10L, Instant.now()));
+                almacenPendienteSinRut.decidirVerificacion(DecisionVerificacionAlmacen.APPROVED, "Aprobación", 10L, Instant.now()));
     }
 
     @Test
-    @DisplayName("Criterio 3: Dado un almacén ya APROBADO, cuando lo decido otra vez, entonces lanza AlmacenYaDecididoException (409)")
+    @DisplayName("Criterio 3: Dado un almacén ya APPROVED, cuando lo decido otra vez, entonces lanza AlmacenYaDecididoException (409)")
     void debeLanzarExcepcionAlDecidirAlmacenYaAprobado() {
-        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APROBADO, "Primera decisión", 10L, Instant.now());
+        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APPROVED, "Primera decisión", 10L, Instant.now());
 
         assertThrows(AlmacenYaDecididoException.class, () ->
-                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, "Cambio de opinión", 10L, Instant.now()));
+                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, "Cambio de opinión", 10L, Instant.now()));
     }
 
     @Test
-    @DisplayName("Criterio 3b: Dado un almacén ya RECHAZADO, cuando lo decido otra vez, entonces lanza AlmacenYaDecididoException (409)")
+    @DisplayName("Criterio 3b: Dado un almacén ya REJECTED, cuando lo decido otra vez, entonces lanza AlmacenYaDecididoException (409)")
     void debeLanzarExcepcionAlDecidirAlmacenYaRechazado() {
-        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, "RUT ilegible", 10L, Instant.now());
+        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, "RUT ilegible", 10L, Instant.now());
 
         assertThrows(AlmacenYaDecididoException.class, () ->
-                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APROBADO, "Reintento", 10L, Instant.now()));
+                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APPROVED, "Reintento", 10L, Instant.now()));
     }
 
     @Test
     @DisplayName("Negativo: El rechazo exige motivo explicativo no vacío")
     void debeLanzarExcepcionAlRechazarSinMotivo() {
         assertThrows(ReglaDeNegocioException.class, () ->
-                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, "", 10L, Instant.now()));
+                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, "", 10L, Instant.now()));
 
         assertThrows(ReglaDeNegocioException.class, () ->
-                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, "   ", 10L, Instant.now()));
+                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, "   ", 10L, Instant.now()));
 
         assertThrows(ReglaDeNegocioException.class, () ->
-                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.RECHAZADO, null, 10L, Instant.now()));
+                almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.REJECTED, null, 10L, Instant.now()));
     }
 
     @Test
-    @DisplayName("Reabrir revisión: Pasa de APROBADO a PENDIENTE")
+    @DisplayName("Reabrir revisión: Pasa de APPROVED a PENDING")
     void debeReabrirRevisionDeAlmacenDecidido() {
-        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APROBADO, "Aprobado", 10L, Instant.now());
+        almacenPendienteConRut.decidirVerificacion(DecisionVerificacionAlmacen.APPROVED, "Aprobado", 10L, Instant.now());
         almacenPendienteConRut.solicitarRevision();
 
-        assertEquals(EstadoVerificacionAlmacen.PENDIENTE, almacenPendienteConRut.getEstadoVerificacion());
+        assertEquals(EstadoVerificacionAlmacen.PENDING, almacenPendienteConRut.getEstadoVerificacion());
     }
 
     @Test
-    @DisplayName("Reabrir revisión: Si ya está PENDIENTE lanza AlmacenYaPendienteException (422)")
+    @DisplayName("Reabrir revisión: Si ya está PENDING lanza AlmacenYaPendienteException (422)")
     void debeLanzarExcepcionAlReabrirAlmacenYaPendiente() {
         assertThrows(AlmacenYaPendienteException.class, () -> almacenPendienteConRut.solicitarRevision());
     }

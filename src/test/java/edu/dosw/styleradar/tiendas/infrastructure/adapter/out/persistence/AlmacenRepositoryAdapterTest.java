@@ -70,7 +70,7 @@ class AlmacenRepositoryAdapterTest {
                 .correoContacto("contacto@tienda.com")
                 .umbralUltimasUnidades(4)
                 .diasNuevaLlegada(10)
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .urlRutPdf("https://blob/rut.pdf")
                 .build();
 
@@ -82,7 +82,7 @@ class AlmacenRepositoryAdapterTest {
                 .umbralUltimasUnidades(4)
                 .diasNuevaLlegada(10)
                 .fechaActualizacionCatalogo(Instant.now())
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .urlRutPdf("https://blob/rut.pdf")
                 .build();
 
@@ -94,7 +94,7 @@ class AlmacenRepositoryAdapterTest {
         assertThat(resultado.getNit()).isEqualTo(NIT);
         assertThat(resultado.getUmbralUltimasUnidades()).isEqualTo(4);
         assertThat(resultado.getDiasNuevaLlegada()).isEqualTo(10);
-        assertThat(resultado.getEstadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.APROBADO);
+        assertThat(resultado.getEstadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.APPROVED);
         assertThat(resultado.getUrlRutPdf()).isEqualTo("https://blob/rut.pdf");
         verify(almacenRepository).save(any(AlmacenEntity.class));
     }
@@ -107,7 +107,7 @@ class AlmacenRepositoryAdapterTest {
                 .nombreComercial("Tienda Centro")
                 .umbralUltimasUnidades(5)
                 .diasNuevaLlegada(12)
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .build();
 
         when(almacenRepository.findByNit(NIT)).thenReturn(Optional.of(entidad));
@@ -118,7 +118,7 @@ class AlmacenRepositoryAdapterTest {
         assertThat(resultado.get().getNit()).isEqualTo(NIT);
         assertThat(resultado.get().getUmbralUltimasUnidades()).isEqualTo(5);
         assertThat(resultado.get().getDiasNuevaLlegada()).isEqualTo(12);
-        assertThat(resultado.get().getEstadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.PENDIENTE);
+        assertThat(resultado.get().getEstadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.PENDING);
     }
 
     @Test
@@ -128,14 +128,14 @@ class AlmacenRepositoryAdapterTest {
         AlmacenEntity entidad = AlmacenEntity.builder()
                 .nit(NIT)
                 .nombreComercial("Tienda Centro")
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .build();
 
-        when(almacenRepository.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.PENDIENTE), eq(pageable)))
+        when(almacenRepository.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.PENDING), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(entidad), pageable, 1));
 
         Pagina<Almacen> resultado = adapter.findByEstadoVerificacion(
-                EstadoVerificacionAlmacen.PENDIENTE, new SolicitudPagina(0, 10));
+                EstadoVerificacionAlmacen.PENDING, new SolicitudPagina(0, 10));
 
         assertThat(resultado.contenido()).hasSize(1);
         assertThat(resultado.contenido().get(0).getNit()).isEqualTo(NIT);
@@ -151,7 +151,7 @@ class AlmacenRepositoryAdapterTest {
         AlmacenEntity entidad = AlmacenEntity.builder()
                 .nit(NIT)
                 .nombreComercial("Tienda Centro")
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .build();
 
         when(almacenRepository.findAll(pageable))
@@ -372,7 +372,7 @@ class AlmacenRepositoryAdapterTest {
 
         var req = new org.springframework.mock.web.MockHttpServletRequest();
         req.setAttribute("authenticatedUserId", 77L);
-        req.setAttribute("authenticatedRoles", "ROLE_ADMIN_STYLERADAR");
+        req.setAttribute("authenticatedRoles", "ROLE_STYLERADAR_ADMIN");
         org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
                 new org.springframework.web.context.request.ServletRequestAttributes(req));
         try {
@@ -385,7 +385,7 @@ class AlmacenRepositoryAdapterTest {
             assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveRole(null, "ROLE_ADMIN"))
                     .isEqualTo("ROLE_ADMIN");
             assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.in.rest.AuthRequestContextResolver.resolveRole(null, null))
-                    .isEqualTo("ROLE_ADMIN_STYLERADAR");
+                    .isEqualTo("ROLE_STYLERADAR_ADMIN");
         } finally {
             org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
         }
@@ -395,15 +395,15 @@ class AlmacenRepositoryAdapterTest {
         var exFund3 = new edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException("representante duplicado");
         var exFund4 = new edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException("nit", "NIT ya existe");
         assertThat(exFund1.getValidationErrors()).containsKey("nit");
-        assertThat(exFund2.getValidationErrors()).containsKey("nombre");
-        assertThat(exFund3.getValidationErrors()).containsKey("representanteId");
+        assertThat(exFund2.getValidationErrors()).containsKey("name");
+        assertThat(exFund3.getValidationErrors()).containsKey("representativeId");
         assertThat(exFund4.getValidationErrors()).containsEntry("nit", "NIT ya existe");
 
         var exAlm1 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("NIT duplicado");
         var exAlm2 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("Otro error");
-        var exAlm3 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("usuarioId", "Ya administra");
+        var exAlm3 = new edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException("userId", "Ya administra");
         assertThat(exAlm1.getValidationErrors()).containsKey("nit");
         assertThat(exAlm2.getValidationErrors()).isEmpty();
-        assertThat(exAlm3.getValidationErrors()).containsEntry("usuarioId", "Ya administra");
+        assertThat(exAlm3.getValidationErrors()).containsEntry("userId", "Ya administra");
     }
 }

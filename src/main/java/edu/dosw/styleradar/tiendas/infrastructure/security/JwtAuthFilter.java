@@ -112,7 +112,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         response.setContentType(ErrorResponseDTO.MEDIA_TYPE);
         response.setCharacterEncoding("UTF-8");
 
-        ErrorResponseDTO errorResponse = ErrorResponseDTO.problema(CodigoError.NO_AUTENTICADO,
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.problema(CodigoError.UNAUTHENTICATED,
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(), mensaje, path, Map.of());
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }

@@ -296,8 +296,8 @@ svgw('0 0 510 248',
   ['POST','/almacenes','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Contrato DTO</span>','SR-RF-62 Registro'],
   ['GET','/almacenes','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Público</span>','SR-RF-17 Listado/Mapa'],
   ['GET','/almacenes/{nit}/<wbr>catalog-settings','<span class="pill ok" style="font-size:8.8px;padding:1px 6px">Público</span>','SR-RF-59/60 Config'],
-  ['PUT','/almacenes/{nit}/<wbr>catalog-settings','<span class="pill" style="font-size:8.8px;padding:1px 6px">ADMIN_ALMACEN</span>','SR-RF-59/60 Umbral'],
-  ['POST','/almacenes/{nit}/<wbr>fotografias','<span class="pill" style="font-size:8.8px;padding:1px 6px">ADMIN_ALMACEN</span>','SR-RF-74 Vitrina (≤6MB)'],
+  ['PUT','/almacenes/{nit}/<wbr>catalog-settings','<span class="pill" style="font-size:8.8px;padding:1px 6px">STORE_ADMIN</span>','SR-RF-59/60 Umbral'],
+  ['POST','/almacenes/{nit}/<wbr>fotografias','<span class="pill" style="font-size:8.8px;padding:1px 6px">STORE_ADMIN</span>','SR-RF-74 Vitrina (≤6MB)'],
   ['PATCH','/admin/almacenes/<wbr>{nit}/verification','<span class="pill bad" style="font-size:8.8px;padding:1px 6px">ADMIN_SR</span>','SR-RF-62 Verif. RUT'],
   ['PATCH','/admin/fundaciones/<wbr>{id}/deactivate','<span class="pill bad" style="font-size:8.8px;padding:1px 6px">ADMIN_SR</span>','SR-RF-65 Baja + Evento'],
   ['GET','/fundaciones','<span class="pill" style="font-size:8.8px;padding:1px 6px">Público/DTO</span>','SR-RF-43/63 Cercanas']
@@ -326,7 +326,7 @@ svgw('0 0 510 248',
 '<div style="display:flex;flex-direction:column;gap:10px;flex:1">'+
 '<table style="font-size:10.2px;line-height:1.22;table-layout:fixed;width:100%"><tr><th style="width:26%">Tabla SQL</th><th style="width:21%">Clave</th><th style="width:32%">Campos Clave</th><th style="width:21%">Integridad</th></tr>'+
 [
-  ['almacenes','PK nit (30)','nombre_comercial, estado_verificacion, url_rut_pdf','PENDIENTE / APROBADO'],
+  ['almacenes','PK nit (30)','nombre_comercial, estado_verificacion, url_rut_pdf','PENDING / APPROVED'],
   ['almacen_fotos','FK almacen_nit','url_foto, orden, es_portada, fecha_subida','ON DELETE CASCADE'],
   ['administradores_<wbr>almacenes','FK almacen_nit','usuario_id, almacen_nit, fecha_asignacion','UNIQUE (usuario_id, nit)'],
   ['fundaciones','PK id (BIGSERIAL)','nombre, representante_id, activa, lat, lng','UNIQUE · Idx rep/act'],
@@ -353,7 +353,7 @@ cd('FinOps TCO Azure (Estimado)','Escenario QA/MVP ~$17/mes vs Producción escal
 '<div style="display:flex;justify-content:space-between;align-items:center"><span class="lab" style="font-size:10px;color:#C4B5FD;margin:0">Payload: FundacionDesactivadaEvent (SR-RF-65)</span><span style="font:700 10px var(--fm);color:#34D399">TopicExchange</span></div>'+
 '<div style="font:400 10.5px/1.4 var(--fm);color:#E8DCCB">{ "fundacionId": 105, "nombreFundacion": "Moda Sostenible", "representanteId": 42,<br>"fechaDesactivacion": "2026-11-09T18:30Z", "motivo": "Cese operaciones" }</div></div>'+
 cd('Resiliencia AMQP y Estado Real del Broker','RabbitMQFundacionEventPublisherAdapter captura AmqpException sin bloquear PostgreSQL; management.health.rabbit.enabled=false en QA/PROD porque el broker compartido no está enlazado hoy.','padding:10px 14px;gap:3px')+
-cd('Enumeraciones de Dominio Puro (4 Enums)','CategoriaAlmacen · TipoPrenda · EstadoVerificacionAlmacen (PENDIENTE, APROBADO, RECHAZADO) · DecisionVerificacionAlmacen.','padding:10px 14px;gap:3px')},
+cd('Enumeraciones de Dominio Puro (4 Enums)','CategoriaAlmacen · TipoPrenda · EstadoVerificacionAlmacen (PENDING, APPROVED, REJECTED) · DecisionVerificacionAlmacen.','padding:10px 14px;gap:3px')},
 
 {c:'graf',t:'Seguridad OWASP',tag:'10',tab:'Seguridad',h:K('10 · Seguridad')+H('Roles RBAC, BOLA','y OWASP Top 10:2025')+
 '<table style="font-size:10.5px;line-height:1.26;table-layout:fixed;width:100%"><tr><th style="width:36%">Operación</th><th style="width:14%">Anón</th><th style="width:16%">Compr.</th><th style="width:18%">Admin Alm</th><th style="width:16%">Admin SR</th></tr>'+

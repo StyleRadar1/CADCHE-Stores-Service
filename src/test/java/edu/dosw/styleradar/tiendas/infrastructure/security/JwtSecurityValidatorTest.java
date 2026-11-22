@@ -23,32 +23,32 @@ class JwtSecurityValidatorTest {
     @Test
     @DisplayName("Lee sub como usuario y la lista de roles del token emitido por ms-auth")
     void debeLeerIdentidadDelTokenDeMsAuth() {
-        String token = TokensDePrueba.token(15L, List.of("ADMIN_ALMACEN"), 3600);
+        String token = TokensDePrueba.token(15L, List.of("STORE_ADMIN"), 3600);
 
         JwtSecurityValidator.IdentidadToken identidad = validator.validar(token);
 
         assertThat(identidad.usuarioId()).isEqualTo(15L);
-        assertThat(identidad.roles()).containsExactly("ADMIN_ALMACEN");
-        assertThat(identidad.rolesCsv()).isEqualTo("ADMIN_ALMACEN");
+        assertThat(identidad.roles()).containsExactly("STORE_ADMIN");
+        assertThat(identidad.rolesCsv()).isEqualTo("STORE_ADMIN");
     }
 
     @Test
     @DisplayName("Acepta roles como texto separado por comas")
     void debeAceptarRolesComoTexto() {
-        String token = Jwts.builder().subject("3").claim("roles", "COMPRADOR, ADMIN_STYLERADAR")
+        String token = Jwts.builder().subject("3").claim("roles", "COMPRADOR, STYLERADAR_ADMIN")
                 .expiration(new java.util.Date(System.currentTimeMillis() + 60_000))
                 .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
                         io.jsonwebtoken.io.Decoders.BASE64.decode(SECRETO_DEV)))
                 .compact();
 
-        assertThat(validator.validar(token).roles()).containsExactlyInAnyOrder("COMPRADOR", "ADMIN_STYLERADAR");
+        assertThat(validator.validar(token).roles()).containsExactlyInAnyOrder("COMPRADOR", "STYLERADAR_ADMIN");
     }
 
     @Test
     @DisplayName("Rechaza token vencido, firmado con otro secreto, alterado, vacío o mal formado")
     void debeRechazarTokensInvalidos() {
         String vencido = TokensDePrueba.token(1L, List.of("COMPRADOR"), -120);
-        String ajeno = TokensDePrueba.token(SECRETO_AJENO, 1L, List.of("ADMIN_STYLERADAR"), 3600);
+        String ajeno = TokensDePrueba.token(SECRETO_AJENO, 1L, List.of("STYLERADAR_ADMIN"), 3600);
         String valido = TokensDePrueba.token(1L, List.of("COMPRADOR"), 3600);
         String alterado = valido.substring(0, valido.length() - 3) + "abc";
 

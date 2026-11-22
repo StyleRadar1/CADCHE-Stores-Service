@@ -58,7 +58,7 @@ class RegistrarAlmacenUseCaseTest {
     private static final String NIT = "900123456-1";
 
     @Test
-    @DisplayName("Debe registrar almacén en estado PENDIENTE y asociar administrador cuando se envía usuarioId")
+    @DisplayName("Debe registrar almacén en estado PENDING y asociar administrador cuando se envía usuarioId")
     void debeRegistrarAlmacenExitosamente() {
         RegistrarAlmacenRequestDTO req = RegistrarAlmacenRequestDTO.builder()
                 .nit(NIT)
@@ -79,7 +79,7 @@ class RegistrarAlmacenUseCaseTest {
         VerificacionAlmacenResponseDTO resp = useCase.registrarAlmacen(req, 15L, "ROLE_TIENDA");
 
         assertThat(resp.nit()).isEqualTo(NIT);
-        assertThat(resp.estadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.PENDIENTE);
+        assertThat(resp.estadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.PENDING);
         assertThat(resp.correoContacto()).isEqualTo("contacto@atelier.co");
         assertThat(resp.representante()).isEqualTo("Usuario #15");
         verify(repositoryPort).asociarAdministrador(NIT, 15L);
@@ -156,7 +156,7 @@ class RegistrarAlmacenUseCaseTest {
         Almacen almacen = Almacen.builder()
                 .nit(NIT)
                 .nombreComercial("Atelier Urbano")
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .build();
         when(repositoryPort.findByAdministradorUsuarioId(15L)).thenReturn(Optional.of(almacen));
 
@@ -211,16 +211,16 @@ class RegistrarAlmacenUseCaseTest {
                 .nit(NIT)
                 .nombreComercial("Atelier")
                 .categorias(Set.of(CategoriaAlmacen.CASUAL))
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .build();
         Almacen a2 = Almacen.builder()
                 .nit("900999888-2")
                 .nombreComercial("Deportes")
-                .categorias(Set.of(CategoriaAlmacen.DEPORTIVA))
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .categorias(Set.of(CategoriaAlmacen.SPORTY))
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .build();
 
-        when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.APROBADO), any(SolicitudPagina.class)))
+        when(repositoryPort.findByEstadoVerificacion(eq(EstadoVerificacionAlmacen.APPROVED), any(SolicitudPagina.class)))
                 .thenReturn(new Pagina<>(List.of(a1, a2), 0, 10, 2, 1));
 
         ConsultaAlmacenRequestDTO req = new ConsultaAlmacenRequestDTO();

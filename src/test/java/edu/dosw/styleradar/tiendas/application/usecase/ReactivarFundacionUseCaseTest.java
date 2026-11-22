@@ -45,7 +45,7 @@ class ReactivarFundacionUseCaseTest {
     @InjectMocks
     private ReactivarFundacionUseCaseImpl useCase;
 
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
 
     @Test
     @DisplayName("SR-RF-65 B-6.1: Debe reactivar una fundación inactiva, publicar FundacionReactivadaEvent y fallar con 409 si ya está activa")

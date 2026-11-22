@@ -63,7 +63,7 @@ public class AlmacenController implements AlmacenApi {
 
     @Override
     public ResponseEntity<DocumentoSubidoResponseDTO> subirDocumentoRut(
-            @RequestPart("archivo") MultipartFile archivo,
+            @RequestPart("file") MultipartFile archivo,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
@@ -184,7 +184,7 @@ public class AlmacenController implements AlmacenApi {
     @Override
     public ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
             String nit,
-            @RequestPart("archivo") MultipartFile archivo,
+            @RequestPart("file") MultipartFile archivo,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId) {
         if (archivo == null || archivo.isEmpty()) {
             throw new ArchivoNoEsImagenException("Se requiere adjuntar un archivo de imagen válido");

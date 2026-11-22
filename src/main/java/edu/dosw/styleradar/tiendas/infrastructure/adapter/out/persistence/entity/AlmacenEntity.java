@@ -68,7 +68,7 @@ public class AlmacenEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_verificacion", length = 30)
     @Builder.Default
-    private EstadoVerificacionAlmacen estadoVerificacion = EstadoVerificacionAlmacen.PENDIENTE;
+    private EstadoVerificacionAlmacen estadoVerificacion = EstadoVerificacionAlmacen.PENDING;
 
     @Column(name = "url_rut_pdf", length = 500)
     private String urlRutPdf;

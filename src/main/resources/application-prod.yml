@@ -12,10 +12,11 @@ spring:
     username: ${DB_USERNAME:styleradaradmin}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
+    # PostgreSQL de Azure compartido entre microservicios: pool pequeño para no agotar las conexiones.
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 3
-      idle-timeout: 300000
+      maximum-pool-size: 3
+      minimum-idle: 1
+      idle-timeout: 30000
       max-lifetime: 600000
       connection-timeout: 20000
 

@@ -16,23 +16,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Almacenes", description = "Almacenes aliados de StyleRadar")
+@Tag(name = "Stores", description = "Store registration with RUT in PDF, store lookup, catalog badge settings and evaluation and physical-store photos")
 public interface UsuarioAlmacenApi {
 
     @Operation(
-            summary = "Consultar el almacén que administra un usuario (SR-RF-59 / SR-RF-62-A)",
-            description = "El usuario se identifica en la ruta. Solo puede consultarlo el mismo usuario (Tienda) o un "
-                    + "ADMIN_STYLERADAR; cualquier otra identidad recibe 403.",
+            summary = "Get the store administered by a user",
+            description = "The user is named in the path. Only that same user (store) or a STYLERADAR_ADMIN can read it; any other identity gets 403.",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Almacén administrado por el usuario"),
-            @ApiResponse(responseCode = "401", description = "JWT ausente o inválido", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "El usuario de la ruta no es quien hace la petición", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "El usuario no administra ningún almacén", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "200", description = "Store administered by the user"),
+            @ApiResponse(responseCode = "401", description = "JWT missing or invalid", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "The user in the path is not the caller", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "The user does not administer any store", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @GetMapping("/{userId}/store")
     ResponseEntity<VerificacionAlmacenResponseDTO> obtenerAlmacenDelUsuario(
-            @Parameter(description = "Identificador del usuario dueño del almacén", example = "10") @PathVariable("userId") Long userId,
+            @Parameter(description = "Identifier of the user who owns the store", example = "10") @PathVariable("userId") Long userId,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);

@@ -37,10 +37,10 @@ public class FundacionYaRegistradaException extends RuntimeException {
             return Map.of("nit", mensaje);
         }
         if (lower.contains("nombre")) {
-            return Map.of("nombre", mensaje);
+            return Map.of("name", mensaje);
         }
         if (lower.contains("representante")) {
-            return Map.of("representanteId", mensaje);
+            return Map.of("representativeId", mensaje);
         }
         return Map.of();
     }

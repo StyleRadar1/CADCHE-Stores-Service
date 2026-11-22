@@ -54,7 +54,7 @@ public class FundacionController implements FundacionApi {
 
     @Override
     public ResponseEntity<DocumentoSubidoResponseDTO> subirCertificado(
-            @RequestPart("archivo") MultipartFile archivo,
+            @RequestPart("file") MultipartFile archivo,
             @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         if (archivo == null || archivo.isEmpty()) {

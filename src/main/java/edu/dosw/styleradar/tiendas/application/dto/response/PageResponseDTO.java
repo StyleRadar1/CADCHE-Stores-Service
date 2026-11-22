@@ -10,28 +10,28 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Respuesta paginada estándar")
+@Schema(description = "Standard paginated response")
 public class PageResponseDTO<T> {
 
-    @Schema(description = "Elementos contenidos en la página actual")
+    @Schema(description = "Items of the current page")
     private List<T> content;
 
-    @Schema(description = "Índice de página actual (base 0)", example = "0")
+    @Schema(description = "Current page index (zero based)", example = "0")
     private int page;
 
-    @Schema(description = "Tamaño de página solicitado", example = "20")
+    @Schema(description = "Requested page size", example = "20")
     private int size;
 
-    @Schema(description = "Cantidad total de elementos disponibles", example = "1")
+    @Schema(description = "Total number of items", example = "1")
     private long totalElements;
 
-    @Schema(description = "Cantidad total de páginas disponibles", example = "1")
+    @Schema(description = "Total number of pages", example = "1")
     private int totalPages;
 
-    @Schema(description = "Indica si es la primera página", example = "true")
+    @Schema(description = "Whether this is the first page", example = "true")
     private boolean first;
 
-    @Schema(description = "Indica si es la última página", example = "true")
+    @Schema(description = "Whether this is the last page", example = "true")
     private boolean last;
 }
 
