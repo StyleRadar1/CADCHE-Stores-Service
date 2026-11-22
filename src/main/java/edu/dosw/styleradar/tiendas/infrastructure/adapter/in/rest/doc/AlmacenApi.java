@@ -49,7 +49,7 @@ import jakarta.validation.Valid;
 public interface AlmacenApi {
 
     @Operation(
-            summary = "Consultar almacenes aliados verificados",
+            summary = "List verified partner stores",
             description = "Public. Returns the APPROVED stores, paginated.",
             security = {})
     @ApiResponses({

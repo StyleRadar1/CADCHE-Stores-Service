@@ -71,8 +71,8 @@ public interface VerificacionAlmacenApi {
             @Parameter(description = "NIT of the store pending decision", example = "900123456-1") @PathVariable String nit,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(examples = {
-                            @ExampleObject(name = "APPROVED", value = "{\"decision\":\"APPROVED\",\"motivo\":\"Datos y RUT en PDF verificados correctamente\"}"),
-                            @ExampleObject(name = "REJECTED", value = "{\"decision\":\"REJECTED\",\"motivo\":\"El RUT presentado no coincide con la actividad económica\"}")
+                            @ExampleObject(name = "APPROVED", value = "{\"decision\":\"APPROVED\",\"reason\":\"Datos y RUT en PDF verificados correctamente\"}"),
+                            @ExampleObject(name = "REJECTED", value = "{\"decision\":\"REJECTED\",\"reason\":\"El RUT presentado no coincide con la actividad económica\"}")
                     }))
             @Valid @RequestBody DecisionVerificacionRequestDTO request,
             @Parameter(in = ParameterIn.HEADER, description = "User roles (requires ROLE_STYLERADAR_ADMIN)", example = "ROLE_STYLERADAR_ADMIN")

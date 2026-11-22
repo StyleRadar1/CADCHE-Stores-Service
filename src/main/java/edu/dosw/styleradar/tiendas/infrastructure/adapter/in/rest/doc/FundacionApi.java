@@ -41,9 +41,9 @@ public interface FundacionApi {
             summary = "Upload the legal-entity certificate in PDF of a foundation (SR-RF-63)",
             description = "ROLE_STYLERADAR_ADMIN. Receives a PDF of at most 5 MB and returns its public URL in object storage.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Certificado PDF almacenado exitosamente"),
+            @ApiResponse(responseCode = "201", description = "PDF certificate stored successfully"),
             @ApiResponse(responseCode = "400", description = "File is not a PDF or larger than 5 MB", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Requiere ROLE_STYLERADAR_ADMIN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+            @ApiResponse(responseCode = "403", description = "Requires ROLE_STYLERADAR_ADMIN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     @PostMapping(value = "/api/v1/admin/foundations/certificates", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<DocumentoSubidoResponseDTO> subirCertificado(

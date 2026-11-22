@@ -29,18 +29,18 @@ public class SwaggerConfig {
         List<Server> servers = new ArrayList<>();
 
         if (customServerUrl != null && !customServerUrl.isBlank()) {
-            servers.add(new Server().url(customServerUrl).description("Servidor Activo Cloud (Configurado)"));
+            servers.add(new Server().url(customServerUrl).description("Active Cloud Server (Configured)"));
         }
 
-        // Entornos Cloud en Azure (QA y PROD)
-        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Microservicio Tiendas (:8140)"));
+        // Cloud environments on Azure (QA and PROD)
+        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Stores Service (:8140)"));
         servers.add(new Server().url("https://styleradar-backend-qa.azurewebsites.net").description("Azure QA - API Gateway (:8080)"));
-        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Microservicio Tiendas (:8140)"));
+        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Stores Service (:8140)"));
         servers.add(new Server().url("https://styleradar-backend-prod.azurewebsites.net").description("Azure PROD - API Gateway (:8080)"));
 
-        // Entornos Locales
-        servers.add(new Server().url("http://localhost:8140").description("Servidor Local ms-tiendas (:8140)"));
-        servers.add(new Server().url("http://localhost:8080").description("API Gateway Local (:8080)"));
+        // Local environments
+        servers.add(new Server().url("http://localhost:8140").description("Local ms-tiendas server (:8140)"));
+        servers.add(new Server().url("http://localhost:8080").description("Local API Gateway (:8080)"));
 
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()
@@ -54,7 +54,7 @@ public class SwaggerConfig {
                         .description("OpenAPI 3.0 specification of the StyleRadar stores and partner foundations microservice: low-stock threshold (SR-RF-59), new-arrival days (SR-RF-60), store verification (SR-RF-62), registration, edition, deactivation and reactivation of partner foundations (SR-RF-63, SR-RF-64, SR-RF-65) and a gallery of up to 6 physical-store photos (SR-RF-74). Routes, fields, values and error codes are in English; only the user messages inside the JSON are in Spanish.")
                         .version("v1")
                         .contact(new Contact()
-                                .name("Equipo CADche - StyleRadar DOSW")
+                                .name("CADche team - StyleRadar DOSW")
                                 .email("cadche@styleradar.com")));
     }
 
@@ -62,7 +62,12 @@ public class SwaggerConfig {
     OpenApiCustomizer storesAuthenticationDocumentation() {
         Set<String> publicGets = Set.of(
                 "/api/v1/stores",
-                "/api/v1/stores/{nit}/photos");
+                "/api/v1/stores/{nit}",
+                "/api/v1/stores/{nit}/catalog-settings",
+                "/api/v1/stores/{nit}/low-stock-threshold",
+                "/api/v1/stores/{nit}/new-arrival-days",
+                "/api/v1/stores/{nit}/photos",
+                "/api/v1/foundations");
         return api -> {
             if (api.getPaths() == null) {
                 return;
