@@ -50,7 +50,7 @@ class FundacionRepositoryAdapterTest {
                 .longitud(-74.06)
                 .representanteId(30L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .build();
 
         FundacionEntity entidadGuardada = FundacionEntity.builder()
@@ -62,7 +62,7 @@ class FundacionRepositoryAdapterTest {
                 .longitud(-74.06)
                 .representanteId(30L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .activa(true)
                 .fechaRegistro(Instant.now())
                 .build();
@@ -174,7 +174,7 @@ class FundacionRepositoryAdapterTest {
                 .representanteId(20L)
                 .horarioAtencion("Lunes a Viernes 09:00 - 17:00")
                 .politicasDonacion("Prendas limpias en buen estado")
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .build();
 
         FundacionEntity entidadGuardada = FundacionEntity.builder()

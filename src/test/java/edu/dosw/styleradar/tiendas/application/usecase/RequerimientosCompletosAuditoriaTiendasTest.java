@@ -68,7 +68,7 @@ class RequerimientosCompletosAuditoriaTiendasTest {
     private AutorizacionAdminStyleRadarValidator adminValidator;
 
     private static final String NIT = "900123456-1";
-    private static final String ROLE_ADMIN = "ROLE_ADMIN_STYLERADAR";
+    private static final String ROLE_ADMIN = "ROLE_STYLERADAR_ADMIN";
 
     @Test
     @DisplayName("Prueba 1 (SR-RF-59): Validación completa de reglas de negocio para últimas unidades")
@@ -83,23 +83,23 @@ class RequerimientosCompletosAuditoriaTiendasTest {
                 .build();
         when(almacenRepositoryPort.findByNit(NIT)).thenReturn(Optional.of(almacen));
 
-        // 1. Stock igual al umbral -> ULTIMAS_UNIDADES activo
+        // 1. Stock igual al umbral -> LOW_STOCK activo
         DistintivoPrendaAlmacenResponseDTO r1 = useCase.evaluarUltimasUnidades(
                 NIT, 101L, new EvaluarUltimasUnidadesRequestDTO(5, true), 10L);
         assertThat(r1.ultimasUnidades()).isTrue();
-        assertThat(r1.distintivoActivo()).isEqualTo("ULTIMAS_UNIDADES");
+        assertThat(r1.distintivoActivo()).isEqualTo("LOW_STOCK");
 
-        // 2. Stock superior al umbral -> NINGUNO
+        // 2. Stock superior al umbral -> NONE
         DistintivoPrendaAlmacenResponseDTO r2 = useCase.evaluarUltimasUnidades(
                 NIT, 101L, new EvaluarUltimasUnidadesRequestDTO(6, true), 10L);
         assertThat(r2.ultimasUnidades()).isFalse();
-        assertThat(r2.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(r2.distintivoActivo()).isEqualTo("NONE");
 
-        // 3. RN-02: Agotado prevalece sobre el distintivo (stock=0 -> NINGUNO)
+        // 3. RN-02: Agotado prevalece sobre el distintivo (stock=0 -> NONE)
         DistintivoPrendaAlmacenResponseDTO r3 = useCase.evaluarUltimasUnidades(
                 NIT, 101L, new EvaluarUltimasUnidadesRequestDTO(0, true), 10L);
         assertThat(r3.ultimasUnidades()).isFalse();
-        assertThat(r3.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(r3.distintivoActivo()).isEqualTo("NONE");
     }
 
     @Test
@@ -121,23 +121,23 @@ class RequerimientosCompletosAuditoriaTiendasTest {
         DistintivoPrendaAlmacenResponseDTO dentro = useCase.evaluarNuevaLlegada(
                 NIT, 202L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(5, ChronoUnit.DAYS), false), 10L);
         assertThat(dentro.nuevaLlegada()).isTrue();
-        assertThat(dentro.distintivoActivo()).isEqualTo("NUEVA_PRENDA");
+        assertThat(dentro.distintivoActivo()).isEqualTo("NEW_ARRIVAL");
 
         // 2. Prenda ingresada fuera de la ventana (hace 11 días > 10 días)
         DistintivoPrendaAlmacenResponseDTO fuera = useCase.evaluarNuevaLlegada(
                 NIT, 202L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(11, ChronoUnit.DAYS), false), 10L);
         assertThat(fuera.nuevaLlegada()).isFalse();
-        assertThat(fuera.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(fuera.distintivoActivo()).isEqualTo("NONE");
 
         // 3. RN-02: Prenda marcada como retirada no recibe distintivo aunque fecha sea reciente
         DistintivoPrendaAlmacenResponseDTO retirada = useCase.evaluarNuevaLlegada(
                 NIT, 202L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(1, ChronoUnit.DAYS), true), 10L);
         assertThat(retirada.nuevaLlegada()).isFalse();
-        assertThat(retirada.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(retirada.distintivoActivo()).isEqualTo("NONE");
     }
 
     @Test
-    @DisplayName("Prueba 3 (SR-RF-62-A): Registro de almacén con RUT obligatorio, estado PENDIENTE y rechazo de duplicados")
+    @DisplayName("Prueba 3 (SR-RF-62-A): Registro de almacén con RUT obligatorio, estado PENDING y rechazo de duplicados")
     void prueba3_SRRF62A_RegistrarAlmacenValidaciones() {
         RegistrarAlmacenUseCaseImpl useCase = new RegistrarAlmacenUseCaseImpl(
                 almacenRepositoryPort, almacenamientoBlobPort, autorizacionAlmacenValidator);
@@ -153,15 +153,15 @@ class RequerimientosCompletosAuditoriaTiendasTest {
         when(almacenRepositoryPort.existeAlmacenParaUsuario(15L)).thenReturn(false);
         when(almacenRepositoryPort.save(any(Almacen.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        VerificacionAlmacenResponseDTO res = useCase.registrarAlmacen(req, 15L, "ROLE_ADMIN_ALMACEN");
+        VerificacionAlmacenResponseDTO res = useCase.registrarAlmacen(req, 15L, "ROLE_STORE_ADMIN");
 
         assertThat(res.nit()).isEqualTo(NIT);
-        assertThat(res.estadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.PENDIENTE);
+        assertThat(res.estadoVerificacion()).isEqualTo(EstadoVerificacionAlmacen.PENDING);
         verify(almacenRepositoryPort).asociarAdministrador(NIT, 15L);
 
         // Rechazo si el NIT ya existe
         when(almacenRepositoryPort.existsByNit(NIT)).thenReturn(true);
-        assertThatThrownBy(() -> useCase.registrarAlmacen(req, 16L, "ROLE_ADMIN_ALMACEN"))
+        assertThatThrownBy(() -> useCase.registrarAlmacen(req, 16L, "ROLE_STORE_ADMIN"))
                 .isInstanceOf(AlmacenYaRegistradoException.class);
     }
 
@@ -174,14 +174,14 @@ class RequerimientosCompletosAuditoriaTiendasTest {
         Almacen sinRut = Almacen.builder()
                 .nit(NIT)
                 .nombreComercial("Tienda Sin Rut")
-                .estadoVerificacion(EstadoVerificacionAlmacen.PENDIENTE)
+                .estadoVerificacion(EstadoVerificacionAlmacen.PENDING)
                 .urlRutPdf(null)
                 .build();
 
         when(almacenRepositoryPort.findByNit(NIT)).thenReturn(Optional.of(sinRut));
 
         DecisionVerificacionRequestDTO decisionAprobar = new DecisionVerificacionRequestDTO();
-        decisionAprobar.setDecision(DecisionVerificacionAlmacen.APROBADO);
+        decisionAprobar.setDecision(DecisionVerificacionAlmacen.APPROVED);
         decisionAprobar.setMotivo("Verificación documental exitosa");
 
         // RN-03: No se puede aprobar sin RUT
@@ -191,7 +191,7 @@ class RequerimientosCompletosAuditoriaTiendasTest {
         // Almacén ya aprobado no puede volver a decidirse sin reapertura
         Almacen yaAprobado = Almacen.builder()
                 .nit(NIT)
-                .estadoVerificacion(EstadoVerificacionAlmacen.APROBADO)
+                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
                 .urlRutPdf("https://blob/rut.pdf")
                 .build();
         when(almacenRepositoryPort.findByNit(NIT)).thenReturn(Optional.of(yaAprobado));

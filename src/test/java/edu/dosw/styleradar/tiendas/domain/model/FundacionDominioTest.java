@@ -33,7 +33,7 @@ class FundacionDominioTest {
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
                 .longitud(-74.0531)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .representanteId(24L)
                 .urlCertificadoPersoneriaJuridica("https://styleradarblob.blob.core.windows.net/fundaciones/cert.pdf")
                 .causasApoyadas("Niñez vulnerable y adultos mayores")
@@ -147,7 +147,7 @@ class FundacionDominioTest {
                 .email("nuevo_contacto@abrigosolidario.org")
                 .latitud(4.6534)
                 .longitud(-74.0621)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.INFERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.BOTTOM))
                 .representanteId(99L)
                 .horarioAtencion("Lunes a Viernes 08:00 - 18:00")
                 .politicasDonacion("Prendas limpias y planchadas")
@@ -183,7 +183,7 @@ class FundacionDominioTest {
                 .email("info@fundacion.org")
                 .latitud(4.5)
                 .longitud(-74.1)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(10L)
                 .build();
 
@@ -199,7 +199,7 @@ class FundacionDominioTest {
                 .email("info@fundacion.org")
                 .latitud(4.5)
                 .longitud(-74.1)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(null)
                 .build();
 
@@ -215,7 +215,7 @@ class FundacionDominioTest {
                 .email("info@fundacion.org")
                 .latitud(-95.0)
                 .longitud(-74.1)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP))
                 .representanteId(10L)
                 .build();
 

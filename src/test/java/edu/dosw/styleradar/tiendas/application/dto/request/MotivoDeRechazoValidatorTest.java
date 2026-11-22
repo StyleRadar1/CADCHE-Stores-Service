@@ -27,7 +27,7 @@ class MotivoDeRechazoValidatorTest {
     @Test
     @DisplayName("Rechazo sin motivo: 'El rechazo exige un motivo no vacío' en el campo motivo")
     void rechazoSinMotivo() {
-        var errores = validar(DecisionVerificacionAlmacen.RECHAZADO, " ");
+        var errores = validar(DecisionVerificacionAlmacen.REJECTED, " ");
         assertThat(errores).singleElement().satisfies(e -> {
             assertThat(e.getPropertyPath()).hasToString("motivo");
             assertThat(e.getMessage()).isEqualTo("El rechazo exige un motivo no vacío");
@@ -37,7 +37,7 @@ class MotivoDeRechazoValidatorTest {
     @Test
     @DisplayName("Rechazo con motivo corto: mensaje de longitud en el campo motivo")
     void rechazoConMotivoCorto() {
-        var errores = validar(DecisionVerificacionAlmacen.RECHAZADO, "corto");
+        var errores = validar(DecisionVerificacionAlmacen.REJECTED, "corto");
         assertThat(errores).singleElement().satisfies(e -> {
             assertThat(e.getPropertyPath()).hasToString("motivo");
             assertThat(e.getMessage()).isEqualTo("El motivo debe tener entre 10 y 1000 caracteres");
@@ -47,7 +47,7 @@ class MotivoDeRechazoValidatorTest {
     @Test
     @DisplayName("Aprobar sin motivo y rechazar con 10 caracteres son válidos")
     void casosValidos() {
-        assertThat(validar(DecisionVerificacionAlmacen.APROBADO, null)).isEmpty();
-        assertThat(validar(DecisionVerificacionAlmacen.RECHAZADO, "Diez letra")).isEmpty();
+        assertThat(validar(DecisionVerificacionAlmacen.APPROVED, null)).isEmpty();
+        assertThat(validar(DecisionVerificacionAlmacen.REJECTED, "Diez letra")).isEmpty();
     }
 }

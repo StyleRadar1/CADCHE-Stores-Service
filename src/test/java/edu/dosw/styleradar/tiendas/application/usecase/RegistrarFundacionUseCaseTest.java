@@ -55,7 +55,7 @@ class RegistrarFundacionUseCaseTest {
     private RegistrarFundacionUseCaseImpl useCase;
 
     private FundacionRequestDTO requestValido;
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
 
     @BeforeEach
     void setUp() {
@@ -69,7 +69,7 @@ class RegistrarFundacionUseCaseTest {
                 .email("contacto@abrigosolidario.org")
                 .latitud(4.6712)
                 .longitud(-74.0531)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .representanteId(24L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
                 .causasApoyadas("Niñez y adultos mayores")
@@ -180,24 +180,28 @@ class RegistrarFundacionUseCaseTest {
     void debeConsultarFundacionesCercanasActivas() {
         Fundacion cercana = Fundacion.builder()
                 .id(1L).nombre("Cercana").activa(true).latitud(4.67).longitud(-74.05)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR)).build();
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP)).build();
         Fundacion lejana = Fundacion.builder()
                 .id(2L).nombre("Lejana").activa(true).latitud(6.24).longitud(-75.58)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR)).build();
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP)).build();
         Fundacion inactiva = Fundacion.builder()
                 .id(3L).nombre("Inactiva").activa(false).latitud(4.67).longitud(-74.05)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR)).build();
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP)).build();
 
         when(repositoryPort.findAll()).thenReturn(List.of(lejana, inactiva, cercana));
 
         ConsultaFundacionesRequestDTO req = ConsultaFundacionesRequestDTO.builder()
-                .latitude(4.6712).longitude(-74.0531).type(TipoPrenda.SUPERIOR).build();
+                .latitude(4.6712).longitude(-74.0531).type(TipoPrenda.TOP).build();
 
         List<FundacionResponseDTO> resultado = useCase.consultarCercanas(req);
 
         assertEquals(2, resultado.size());
         assertEquals("Cercana", resultado.get(0).getNombre());
         assertEquals("Lejana", resultado.get(1).getNombre());
-        assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(null));
+        // Sin coordenadas lista las activas por nombre; con solo una coordenada es un error.
+        assertEquals(List.of("Cercana", "Lejana"),
+                useCase.consultarCercanas(null).stream().map(FundacionResponseDTO::getNombre).toList());
+        assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(
+                ConsultaFundacionesRequestDTO.builder().latitude(4.6).build()));
     }
 }

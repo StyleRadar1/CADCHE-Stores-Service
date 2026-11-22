@@ -49,20 +49,20 @@ class JwtAuthFilterTest {
     @Test
     @DisplayName("Con JWT válido la identidad sale del token aunque el cliente envíe otras cabeceras X-User-*")
     void conTokenValido_identidadDelTokenIgnoraCabecerasFalsas() throws ServletException, IOException {
-        request.addHeader("Authorization", "Bearer " + TokensDePrueba.token(10L, List.of("ADMIN_ALMACEN"), 3600));
+        request.addHeader("Authorization", "Bearer " + TokensDePrueba.token(10L, List.of("STORE_ADMIN"), 3600));
         request.addHeader("X-User-Id", "999");
-        request.addHeader("X-User-Roles", "ADMIN_STYLERADAR");
+        request.addHeader("X-User-Roles", "STYLERADAR_ADMIN");
 
         filtro(true).doFilter(request, response, filterChain);
 
         HttpServletRequest llegada = peticionQueLlegoAlControlador();
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(llegada.getHeader("X-User-Id")).isEqualTo("10");
-        assertThat(llegada.getHeader("x-user-roles")).isEqualTo("ADMIN_ALMACEN");
-        assertThat(llegada.getHeader("X-User-Role")).isEqualTo("ADMIN_ALMACEN");
-        assertThat(Collections.list(llegada.getHeaders("X-User-Roles"))).containsExactly("ADMIN_ALMACEN");
+        assertThat(llegada.getHeader("x-user-roles")).isEqualTo("STORE_ADMIN");
+        assertThat(llegada.getHeader("X-User-Role")).isEqualTo("STORE_ADMIN");
+        assertThat(Collections.list(llegada.getHeaders("X-User-Roles"))).containsExactly("STORE_ADMIN");
         assertThat(llegada.getAttribute(JwtAuthFilter.ATRIBUTO_USUARIO)).isEqualTo(10L);
-        assertThat(llegada.getAttribute(JwtAuthFilter.ATRIBUTO_ROLES)).isEqualTo("ADMIN_ALMACEN");
+        assertThat(llegada.getAttribute(JwtAuthFilter.ATRIBUTO_ROLES)).isEqualTo("STORE_ADMIN");
         assertThat(Collections.list(llegada.getHeaderNames())).contains("x-user-id", "Authorization");
     }
 
@@ -70,7 +70,7 @@ class JwtAuthFilterTest {
     @DisplayName("Sin token y sin confianza en el Gateway (QA/PROD) las cabeceras X-User-* se ocultan")
     void sinTokenNiConfianza_ocultaCabecerasDeIdentidad() throws ServletException, IOException {
         request.addHeader("X-User-Id", "1");
-        request.addHeader("X-User-Roles", "ADMIN_STYLERADAR");
+        request.addHeader("X-User-Roles", "STYLERADAR_ADMIN");
         request.addHeader("Accept", "application/json");
 
         filtro(false).doFilter(request, response, filterChain);
@@ -99,7 +99,7 @@ class JwtAuthFilterTest {
     @DisplayName("Token vencido o firmado con otro secreto responde 401 con el formato de error del contrato")
     void conTokenInvalido_responde401() throws ServletException, IOException {
         request.addHeader("Authorization", "Bearer " + TokensDePrueba.token(
-                TokensDePrueba.SECRETO_AJENO, 1L, List.of("ADMIN_STYLERADAR"), 3600));
+                TokensDePrueba.SECRETO_AJENO, 1L, List.of("STYLERADAR_ADMIN"), 3600));
 
         filtro(true).doFilter(request, response, filterChain);
 
@@ -107,7 +107,7 @@ class JwtAuthFilterTest {
         assertThat(response.getContentAsString())
                 .contains("\"status\":401")
                 .contains("inválida o ha sido alterada")
-                .contains("\"validationErrors\":{}");
+                .contains("\"errors\":{}");
         assertThat(filterChain.getRequest()).isNull();
 
         MockHttpServletResponse respuestaVencido = new MockHttpServletResponse();

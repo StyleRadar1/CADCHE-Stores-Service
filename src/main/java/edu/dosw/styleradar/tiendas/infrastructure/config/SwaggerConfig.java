@@ -29,34 +29,32 @@ public class SwaggerConfig {
         List<Server> servers = new ArrayList<>();
 
         if (customServerUrl != null && !customServerUrl.isBlank()) {
-            servers.add(new Server().url(customServerUrl).description("Servidor Activo Cloud (Configurado)"));
+            servers.add(new Server().url(customServerUrl).description("Active Cloud Server (Configured)"));
         }
 
-        // Entornos Cloud en Azure (QA y PROD)
-        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Microservicio Tiendas (:8140)"));
+        // Cloud environments on Azure (QA and PROD)
+        servers.add(new Server().url("https://styleradar-tiendas-qa.azurewebsites.net").description("Azure QA - Stores Service (:8140)"));
         servers.add(new Server().url("https://styleradar-backend-qa.azurewebsites.net").description("Azure QA - API Gateway (:8080)"));
-        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Microservicio Tiendas (:8140)"));
+        servers.add(new Server().url("https://styleradar-tiendas-prod.azurewebsites.net").description("Azure PROD - Stores Service (:8140)"));
         servers.add(new Server().url("https://styleradar-backend-prod.azurewebsites.net").description("Azure PROD - API Gateway (:8080)"));
 
-        // Entornos Locales
-        servers.add(new Server().url("http://localhost:8140").description("Servidor Local ms-tiendas (:8140)"));
-        servers.add(new Server().url("http://localhost:8080").description("API Gateway Local (:8080)"));
+        // Local environments
+        servers.add(new Server().url("http://localhost:8140").description("Local ms-tiendas server (:8140)"));
+        servers.add(new Server().url("http://localhost:8080").description("Local API Gateway (:8080)"));
 
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT")
-                        .description("Token JWT emitido por ms-auth (HS256 / RS256)")))
+                        .description("JWT issued by ms-auth (HS256)")))
                 .servers(servers)
                 .info(new Info()
                         .title("StyleRadar - Stores Service API (ms-tiendas)")
-                        .description("Especificación OpenAPI 3.0 del microservicio de gestión de tiendas y fundaciones aliadas de StyleRadar. "
-                                + "Gobierna los umbrales de últimas unidades (SR-RF-59), días de nueva llegada (SR-RF-60), verificación de almacenes aliados (SR-RF-62), "
-                                + "registro, edición y desactivación de fundaciones aliadas (SR-RF-63, SR-RF-64, SR-RF-65) y galería de hasta 6 fotografías de tienda física (SR-RF-74).")
+                        .description("OpenAPI 3.0 specification of the StyleRadar stores and partner foundations microservice: low-stock threshold, new-arrival days, store verification, registration, edition, deactivation and reactivation of partner foundations and a gallery of up to 6 physical-store photos. Routes, fields, values and error codes are in English; only the user messages inside the JSON are in Spanish.")
                         .version("v1")
                         .contact(new Contact()
-                                .name("Equipo CADche - StyleRadar DOSW")
+                                .name("CADche team - StyleRadar DOSW")
                                 .email("cadche@styleradar.com")));
     }
 
@@ -64,7 +62,12 @@ public class SwaggerConfig {
     OpenApiCustomizer storesAuthenticationDocumentation() {
         Set<String> publicGets = Set.of(
                 "/api/v1/stores",
-                "/api/v1/stores/{nit}/photos");
+                "/api/v1/stores/{nit}",
+                "/api/v1/stores/{nit}/catalog-settings",
+                "/api/v1/stores/{nit}/low-stock-threshold",
+                "/api/v1/stores/{nit}/new-arrival-days",
+                "/api/v1/stores/{nit}/photos",
+                "/api/v1/foundations");
         return api -> {
             if (api.getPaths() == null) {
                 return;

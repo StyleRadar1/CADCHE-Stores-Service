@@ -51,14 +51,14 @@ public class EditarFundacionUseCaseImpl implements EditarFundacionUseCase {
         if (nombreNormalizado != null && repositoryPort.existsByNombreIgnoreCaseAndIdNot(nombreNormalizado, id)) {
             throw new FundacionYaRegistradaException(
                     "Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado,
-                    Map.of("nombre", "Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado));
+                    Map.of("name", "Ya existe otra fundación aliada registrada con el nombre: " + nombreNormalizado));
         }
 
         if (request.getRepresentanteId() != null && repositoryPort.existsByRepresentanteIdAndIdNot(request.getRepresentanteId(), id)) {
             throw new FundacionYaRegistradaException(
                     "El usuario con ID " + request.getRepresentanteId()
                             + " ya se encuentra asignado como representante de otra fundación aliada",
-                    Map.of("representanteId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
+                    Map.of("representativeId", "El usuario ya se encuentra asignado como representante de otra fundación aliada"));
         }
 
         String emailNorm = stripOrNull(request.getEmail());

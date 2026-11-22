@@ -51,7 +51,7 @@ class DesactivarFundacionUseCaseTest {
     @InjectMocks
     private DesactivarFundacionUseCaseImpl useCase;
 
-    private static final String ADMIN_ROLE = "ROLE_ADMIN_STYLERADAR";
+    private static final String ADMIN_ROLE = "ROLE_STYLERADAR_ADMIN";
     private Fundacion fundacionActiva;
 
     @BeforeEach
@@ -67,7 +67,7 @@ class DesactivarFundacionUseCaseTest {
                 .email("esperanza@fundacion.org")
                 .latitud(4.6800)
                 .longitud(-74.0700)
-                .categoriasAceptadas(Set.of(TipoPrenda.SUPERIOR, TipoPrenda.CALZADO))
+                .categoriasAceptadas(Set.of(TipoPrenda.TOP, TipoPrenda.FOOTWEAR))
                 .representanteId(18L)
                 .urlCertificadoPersoneriaJuridica("https://blob/cert.pdf")
                 .causasApoyadas("Adultos mayores en condición de calle")
@@ -149,7 +149,7 @@ class DesactivarFundacionUseCaseTest {
     @Test
     @DisplayName("Criterio 5 (403 Forbidden): Dado que no soy administrador, cuando llamo al endpoint, recibo 403")
     void debeLanzar403CuandoUsuarioNoEsAdmin() {
-        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas"))
+        doThrow(new AccesoDenegadoAlmacenException("Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas"))
                 .when(adminValidator).validarEsAdministradorParaFundaciones("ROLE_COMPRADOR");
 
         assertThrows(AccesoDenegadoAlmacenException.class,

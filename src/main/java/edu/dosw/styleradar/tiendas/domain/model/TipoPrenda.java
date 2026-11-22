@@ -1,10 +1,10 @@
 package edu.dosw.styleradar.tiendas.domain.model;
 
 public enum TipoPrenda {
-    SUPERIOR,
-    INFERIOR,
-    CALZADO,
-    VESTIDO,
-    ACCESORIO
+    TOP,
+    BOTTOM,
+    FOOTWEAR,
+    DRESS,
+    ACCESSORY
 }
 

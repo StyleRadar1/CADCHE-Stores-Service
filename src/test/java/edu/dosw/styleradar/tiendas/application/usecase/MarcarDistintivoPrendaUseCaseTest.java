@@ -44,7 +44,7 @@ class MarcarDistintivoPrendaUseCaseTest {
     private static final String NIT = "900123456-1";
 
     @Test
-    @DisplayName("SR-RF-59: Debe marcar prenda como ULTIMAS_UNIDADES usando el umbral real del almacén y rechazar stock superior con 422")
+    @DisplayName("SR-RF-59: Debe marcar prenda como LOW_STOCK usando el umbral real del almacén y rechazar stock superior con 422")
     void debeMarcarUltimasUnidadesSegunUmbralDelAlmacen() {
         Almacen almacen = Almacen.builder()
                 .nit(NIT)
@@ -61,7 +61,7 @@ class MarcarDistintivoPrendaUseCaseTest {
         assertThat(resp.ultimasUnidades()).isTrue();
         assertThat(resp.umbralUltimasUnidades()).isEqualTo(4);
         assertThat(resp.diasNuevaLlegada()).isEqualTo(10);
-        assertThat(resp.distintivoActivo()).isEqualTo("ULTIMAS_UNIDADES");
+        assertThat(resp.distintivoActivo()).isEqualTo("LOW_STOCK");
         verify(autorizacionValidator).validarAcceso(NIT, 10L, repositoryPort);
 
         assertThatThrownBy(() -> useCase.marcarUltimasUnidades(NIT, 104L, 8, 10L))
@@ -84,26 +84,26 @@ class MarcarDistintivoPrendaUseCaseTest {
         DistintivoPrendaAlmacenResponseDTO enUmbral = useCase.evaluarUltimasUnidades(
                 NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(3, true), 10L);
         assertThat(enUmbral.ultimasUnidades()).isTrue();
-        assertThat(enUmbral.distintivoActivo()).isEqualTo("ULTIMAS_UNIDADES");
+        assertThat(enUmbral.distintivoActivo()).isEqualTo("LOW_STOCK");
 
         DistintivoPrendaAlmacenResponseDTO sobreUmbral = useCase.evaluarUltimasUnidades(
                 NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(4, true), 10L);
         assertThat(sobreUmbral.ultimasUnidades()).isFalse();
-        assertThat(sobreUmbral.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(sobreUmbral.distintivoActivo()).isEqualTo("NONE");
 
         DistintivoPrendaAlmacenResponseDTO agotada = useCase.evaluarUltimasUnidades(
                 NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(0, true), 10L);
         assertThat(agotada.ultimasUnidades()).isFalse();
-        assertThat(agotada.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(agotada.distintivoActivo()).isEqualTo("NONE");
 
         DistintivoPrendaAlmacenResponseDTO noDisponible = useCase.evaluarUltimasUnidades(
                 NIT, 104L, new EvaluarUltimasUnidadesRequestDTO(2, false), 10L);
         assertThat(noDisponible.ultimasUnidades()).isFalse();
-        assertThat(noDisponible.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(noDisponible.distintivoActivo()).isEqualTo("NONE");
     }
 
     @Test
-    @DisplayName("SR-RF-60: Debe marcar prenda como NUEVA_PRENDA usando los días configurados y rechazar fecha expirada con 422")
+    @DisplayName("SR-RF-60: Debe marcar prenda como NEW_ARRIVAL usando los días configurados y rechazar fecha expirada con 422")
     void debeMarcarNuevaLlegadaSegunPeriodoDelAlmacen() {
         Almacen almacen = Almacen.builder()
                 .nit(NIT)
@@ -118,7 +118,7 @@ class MarcarDistintivoPrendaUseCaseTest {
 
         assertThat(resp.nuevaLlegada()).isTrue();
         assertThat(resp.diasNuevaLlegada()).isEqualTo(7);
-        assertThat(resp.distintivoActivo()).isEqualTo("NUEVA_PRENDA");
+        assertThat(resp.distintivoActivo()).isEqualTo("NEW_ARRIVAL");
 
         assertThatThrownBy(() -> useCase.marcarNuevaLlegada(
                 NIT, 104L, Instant.now().minus(15, ChronoUnit.DAYS), 10L))
@@ -142,17 +142,17 @@ class MarcarDistintivoPrendaUseCaseTest {
         DistintivoPrendaAlmacenResponseDTO vigente = useCase.evaluarNuevaLlegada(
                 NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(7, ChronoUnit.DAYS).plusSeconds(60), false), 10L);
         assertThat(vigente.nuevaLlegada()).isTrue();
-        assertThat(vigente.distintivoActivo()).isEqualTo("NUEVA_PRENDA");
+        assertThat(vigente.distintivoActivo()).isEqualTo("NEW_ARRIVAL");
 
         DistintivoPrendaAlmacenResponseDTO expirada = useCase.evaluarNuevaLlegada(
                 NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(8, ChronoUnit.DAYS), false), 10L);
         assertThat(expirada.nuevaLlegada()).isFalse();
-        assertThat(expirada.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(expirada.distintivoActivo()).isEqualTo("NONE");
 
         DistintivoPrendaAlmacenResponseDTO retirada = useCase.evaluarNuevaLlegada(
                 NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.minus(1, ChronoUnit.DAYS), true), 10L);
         assertThat(retirada.nuevaLlegada()).isFalse();
-        assertThat(retirada.distintivoActivo()).isEqualTo("NINGUNO");
+        assertThat(retirada.distintivoActivo()).isEqualTo("NONE");
 
         assertThatThrownBy(() -> useCase.evaluarNuevaLlegada(
                 NIT, 104L, new EvaluarNuevaLlegadaRequestDTO(ahora.plus(1, ChronoUnit.DAYS), false), 10L))

@@ -10,15 +10,15 @@ import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
  */
 public class AutorizacionAdminStyleRadarValidator {
 
-    public static final String ROL_ADMIN_STYLERADAR = "ROLE_ADMIN_STYLERADAR";
-    public static final String ROL_ADMIN_CORTO = "ADMIN_STYLERADAR";
+    public static final String ROL_ADMIN_STYLERADAR = "ROLE_STYLERADAR_ADMIN";
+    public static final String ROL_ADMIN_CORTO = "STYLERADAR_ADMIN";
 
     public static final String MENSAJE_VERIFICAR_ALMACENES =
-            "Se requiere el rol ROLE_ADMIN_STYLERADAR para verificar almacenes aliados";
+            "Se requiere el rol ROLE_STYLERADAR_ADMIN para verificar almacenes aliados";
     public static final String MENSAJE_SIN_IDENTIDAD =
             "Se requiere un token de acceso válido para esta operación";
     public static final String MENSAJE_GESTIONAR_FUNDACIONES =
-            "Se requiere el rol ROLE_ADMIN_STYLERADAR para gestionar fundaciones aliadas";
+            "Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas";
 
     public void validarEsAdministradorStyleRadar(String roles) {
         validarRolConMensaje(roles, MENSAJE_VERIFICAR_ALMACENES);

@@ -1,5 +1,7 @@
 package edu.dosw.styleradar.tiendas.application.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 import java.util.Set;
 
@@ -7,56 +9,56 @@ import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Estado de verificación, personería jurídica (NIT y RUT en PDF) y datos de registro de un almacén aliado (SR-RF-62 / SR-RF-62-A)")
+@Schema(description = "Verification status, legal entity (NIT and RUT in PDF) and registration data of a partner store")
 public record VerificacionAlmacenResponseDTO(
-        @Schema(description = "NIT del almacén", example = "900123456-1")
+        @Schema(description = "Store NIT", example = "900123456-1")
         String nit,
 
-        @Schema(description = "Nombre comercial del almacén", example = "Atelier Urbano Chapinero")
-        String nombreComercial,
+        @Schema(description = "Store trade name", example = "Atelier Urbano Chapinero")
+        @JsonProperty("tradeName") String nombreComercial,
 
-        @Schema(description = "Descripción del almacén", example = "Moda independiente y prendas urbanas")
-        String descripcion,
+        @Schema(description = "Store description", example = "Moda independiente y prendas urbanas")
+        @JsonProperty("description") String descripcion,
 
-        @Schema(description = "Teléfono de contacto del establecimiento", example = "+57 601 312 4455")
-        String telefono,
+        @Schema(description = "Contact phone of the business", example = "+57 601 312 4455")
+        @JsonProperty("phone") String telefono,
 
-        @Schema(description = "Correo electrónico de contacto del almacén", example = "contacto@atelierurbano.co")
-        String correoContacto,
+        @Schema(description = "Store contact email", example = "contacto@atelierurbano.co")
+        @JsonProperty("contactEmail") String correoContacto,
 
-        @Schema(description = "Latitud geográfica WGS84", example = "4.6533")
-        Double latitud,
+        @Schema(description = "WGS84 latitude", example = "4.6533")
+        @JsonProperty("latitude") Double latitud,
 
-        @Schema(description = "Longitud geográfica WGS84", example = "-74.0602")
-        Double longitud,
+        @Schema(description = "WGS84 longitude", example = "-74.0602")
+        @JsonProperty("longitude") Double longitud,
 
-        @Schema(description = "Reputación promedio del almacén", example = "4.8")
-        Double reputacion,
+        @Schema(description = "Average store rating", example = "4.8")
+        @JsonProperty("rating") Double reputacion,
 
-        @Schema(description = "Categorías comerciales del almacén", example = "[\"CASUAL\",\"VINTAGE\"]")
-        Set<CategoriaAlmacen> categorias,
+        @Schema(description = "Business categories of the store", example = "[\"CASUAL\",\"VINTAGE\"]")
+        @JsonProperty("categories") Set<CategoriaAlmacen> categorias,
 
-        @Schema(description = "Estado de verificación administrativa (PENDIENTE, APROBADO, RECHAZADO). NULL indica legado sin aprobación administrativa", example = "APROBADO")
-        EstadoVerificacionAlmacen estadoVerificacion,
+        @Schema(description = "Verification status (PENDING, APPROVED, REJECTED). Null means a legacy store never verified", example = "APPROVED")
+        @JsonProperty("verificationStatus") EstadoVerificacionAlmacen estadoVerificacion,
 
-        @Schema(description = "Indica si el registro corresponde a un almacén legado sin verificación explícita", example = "false")
-        boolean legadoSinVerificacion,
+        @Schema(description = "Whether the record is a legacy store without explicit verification", example = "false")
+        @JsonProperty("legacyUnverified") boolean legadoSinVerificacion,
 
-        @Schema(description = "Fecha y hora UTC de la última decisión de verificación", example = "2026-11-02T19:00:00Z")
-        Instant fechaDecisionVerificacion,
+        @Schema(description = "UTC date and time of the last verification decision", example = "2026-11-02T19:00:00Z")
+        @JsonProperty("verificationDecidedAt") Instant fechaDecisionVerificacion,
 
-        @Schema(description = "Identificador del administrador StyleRadar que registró la última decisión", example = "1")
-        Long administradorDecisionId,
+        @Schema(description = "StyleRadar admin who recorded the last decision", example = "1")
+        @JsonProperty("decisionAdminId") Long administradorDecisionId,
 
-        @Schema(description = "Motivo u observación de la decisión de verificación", example = "Datos revisados")
-        String motivoVerificacion,
+        @Schema(description = "Reason or note of the verification decision", example = "Datos revisados")
+        @JsonProperty("verificationReason") String motivoVerificacion,
 
-        @Schema(description = "URL del documento RUT adjunto en PDF para validación de personería jurídica (SR-RF-62)",
+        @Schema(description = "URL of the attached RUT in PDF used to validate the legal entity",
                 example = "https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut-atelier-urbano.pdf")
-        String urlRutPdf,
+        @JsonProperty("rutPdfUrl") String urlRutPdf,
 
-        @Schema(description = "Identificador o referencia del usuario administrador representante del almacén", example = "10")
-        String representante
+        @Schema(description = "Identifier or reference of the store administrator user", example = "10")
+        @JsonProperty("representative") String representante
 ) {
     public VerificacionAlmacenResponseDTO(
             String nit,

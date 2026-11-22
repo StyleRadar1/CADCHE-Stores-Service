@@ -14,22 +14,20 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Parámetros de consulta de fundaciones aliadas activas cercanas al donante (SR-RF-43)")
+@Schema(description = "Optional parameters of the public list of active partner foundations")
 public class ConsultaFundacionesRequestDTO {
 
-    @NotNull(message = "La latitud es obligatoria")
     @DecimalMin(value = "-90.0", message = "La latitud debe estar entre -90 y 90")
     @DecimalMax(value = "90.0", message = "La latitud debe estar entre -90 y 90")
-    @Schema(description = "Latitud geográfica WGS84 del usuario donante", example = "4.6712", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Optional donor WGS84 latitude; with longitude, results are sorted by distance", example = "4.6712")
     private Double latitude;
 
-    @NotNull(message = "La longitud es obligatoria")
     @DecimalMin(value = "-180.0", message = "La longitud debe estar entre -180 y 180")
     @DecimalMax(value = "180.0", message = "La longitud debe estar entre -180 y 180")
-    @Schema(description = "Longitud geográfica WGS84 del usuario donante", example = "-74.0531", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Optional donor WGS84 longitude; with latitude, results are sorted by distance", example = "-74.0531")
     private Double longitude;
 
-    @Schema(description = "Filtro opcional por categoría de prenda aceptada por la fundación", example = "SUPERIOR")
+    @Schema(description = "Optional filter by garment category accepted by the foundation", example = "TOP")
     private TipoPrenda type;
 }
 

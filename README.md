@@ -40,7 +40,7 @@
       <img src="https://sonarcloud.io/api/project_badges/measure?project=StyleRadar1_CADCHE-Stores-Service&metric=alert_status" alt="Quality Gate" />
     </a>
     <a href="https://sonarcloud.io/component_measures?id=StyleRadar1_CADCHE-Stores-Service&metric=coverage">
-      <img src="https://img.shields.io/badge/JaCoCo_Coverage-94.7%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" />
+      <img src="https://img.shields.io/badge/JaCoCo_Coverage-94.5%25-16A34A?style=for-the-badge&logo=codecov&logoColor=white" alt="Coverage" />
     </a>
   </p>
   <p>
@@ -81,7 +81,7 @@
 * **Identificador de Servicio:** `ms-tiendas` (`CADCHE-Stores-Service`)
 * **Paquete Arquitectónico:** `Paquete 1: Identidad` · Equipo `CADche`
 * **Puerto de Escucha Oficial:** `8140` (bloque `8100` del equipo: ms-auth `8100`, ms-usuarios `8120`, ms-tiendas `8140`)
-* **Base de Datos Asignada:** `PostgreSQL 16` (`styleradar_tiendas`), una por ambiente (QA y PROD separadas), con migraciones **Flyway V1..V6**. Los binarios (RUT en PDF, fotos y certificados) van a **Azure Blob Storage**; la base solo guarda la URL.
+* **Base de Datos Asignada:** `PostgreSQL 16` (`styleradar_tiendas`), una por ambiente (QA y PROD separadas), con migraciones **Flyway V1..V7**. Los binarios (RUT en PDF, fotos y certificados) van a **Azure Blob Storage**; la base solo guarda la URL.
 * **Bounded Context:** `Gestión de Tiendas Aliadas y Fundaciones`
 
 ### Responsabilidades del Dominio (historias del Sprint 2)
@@ -90,7 +90,7 @@
 | :--- | :--- |
 | **SR-RF-59** · Últimas unidades | Umbral configurable por almacén (`0..50`) y distintivo «Últimas unidades» por prenda. |
 | **SR-RF-60** · Nueva llegada | Periodo configurable (`1..60` días) y distintivo «Nueva llegada». |
-| **SR-RF-62-A** · Registrar almacén | La tienda registra su almacén y sube el RUT (PDF ≤ 5 MB); queda `PENDIENTE`. |
+| **SR-RF-62-A** · Registrar almacén | La tienda registra su almacén y sube el RUT (PDF ≤ 5 MB); queda `PENDING`. |
 | **SR-RF-62** · Verificar almacén | El admin aprueba (RUT obligatorio) o rechaza (motivo de 10 a 1000 caracteres) y puede reabrir la revisión. |
 | **SR-RF-63 / 64 / 65** · Fundaciones | Registrar, editar, desactivar y reactivar fundaciones aliadas; publica eventos al desactivar o reactivar. |
 | **SR-RF-74** · Fotografías | Hasta `6` fotos por tienda (JPG, PNG o WEBP ≤ 6 MB), orden y portada. |
@@ -177,7 +177,7 @@ flowchart LR
 
 <div align="center">
   <img src="docs/uml/DiagramaBaseDatos.png" alt="Modelo de base de datos ms-tiendas" width="100%" />
-  <sub>Figura 3.2: esquema real de PostgreSQL 16 tras Flyway V1..V6 (<a href="docs/uml/DiagramaBaseDatos.drawio">DiagramaBaseDatos.drawio</a>).</sub>
+  <sub>Figura 3.2: esquema real de PostgreSQL 16 tras Flyway V1..V7 (<a href="docs/uml/DiagramaBaseDatos.drawio">DiagramaBaseDatos.drawio</a>).</sub>
 </div>
 
 **Justificación del diagrama de base de datos.** Es el esquema real que deja Flyway (V1 a V6) en PostgreSQL 16, el mismo que Hibernate valida al arrancar (`ddl-auto=validate`). Documenta las claves, las restricciones de unicidad (NIT del almacén, nombre y NIT de la fundación, una categoría por fila) y la tabla `administradores_almacenes`, que es la base del control de propiedad (BOLA) de todas las operaciones de la Tienda.
@@ -212,7 +212,7 @@ flowchart LR
 * **Cliente → API Gateway → ms-tiendas.** Ninguna petición del front llega directo al servicio.
 * **Base de datos propia (`tiendas_db`).** Cada microservicio es dueño de sus datos; los demás consultan almacenes y fundaciones por la API, nunca por la base.
 * **Azure Blob Storage** (sistema externo) guarda las fotos de la tienda, el RUT y el certificado de las fundaciones.
-* **RabbitMQ:** ms-tiendas publica `fundacion.desactivada` y `fundacion.reactivada` para que el servicio de donaciones deje de ofrecer la fundación o la vuelva a ofrecer.
+* **RabbitMQ:** ms-tiendas publica `foundation.deactivated` y `foundation.reactivated` para que el servicio de donaciones deje de ofrecer la fundación o la vuelva a ofrecer.
 * **ms-auth** no se llama en cada petición: ms-tiendas valida el JWT localmente con el mismo secreto.
 
 ### 3.5 Diagrama de Despliegue
@@ -273,8 +273,10 @@ tiendas/
 
 ### Convención de rutas
 
-* Todas las rutas están **en inglés** y empiezan por **`/api/v1`**. Los nombres de los campos JSON se mantienen como los define el contrato con el front.
-* El proyecto **no usa `/me`**. El almacén de una Tienda se consulta con **`GET /api/v1/users/{userId}/store`**, que nombra al usuario de forma explícita. El backend comprueba que quien llama sea ese mismo usuario o un `ADMIN_STYLERADAR`; cualquier otra identidad recibe `403`.
+* Todas las rutas están **en inglés** y empiezan por **`/api/v1`**.
+* **Análisis de requerimientos v2 (17/11/2026):** rutas, nombres de campos JSON, valores (estados, categorías, distintivos, roles), parámetros, la parte `file` de los multipart, los eventos y los códigos de error van **en inglés**; Swagger también. **Solo los mensajes para el usuario dentro del JSON** (`message`, `detail` y los mensajes de `errors`) están en español.
+* Valores: `verificationStatus` `PENDING`/`APPROVED`/`REJECTED`; `categories` `CASUAL`, `FORMAL`, `SPORTY`, `VINTAGE`, `ACCESSORIES`; `acceptedCategories` `TOP`, `BOTTOM`, `FOOTWEAR`, `DRESS`, `ACCESSORY`; `activeBadge` `LOW_STOCK`, `NEW_ARRIVAL`, `NONE`; roles `STORE_ADMIN` y `STYLERADAR_ADMIN` (los tokens con los nombres anteriores siguen aceptados). La migración `V7` traduce los datos ya guardados.
+* El proyecto **no usa `/me`**. El almacén de una Tienda se consulta con **`GET /api/v1/users/{userId}/store`**, que nombra al usuario de forma explícita. El backend comprueba que quien llama sea ese mismo usuario o un `STYLERADAR_ADMIN`; cualquier otra identidad recibe `403`.
 * El API Gateway debe enrutar ese patrón exacto (`/api/v1/users/{userId}/store`) a ms-tiendas, porque el resto de `/api/v1/users/**` pertenece a ms-usuarios.
 * `/actuator/health` y la documentación OpenAPI (`/v3/api-docs`, `/swagger-ui`) son rutas de operación y quedan fuera de esta convención.
 
@@ -314,14 +316,14 @@ tiendas/
 | `PATCH` | `/api/v1/admin/foundations/{id}/activate` | SR-RF-65 · Reactivar (publica evento) | Admin |
 | `GET` | `/api/v1/foundations` | Fundaciones cercanas activas | Público |
 
-Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `codigo`, `timestamp` y `validationErrors`; `error`, `message` y `path` quedan como alias de compatibilidad. Catálogo de `codigo`: `DATOS_INVALIDOS`, `REGLA_DE_NEGOCIO` (400), `NO_AUTENTICADO` (401), `ACCESO_DENEGADO` (403), `RECURSO_NO_ENCONTRADO` (404), `METODO_NO_PERMITIDO` (405), `CONFLICTO` (409), `ARCHIVO_DEMASIADO_GRANDE` (413), `OPERACION_NO_PROCESABLE` (422), `ERROR_INTERNO` (500) y `SERVICIO_NO_DISPONIBLE` (503).
+Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `code` y `errors` (claves en inglés, mensajes en español); `timestamp`, `error`, `message` y `path` quedan como alias de compatibilidad. `type` es `https://api.styleradar.com/errors/{code en minúsculas con guiones}`. Catálogo de `code`: `INVALID_DATA`, `BUSINESS_RULE_VIOLATION` (400), `UNAUTHENTICATED` (401), `ACCESS_DENIED` (403), `RESOURCE_NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `FILE_TOO_LARGE` (413), `UNPROCESSABLE_OPERATION` (422), `INTERNAL_ERROR` (500) y `SERVICE_UNAVAILABLE` (503).
 
 ```json
-{ "type": "https://api.styleradar.com/errores/conflicto", "title": "Conflict", "status": 409,
+{ "type": "https://api.styleradar.com/errors/conflict", "title": "Conflict", "status": 409,
   "detail": "Ya existe una fundación con ese nombre", "instance": "/api/v1/admin/foundations",
-  "codigo": "CONFLICTO", "timestamp": "2026-11-13T15:04:05", "error": "Conflict",
+  "code": "CONFLICT", "timestamp": "2026-11-13T15:04:05", "error": "Conflict",
   "message": "Ya existe una fundación con ese nombre", "path": "/api/v1/admin/foundations",
-  "validationErrors": { "nombre": "Ya existe una fundación con ese nombre" } }
+  "errors": { "name": "Ya existe una fundación con ese nombre" } }
 ```
 
 ---
@@ -332,15 +334,15 @@ Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** 
 
 | Dirección | Exchange / routing key | Evento | Destinatarios | Cuándo |
 | :--- | :--- | :--- | :--- | :--- |
-| **PUBLICA** | `styleradar.exchange` / `styleradar.tiendas.fundacion.desactivada` | `FundacionDesactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al desactivar una fundación (SR-RF-65). |
-| **PUBLICA** | `styleradar.exchange` / `styleradar.tiendas.fundacion.reactivada` | `FundacionReactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al reactivarla. |
+| **PUBLICA** | `styleradar.exchange` / `foundation.deactivated` | `FundacionDesactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al desactivar una fundación (SR-RF-65). |
+| **PUBLICA** | `styleradar.exchange` / `foundation.reactivated` | `FundacionReactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al reactivarla. |
 | **CONSUME** | — | — | — | ms-tiendas no consume eventos. |
 
-Cada evento lleva un `eventoId` para que los consumidores sean idempotentes.
+Cada evento lleva un `eventId` para que los consumidores sean idempotentes. Campos (análisis v2): `eventId`, `foundationId`, `foundationName`, `representativeId`, `deactivatedAt`/`reactivatedAt` y `reason`.
 
 ```json
-{ "eventoId": "4b1f...", "fundacionId": 7, "nombreFundacion": "Fundación Abrigar",
-  "representanteId": 30, "fechaDesactivacion": "2026-11-13T15:04:05Z", "motivo": "..." }
+{ "eventId": "4b1f...", "foundationId": 7, "foundationName": "Fundación Abrigar",
+  "representativeId": 30, "deactivatedAt": "2026-11-13T15:04:05Z", "reason": "..." }
 ```
 
 ---
@@ -354,7 +356,7 @@ Cada evento lleva un `eventoId` para que los consumidores sean idempotentes.
 | Lenguaje | Java LTS | `21` | Estándar del curso. |
 | Framework | Spring Boot | `3.2.12` | Web, Data JPA, AMQP, Validation y Actuator. |
 | Base de datos | PostgreSQL | `16` | Todos los perfiles (dev con Docker Compose); **sin H2**. |
-| Migraciones | Flyway | `10.20.1` | V1..V6 con `ddl-auto=validate`. |
+| Migraciones | Flyway | `10.20.1` | V1..V7 con `ddl-auto=validate`. |
 | Mensajería | RabbitMQ (Spring AMQP) | `3.13` | Eventos de fundaciones. |
 | Seguridad | JJWT | `0.12.6` | Validación de los JWT de ms-auth (misma librería y versión). |
 | Almacenamiento | Azure Blob Storage SDK (`azure-storage-blob`) | `12.29.1` | Subida real de RUT, fotos y certificados (CADCHE-117); Azurite en `docker` y en `AzureBlobStorageAdapterIntegrationTest`. |
@@ -422,9 +424,9 @@ mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.exclud
 
 | Métrica (`mvn verify`, rama `feature/arreglos`) | Resultado | Umbral |
 | :--- | :---: | :---: |
-| Pruebas | **400**, 0 fallos | 100 % en verde |
-| Cobertura de instrucciones | **94.7 %** | ≥ 85 % (rompe el build) |
-| Cobertura de ramas | **76.5 %** | — |
+| Pruebas | **408**, 0 fallos | 100 % en verde |
+| Cobertura de instrucciones | **94.5 %** | ≥ 85 % (rompe el build) |
+| Cobertura de ramas | **76.4 %** | — |
 | SpotBugs | 0 hallazgos | 0 |
 
 | Nivel | Qué cubre |
@@ -433,8 +435,8 @@ mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.exclud
 | Casos de uso (Mockito) | Los 13 casos de uso con sus flujos alternos. |
 | WebMvc | Los 5 controladores con el contrato de errores. |
 | Seguridad | `JwtAuthFilterTest` (cabeceras falsificadas, token vencido o ajeno), `JwtSecurityValidatorTest` y `OwaspTop10SecurityTest`. |
-| **Trazabilidad Word y contrato** | `TrazabilidadRequerimientosTiendasTest`: un caso por cada flujo alterno y regla de negocio de SR-RF-59 a SR-RF-74 y por cada punto del contrato Front ↔ ms-tiendas, contra PostgreSQL 16 real y con JWT como los de ms-auth. |
-| **Integración PostgreSQL 16** | `PersistenciaPostgres16IntegrationTest`: Flyway V1..V6 sobre PostgreSQL 16 real con `ddl-auto=validate`, paginación, propiedad (BOLA) y fundaciones. |
+| **Trazabilidad Word y contrato** | `TrazabilidadRequerimientosTiendasTest`: un caso por cada flujo alterno y regla de negocio de SR-RF-59 a SR-RF-74 (análisis v2), por cada punto del contrato Front ↔ ms-tiendas y por los nombres en inglés del v2, contra PostgreSQL 16 real y con JWT como los de ms-auth. |
+| **Integración PostgreSQL 16** | `PersistenciaPostgres16IntegrationTest`: Flyway V1..V7 sobre PostgreSQL 16 real con `ddl-auto=validate`, paginación, propiedad (BOLA) y fundaciones. |
 
 > Testcontainers se omite si no hay Docker. Con Docker 29+ en local exporte `DOCKER_API_VERSION=1.44`.
 
@@ -523,13 +525,13 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 
 | Código RF | Nombre del Requerimiento | Actor Principal | Criterio de Aceptación Clave |
 | :---: | :--- | :--- | :--- |
-| `SR-RF-17`, `SR-RF-18`, `SR-RF-22` | Visualización de almacenes verificados en mapa y filtro por categoría | `COMPRADOR` / Público | Retorna únicamente almacenes con `estadoVerificacion = APROBADO`, permitiendo filtrar por `CategoriaAlmacen` y consultar el detalle por NIT. |
-| `SR-RF-21` | Cálculo de distancia entre comprador y almacén | `COMPRADOR` / Público | Calcula la distancia en línea recta (`distanciaKm`) mediante la fórmula de Haversine validando rangos geográficos de `latitud` y `longitud`. |
-| `SR-RF-59`, `SR-RF-60` | Configuración de umbrales `ULTIMAS_UNIDADES` y `NUEVA_PRENDA` (Deuda Técnica #8) | `ADMIN_ALMACEN` | Permite parametrizar por tienda el umbral de unidades (`1..50`) y días de vigencia de nueva llegada (`1..60`), así como marcar o desmarcar manualmente prendas. |
-| `SR-RF-62` | Registro y verificación administrativa de almacenes con RUT en PDF | `ADMIN_ALMACEN`, `ADMIN_STYLERADAR` | Registra almacenes en estado `PENDIENTE` con soporte de `urlRutPdf`; exige motivo obligatorio al rechazar y permite solicitar nueva revisión tras subsanación. |
-| `SR-RF-63`, `SR-RF-64`, `SR-RF-65`, `SR-RF-43` | Gestión integral y consulta geolocalizada de fundaciones aliadas | `ADMIN_STYLERADAR`, `COMPRADOR` | Permite registrar (asignando rol `REPRESENTANTE_FUNDACION`), editar, desactivar fundaciones preservando historial y listarlas por cercanía Haversine al donante. |
-| `SR-RF-74` | Gestión de fotografías del almacén físico (Deuda Técnica #7) | `ADMIN_ALMACEN` | Permite subir, listar y eliminar hasta 6 fotografías de fachada/interior por tienda en formatos `JPEG`, `PNG`, `WEBP` o `GIF` (multipart máx. 6 MB por archivo y 7 MB por petición). |
-| `SR-RNF-01` | Asociación y verificación de propiedad `ADMIN_ALMACEN` (Deuda Técnica #1) | `ADMIN_STYLERADAR`, `ADMIN_ALMACEN` | Valida que el usuario autenticado con rol `ADMIN_ALMACEN` sea administrador del NIT objetivo antes de autorizar mutaciones, previniendo vulnerabilidades BOLA/IDOR (`403 Forbidden`). |
+| `SR-RF-17`, `SR-RF-18`, `SR-RF-22` | Visualización de almacenes verificados en mapa y filtro por categoría | `BUYER` / Público | Retorna únicamente almacenes con `estadoVerificacion = APPROVED`, permitiendo filtrar por `CategoriaAlmacen` y consultar el detalle por NIT. |
+| `SR-RF-21` | Cálculo de distancia entre comprador y almacén | `BUYER` / Público | Calcula la distancia en línea recta (`distanciaKm`) mediante la fórmula de Haversine validando rangos geográficos de `latitud` y `longitud`. |
+| `SR-RF-59`, `SR-RF-60` | Configuración de umbrales `LOW_STOCK` y `NEW_ARRIVAL` (Deuda Técnica #8) | `STORE_ADMIN` | Permite parametrizar por tienda el umbral de unidades (`1..50`) y días de vigencia de nueva llegada (`1..60`), así como marcar o desmarcar manualmente prendas. |
+| `SR-RF-62` | Registro y verificación administrativa de almacenes con RUT en PDF | `STORE_ADMIN`, `STYLERADAR_ADMIN` | Registra almacenes en estado `PENDING` con soporte de `urlRutPdf`; exige motivo obligatorio al rechazar y permite solicitar nueva revisión tras subsanación. |
+| `SR-RF-63`, `SR-RF-64`, `SR-RF-65`, `SR-RF-43` | Gestión integral y consulta geolocalizada de fundaciones aliadas | `STYLERADAR_ADMIN`, `BUYER` | Permite registrar (asignando rol `REPRESENTANTE_FUNDACION`), editar, desactivar fundaciones preservando historial y listarlas por cercanía Haversine al donante. |
+| `SR-RF-74` | Gestión de fotografías del almacén físico (Deuda Técnica #7) | `STORE_ADMIN` | Permite subir, listar y eliminar hasta 6 fotografías de fachada/interior por tienda en formatos `JPEG`, `PNG`, `WEBP` o `GIF` (multipart máx. 6 MB por archivo y 7 MB por petición). |
+| `SR-RNF-01` | Asociación y verificación de propiedad `STORE_ADMIN` (Deuda Técnica #1) | `STYLERADAR_ADMIN`, `STORE_ADMIN` | Valida que el usuario autenticado con rol `STORE_ADMIN` sea administrador del NIT objetivo antes de autorizar mutaciones, previniendo vulnerabilidades BOLA/IDOR (`403 Forbidden`). |
 
 ---
 
@@ -575,7 +577,7 @@ El sistema StyleRadar requiere desacoplar el procesamiento intensivo de intelige
 | **Escalabilidad Horizontal** | Soporte de 0 a 1,000 req/s en eventos de ferias de moda | Microservicios stateless en contenedores OCI; escalado elástico independiente por réplicas. |
 | **Consistencia de Datos** | ACID estricto en NIT, administradores y fotos; eventual en eventos | PostgreSQL para transaccionalidad relacional estricta; RabbitMQ para propagación de eventos asíncronos. |
 | **Disponibilidad y Resiliencia** | SLA 99.9%; tolerancia al fallo de servicios downstream | Circuit Breakers (Resilience4j), degradación elegante si el catálogo no responde al aprobar una tienda. |
-| **Seguridad y Privacidad** | Control estricto BOLA/IDOR; validación de firma mágica PDF | Autorización RBAC granular para `ADMIN_ALMACEN` sobre su propio NIT; validación de bytes `%PDF`. |
+| **Seguridad y Privacidad** | Control estricto BOLA/IDOR; validación de firma mágica PDF | Autorización RBAC granular para `STORE_ADMIN` sobre su propio NIT; validación de bytes `%PDF`. |
 | **Eficiencia de Costos (FinOps)** | Costo mensual < $35 USD en fase MVP / académica | Almacenamiento de archivos binarios en Blob Storage Hot LRS de bajo costo sin saturar la base relacional. |
 | **Mantenibilidad & Equipo** | Time-to-market de 8 semanas para el core MVP | Uso de tecnologías ampliamente dominadas por el equipo (Java 21 / Spring Boot) para mitigar riesgo de entrega. |
 
@@ -686,7 +688,7 @@ $$\text{Puntaje Total} = \sum_{i=1}^{5} (\text{Calificación}_{i} \times \text{P
 | C5: Costo & TCO (20 %) | 5 | 2 | 3 | 4 |
 | **Total Ponderado** | **4.95 / 5.00 (Seleccionado)** | **3.40 / 5.00** | **4.15 / 5.00** | **3.95 / 5.00** |
 
-* **Decisión ADR-005:** Se adopta Spring AMQP (`RabbitMQFundacionEventPublisherAdapter`) orientado a publicar `FundacionDesactivadaEvent` hacia `styleradar.fundaciones.exchange` (routing key `fundacion.desactivada`) con captura resiliente de `AmqpException`. En QA, PROD y DEV la comprobación AMQP está deshabilitada (`management.health.rabbit.enabled=false`) hasta activar la integración de eventos con donaciones.
+* **Decisión ADR-005:** Se adopta Spring AMQP (`RabbitMQFundacionEventPublisherAdapter`) orientado a publicar `FundacionDesactivadaEvent` hacia `styleradar.exchange` (routing keys `foundation.deactivated` y `foundation.reactivated`) con captura resiliente de `AmqpException`. En QA, PROD y DEV la comprobación AMQP está deshabilitada (`management.health.rabbit.enabled=false`) hasta activar la integración de eventos con donaciones.
 * **Por qué Spring AMQP:** Desacopla el puerto `FundacionEventPublisherPort` sin bloquear confirmaciones transaccionales en PostgreSQL cuando el broker no está conectado.
 * **Por qué no los otros:** Kafka requiere clústeres pesados con KRaft/Zookeeper que superan el presupuesto MVP; el polling síncrono acopla disponibilidad entre microservicios.
 
@@ -731,7 +733,7 @@ El Technology Radar de StyleRadar categoriza las tecnologías según su nivel de
 * **HOLD:** Monolito no modular, Node.js sin TypeScript, frameworks sin tipado.
 
 #### Cuadrante 2: Almacenamiento & Datos
-* **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 10.20.1 (`V1..V6`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
+* **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 10.20.1 (`V1..V7`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
 * **ADOPT:** SDK Azure Blob Storage v12 para la subida directa de binarios desde `AzureBlobStorageAdapter` (CADCHE-117).
 * **ASSESS:** PostGIS y Redis en iteraciones futuras si aumenta la carga de lectura geoespacial.
 * **HOLD:** MongoDB para transacciones relacionales de NIT o binarios `BYTEA` dentro de PostgreSQL.
@@ -775,7 +777,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 | Servicio / Puerto Oficial | Paquete de Dominio | Persistencia / Almacenamiento | Caché / Estado | Integración / Herramientas Clave |
 | :--- | :--- | :--- | :--- | :--- |
 | **`sr-api-gateway`** (`:8080`) | Perímetro | Sin estado (Stateless) | Límite de tasa perimetral | Enrutamiento HTTP centralizado hacia los paquetes P1–P5 |
-| **`ms-tiendas`** (`:8140`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_tiendas`) + `AzureBlobStorageAdapter`** | **Stateless (JwtAuthFilter HS256)** | **Flyway `V1..V6`, SpringDoc OpenAPI, AMQP deshabilitado hoy en QA/PROD** |
+| **`ms-tiendas`** (`:8140`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_tiendas`) + `AzureBlobStorageAdapter`** | **Stateless (JwtAuthFilter HS256)** | **Flyway `V1..V7`, SpringDoc OpenAPI, AMQP deshabilitado hoy en QA/PROD** |
 | **`ms-auth`** (`:8100`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_auth`)** | **Stateless JWT HS256 / OTP** | **Emisión JWT, BCrypt, JavaMail** |
 | **`ms-usuarios`** (`:8120`) | **P1: Identidad (CADche)** | **PostgreSQL 16 (`styleradar_usuarios`)** | **Stateless** | **Gestión de perfiles y usuarios** |
 | **`ms-inventario`** (`:8200`) | P2: Catálogo | PostgreSQL 16 | En evolución por equipo RESTrepo | Control de stock y tallas |
@@ -787,23 +789,23 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 | **`ms-pagos-suscripciones`** (`:8400`) | P4: Pagos y Estadísticas | PostgreSQL 16 | En evolución por equipo NQS | Pasarela de pagos y planes |
 | **`ms-estadisticas`** (`:8420`) | P4: Pagos y Estadísticas | PostgreSQL 16 | En evolución por equipo NQS | Analítica y reportes |
 | **`ms-probador-virtual`** (`:8500`) | P5: Experiencia | PostgreSQL 16 + Blob | En evolución por equipo Portal 8080 | Procesamiento AI de probador virtual |
-| **`ms-segunda-vida-donaciones`** (`:8520`) | P5: Experiencia | PostgreSQL 16 | Suscriptor futuro `fundacion.desactivada` | Gestión de donaciones y moda circular |
+| **`ms-segunda-vida-donaciones`** (`:8520`) | P5: Experiencia | PostgreSQL 16 | Suscriptor futuro `foundation.deactivated` / `foundation.reactivated` | Gestión de donaciones y moda circular |
 
 *Aislamiento por base de datos (Database-per-Service):* Cada microservicio posee su propio esquema o base de datos aislada en PostgreSQL 16 para garantizar bajo acoplamiento e independencia total de despliegue.
 
 #### Justificación de las Cuatro Preguntas Clave para `ms-tiendas`:
 
 1. **¿Requiere Base de Datos o no?**
-   **Sí requiere base de datos propia.** El microservicio es la fuente de verdad de los almacenes aliados y fundaciones en StyleRadar: persiste `almacenes` (PK `nit`), `almacen_categorias`, `administradores_almacenes` (`(almacen_nit, usuario_id)` único), `almacen_fotos`, `fundaciones` y `fundacion_categorias_aceptadas`, además de estados de verificación (`PENDIENTE`, `APROBADO`, `RECHAZADO`) y configuración de umbrales/periodos de catálogo.
+   **Sí requiere base de datos propia.** El microservicio es la fuente de verdad de los almacenes aliados y fundaciones en StyleRadar: persiste `almacenes` (PK `nit`), `almacen_categorias`, `administradores_almacenes` (`(almacen_nit, usuario_id)` único), `almacen_fotos`, `fundaciones` y `fundacion_categorias_aceptadas`, además de estados de verificación (`PENDING`, `APPROVED`, `REJECTED`) y configuración de umbrales/periodos de catálogo.
 
 2. **Tipo de Base de Datos y Motor Seleccionado:**
    **Persistencia Relacional en PostgreSQL 16 (`styleradar_tiendas`) + puerto `AlmacenamientoBlobPort` (`AzureBlobStorageAdapter`).** PostgreSQL garantiza atomicidad transaccional y reglas estructurales (`almacenes.nit` PK, `UNIQUE (almacen_nit, usuario_id)`, llaves foráneas con `ON DELETE CASCADE`), mientras que la regla de dominio `Almacen.MAXIMO_FOTOGRAFIAS = 6` controla la cuota de vitrina en `almacen_fotos`. Actualmente `ms-tiendas` **no utiliza Redis**.
 
 3. **Frameworks, Lenguaje y Herramientas:**
-   **Java 21 LTS, Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation 3, Flyway 10.20.1, SpringDoc OpenAPI 2.3.0, MapStruct 1.5.5.Final y Lombok 1.18.42.** Spring Boot gestiona el límite multipart (`6MB` por archivo, `7MB` por petición). Flyway versiona `V1..V6` de `styleradar_tiendas`, y los 9 casos de uso se cablean mediante `@Service` implementando `domain.port.in.*UseCase` sin acoplar Spring al dominio puro.
+   **Java 21 LTS, Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation 3, Flyway 10.20.1, SpringDoc OpenAPI 2.3.0, MapStruct 1.5.5.Final y Lombok 1.18.42.** Spring Boot gestiona el límite multipart (`6MB` por archivo, `7MB` por petición). Flyway versiona `V1..V7` de `styleradar_tiendas`, y los 9 casos de uso se cablean mediante `@Service` implementando `domain.port.in.*UseCase` sin acoplar Spring al dominio puro.
 
 4. **Broker de Mensajería:**
-   **Spring AMQP / RabbitMQ (`RabbitMQFundacionEventPublisherAdapter`).** El microservicio implementa la publicación de `FundacionDesactivadaEvent` hacia el exchange `styleradar.fundaciones.exchange` (routing key `fundacion.desactivada`) capturando `AmqpException` para no bloquear las confirmaciones SQL. Actualmente **ni `ms-tiendas` ni `ms-auth` se conectan al broker RabbitMQ compartido** y `management.health.rabbit.enabled=false` está configurado en QA, PROD y DEV.
+   **Spring AMQP / RabbitMQ (`RabbitMQFundacionEventPublisherAdapter`).** El microservicio implementa la publicación de `FundacionDesactivadaEvent` hacia el exchange `styleradar.exchange` (routing keys `foundation.deactivated` y `foundation.reactivated`) capturando `AmqpException` para no bloquear las confirmaciones SQL. Actualmente **ni `ms-tiendas` ni `ms-auth` se conectan al broker RabbitMQ compartido** y `management.health.rabbit.enabled=false` está configurado en QA, PROD y DEV.
 
 ---
 
@@ -811,13 +813,13 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 
 #### 8.1 Resumen de Decisiones y Factores de Éxito
 
-La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 94.67% instrucciones / 95.75% líneas sobre 400 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V6` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
+La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 94.46% instrucciones / 95.45% líneas sobre 408 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V7` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
 
 #### 8.2 Roadmap de Evolución Tecnológica
 
 | Fase / Sprint | Objetivo Tecnológico Clave | Criterio de Aceptación |
 | :--- | :--- | :--- |
-| **Sprint 1 (Semanas 1-2)** | Core arquitectónico: Autenticación JWT, Flyway `V1..V6` y dominio hexagonal puro. | Tokens HS256 validados; migraciones ejecutadas en PostgreSQL 16. |
+| **Sprint 1 (Semanas 1-2)** | Core arquitectónico: Autenticación JWT, Flyway `V1..V7` y dominio hexagonal puro. | Tokens HS256 validados; migraciones ejecutadas en PostgreSQL 16. |
 | **Sprint 2 (Semanas 3-4)** | Fotografías de vitrina (máx. 6), verificación RUT, fundaciones y control BOLA (`SR-RNF-01`). | Endpoints OpenAPI validados; ≥ 85% cobertura JaCoCo; 0 bugs SpotBugs. |
 | **Sprint 3 (Semanas 5-6)** | Cableado persistente de los 8 endpoints de contrato DTO pendientes y SDK Azure Blob real. | Todos los endpoints persistidos en PostgreSQL 16 y blobs reales en Azurite/Blob. |
 | **Sprint 4 (Semanas 7-8)** | Activación de mensajería AMQP TLS 5671 (cuando aplique) y pruebas E2E integradas. | Healthcheck limpio y smoke tests pasando en Azure QA y PROD. |
@@ -826,9 +828,9 @@ La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, co
 
 | Rol en el Proyecto | Nombre del Ingeniero | Decisión / Estado | Firma / Aprobación |
 | :--- | :--- | :---: | :---: |
-| **Líder de Equipo (CADche)** | Juan Diego Valderrama | APROBADO | `J. D. Valderrama` |
-| **Tech Lead / Arquitecto & Backend Developer** | Julian Camilo Giral (`@jcobos548`) | APROBADO | `J. C. Giral` |
-| **Product Owner / Scrum Master & Backend Developer** | Juan Diego Gaitan (`@mamagege`) | APROBADO | `J. D. Gaitan` |
+| **Líder de Equipo (CADche)** | Juan Diego Valderrama | APPROVED | `J. D. Valderrama` |
+| **Tech Lead / Arquitecto & Backend Developer** | Julian Camilo Giral (`@jcobos548`) | APPROVED | `J. C. Giral` |
+| **Product Owner / Scrum Master & Backend Developer** | Juan Diego Gaitan (`@mamagege`) | APPROVED | `J. D. Gaitan` |
 
 *Aprobación para el Desarrollo:* El presente documento constituye la línea base técnica (Technical Baseline) autorizada por el equipo CADche para el desarrollo de los microservicios de StyleRadar.
 
@@ -879,13 +881,13 @@ Para visualizar el documento interactivo localmente o en el navegador:
 | **05** | **04 · Componentes** | Diagrama de puertos y adaptadores: Perímetro Seguridad / REST &rarr; 9 Casos de Uso &rarr; Dominio Puro &rarr; PostgreSQL 16 / Blob / AMQP. |
 | **06** | **05 · Endpoints** | Catálogo OpenAPI de 25 endpoints en `:8140`, métodos, roles y notas de contrato vs persistencia. |
 | **07** | **06 · Flujo** | Casos de uso en 4 fases secuenciales: Controller &rarr; `UseCaseImpl` &rarr; Repositorio JPA / Blob &rarr; Evento AMQP (`DesactivarFundacion`). |
-| **08** | **07 · Datos** | Modelo relacional PostgreSQL 16 Flyway `V1..V6`: tablas `almacenes`, `almacen_categorias`, `administradores_almacenes`, `almacen_fotos`, `fundaciones` y `fundacion_categorias_aceptadas`. |
+| **08** | **07 · Datos** | Modelo relacional PostgreSQL 16 Flyway `V1..V7`: tablas `almacenes`, `almacen_categorias`, `administradores_almacenes`, `almacen_fotos`, `fundaciones` y `fundacion_categorias_aceptadas`. |
 | **09** | **08 · Ambientes** | Aislamiento estricto de infraestructura entre QA, Producción y Local (PostgreSQL SSL, puertos y salud AMQP deshabilitada). |
 | **10** | **09 · Eventos** | Integración AMQP con RabbitMQ: `FundacionDesactivadaEvent` (`styleradar.fundaciones.exchange`) y estado actual en QA/PROD. |
 | **11** | **10 · Roles** | Matriz RBAC por endpoint y mitigación de vulnerabilidades BOLA/IDOR (`SR-RNF-01` vía `AutorizacionAlmacenValidator`). |
 | **12** | **11 · Errores** | Catálogo `CodigoError` con `ErrorResponseDTO` ProblemDetail (`GlobalExceptionHandler`) y `401` (`JwtAuthFilter`). |
 | **13** | **12 · Integraciones** | Mapeo de dependencias Upstream (síncronas vía API Gateway) y Downstream (`ms-segunda-vida-donaciones :8520`). |
-| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`94.67%` instr. / `95.75%` líneas), `400` pruebas y pipeline CI/CD GitHub Actions. |
+| **14** | **13 · Calidad** | Checklist de Quality Gates, cobertura JaCoCo consolidada (`94.46%` instr. / `95.45%` líneas), `408` pruebas y pipeline CI/CD GitHub Actions. |
 | **15** | **14 · Enlaces** | Cuadrícula interactiva de evidencias (GitHub, Swagger QA/PROD, Azure App Service, BDs y Jira). |
 | **16** | **Contraportada** | Cierre editorial oficial: *"Descubre tu estilo. En tu ciudad."* |
 
@@ -914,7 +916,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 
 | Identificador OWASP | Categoría Oficial (OWASP Top 10:2025) | Severidad | ¿Aplica? | Estado | Controles Técnicos y Acciones Implementadas en `ms-tiendas` |
 | :---: | :--- | :---: | :---: | :---: | :--- |
-| **A01:2025** | **Broken Access Control** *(inc. BOLA / IDOR / SSRF)* | Crítica | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Validación de propiedad BOLA (`SR-RNF-01`) mediante `AutorizacionAlmacenValidator` contrastando claim `userId` de JWT vs NIT. RBAC con roles `ADMIN_STYLERADAR` y `ADMIN_ALMACEN`. URLs de Blob fijas sin SSRF. |
+| **A01:2025** | **Broken Access Control** *(inc. BOLA / IDOR / SSRF)* | Crítica | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Validación de propiedad BOLA (`SR-RNF-01`) mediante `AutorizacionAlmacenValidator` contrastando claim `userId` de JWT vs NIT. RBAC con roles `STYLERADAR_ADMIN` y `STORE_ADMIN`. URLs de Blob fijas sin SSRF. |
 | **A02:2025** | **Security Misconfiguration** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Configuración CORS en `CorsConfig`, cabeceras defensivas (`HSTS`, `CSP`, `X-Frame-Options`, `X-Content-Type-Options`) inyectadas en `SecurityHeadersFilter`, y Actuator limitado en `application.yml` (`health`, `info`, `metrics`). |
 | **A03:2025** | **Software Supply Chain Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Análisis estático continuo en pipeline GitHub Actions (`ci-qa.yml`) con **SpotBugs (0 bugs)** y calidad en SonarQube Cloud. Imagen Docker multi-stage mínima `eclipse-temurin:21-jre-alpine` ejecutando como usuario no-root (`appuser`). |
 | **A04:2025** | **Cryptographic Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Cifrado obligatorio en tránsito mediante TLS 1.3/HTTPS, PostgreSQL en Azure con `sslmode=require`, tokens JWT firmados con HMAC-SHA256 (clave de 256 bits en variable de entorno) y cifrado en reposo AES-256 en Azure Blob Storage. |
@@ -935,7 +937,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Vulnerabilidades evaluadas**: Broken Object Level Authorization (BOLA), Insecure Direct Object References (IDOR), Server-Side Request Forgery (SSRF) y Missing Function Level Access Control.
 * **Acciones y Controles Técnicos Implementados**:
   1. **Mitigación BOLA/IDOR (`SR-RNF-01`)**: Se implementó `AutorizacionAlmacenValidator` (`domain/validator/`). Al recibir una mutación sobre `/api/v1/stores/{nit}/...` (configuración de catálogo o fotografías), el componente valida mediante `AlmacenRepositoryPort` (`SpringDataAdministradorAlmacenRepository`) que `usuarioId` esté asociado al NIT. Si no existe coincidencia, lanza `AccesoDenegadoAlmacenException` (`403 Forbidden`).
-  2. **Control de Acceso Administrativo (RBAC en Dominio)**: Los endpoints administrativos bajo `/api/v1/admin/**` delegan en `AutorizacionAdminStyleRadarValidator`, exigiendo el rol `ROLE_ADMIN_STYLERADAR`.
+  2. **Control de Acceso Administrativo (RBAC en Dominio)**: Los endpoints administrativos bajo `/api/v1/admin/**` delegan en `AutorizacionAdminStyleRadarValidator`, exigiendo el rol `ROLE_STYLERADAR_ADMIN`.
   3. **Prevención de SSRF**: Las URLs retornadas por `AzureBlobStorageAdapter` salen del cliente del SDK de la cuenta configurada (`https://{account}.blob.core.windows.net/` o Azurite en local), y `eliminarArchivo` ignora URLs de otras cuentas.
 
 #### A02:2025 – Security Misconfiguration (Configuración Errónea de Seguridad)
@@ -1000,7 +1002,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Acciones y Controles Técnicos Implementados**:
   1. **Deserialización Segura**: Jackson opera sin tipado polimórfico arbitrario (`enableDefaultTyping` deshabilitado).
   2. **Integridad Relacional ACID en PostgreSQL 16**: Claves primarias (`almacenes.nit`, `fundaciones.id`), unicidad (`UNIQUE (almacen_nit, usuario_id)`, `fundaciones.nombre`, `fundaciones.representante_id`) y llaves foráneas `ON DELETE CASCADE`.
-  3. **Integridad de Migraciones DDL con Flyway (`V1..V6`)**: Flyway valida el historial e integridad de migraciones antes de habilitar el esquema con `ddl-auto: validate`.
+  3. **Integridad de Migraciones DDL con Flyway (`V1..V7`)**: Flyway valida el historial e integridad de migraciones antes de habilitar el esquema con `ddl-auto: validate`.
 
 #### A09:2025 – Security Logging and Alerting Failures (Fallas en Registro de Seguridad y Alertas)
 * **¿Aplica?**: **SÍ (Medio)**. La ausencia de trazas forenses impide la detección temprana y respuesta a incidentes de seguridad.
@@ -1015,7 +1017,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 * **Estado**: <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span>.
 * **Acciones y Controles Técnicos Implementados**:
   1. **Manejador Centralizado `GlobalExceptionHandler`**: Intercepta todas las excepciones de dominio (`AlmacenNoEncontradoException`, `AlmacenYaDecididoException`, `LimiteFotografiasSuperadoException`, `AccesoDenegadoAlmacenException`, etc.) y de validación Bean Validation.
-  2. **Respuesta Estructurada (`ErrorResponseDTO`)**: Cada fallo HTTP (`400`, `401`, `403`, `404`, `409`, `422`, `405`, `500`) retorna ProblemDetail RFC 9457 (`application/problem+json`) con `type`, `title`, `status`, `detail`, `instance`, `codigo`, `timestamp` y `validationErrors`, también desde `JwtAuthFilter`.
+  2. **Respuesta Estructurada (`ErrorResponseDTO`)**: Cada fallo HTTP (`400`, `401`, `403`, `404`, `409`, `422`, `405`, `500`) retorna ProblemDetail RFC 9457 (`application/problem+json`) con `type`, `title`, `status`, `detail`, `instance`, `code`, `errors` y los alias `timestamp`, `error`, `message` y `path`, también desde `JwtAuthFilter`.
   3. **Supresión Absoluta de Stack Traces**: En errores `500 Internal Server Error`, la traza técnica solo queda en el log del servidor; el cliente recibe únicamente un mensaje genérico seguro.
   4. **Aislamiento ante Indisponibilidad AMQP**: `RabbitMQFundacionEventPublisherAdapter` captura `AmqpException` para que un broker apagado o desconectado no interrumpa la transacción SQL ni genere errores `500`.
 
@@ -1026,9 +1028,9 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en la suite de pruebas del microservicio (`mvn -B clean verify spotbugs:check`) y en el pipeline de integración continua (`.github/workflows/ci-qa.yml`):
 
 1. **Métricas Verificadas de la Suite de Pruebas y Calidad**:
-   - **Total de pruebas ejecutadas**: `400 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
-   - **Cobertura de instrucciones (JaCoCo)**: `94.67%` (`8.056 / 8.510`, umbral bloqueante `>= 85%` en `pom.xml`).
-   - **Cobertura de líneas (JaCoCo)**: `95.75%` (`1.757 / 1.835`).
+   - **Total de pruebas ejecutadas**: `408 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
+   - **Cobertura de instrucciones (JaCoCo)**: `94.46%` (`8.205 / 8.686`, umbral bloqueante `>= 85%` en `pom.xml`).
+   - **Cobertura de líneas (JaCoCo)**: `95.45%` (`1.785 / 1.870`).
    - **Análisis estático SpotBugs**: `0 bugs` / `0 errores` (`spotbugs:check`).
 
 2. **Matriz de Pruebas Automatizadas por Categoría OWASP Top 10:2025**:
@@ -1060,7 +1062,7 @@ En cumplimiento de los requerimientos de entrega del **Sprint 2** (especificaci�
 ##### A. Cómo se identifica el usuario
 * **Cómo está hoy (corregido en el Sprint 2):**  
   `JwtAuthFilter` valida con **jjwt** el token emitido por `ms-auth` (HS256, mismo secreto Base64 `JWT_SECRET_BASE64`, firma en tiempo constante, `exp` obligatorio) y lee `sub` como usuario y `roles` como lista. La identidad se fija en las cabeceras `X-User-*` mediante `IdentidadVerificadaRequest`, así que **las cabeceras que envíe el cliente se ignoran**. Sin token, las cabeceras solo se aceptan con `TRUST_GATEWAY_HEADERS=true` (por defecto `false` en QA y PROD). Los roles se comparan completos (`RolesUsuario`), nunca como subcadenas.
-* **Riesgo corregido:** antes el servicio priorizaba `X-User-Id` / `X-User-Roles` sobre el JWT y el token era opcional, de modo que una llamada directa a `*.azurewebsites.net` con `X-User-Roles: ADMIN_STYLERADAR` actuaba como administrador (OWASP A01). Además, el validador manual no aceptaba los tokens reales de ms-auth porque usaba la clave en bytes UTF-8 y los claims `userId`/`roles` como texto.
+* **Riesgo corregido:** antes el servicio priorizaba `X-User-Id` / `X-User-Roles` sobre el JWT y el token era opcional, de modo que una llamada directa a `*.azurewebsites.net` con `X-User-Roles: STYLERADAR_ADMIN` actuaba como administrador (OWASP A01). Además, el validador manual no aceptaba los tokens reales de ms-auth porque usaba la clave en bytes UTF-8 y los claims `userId`/`roles` como texto.
 * **Pendiente:** validar `iss` y `aud` cuando ms-auth los emita.
 
 ##### B. Dónde se valida (Gateway o Servicio)
@@ -1091,13 +1093,13 @@ En cumplimiento de los requerimientos de entrega del **Sprint 2** (especificaci�
 ##### A. Roles y qué puede hacer cada uno
 En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
 
-* **`COMPRADOR` (Usuario Final / Cliente):**
+* **`BUYER` (Usuario Final / Cliente):**
   * *Qué puede hacer:* Consultar el catálogo público de almacenes (`GET /api/v1/stores`, `GET /api/v1/stores/{nit}`), consultar configuraciones públicas y galería de fotografías (`GET /api/v1/stores/{nit}/photos`), y consultar fundaciones aliadas (`GET /api/v1/foundations`).
   * *Qué NO puede hacer:* Subir o eliminar fotografías, configurar umbrales/periodos ni acceder a rutas administrativas bajo `/api/v1/admin/**`.
-* **`ADMIN_ALMACEN` (Tienda / Comercio Aliado):**
+* **`STORE_ADMIN` (Tienda / Comercio Aliado):**
   * *Qué puede hacer:* Administrar el almacén asociado a su NIT (`/api/v1/stores/{nit}/catalog-settings`, `low-stock-threshold`, `new-arrival-days`, `fotografias`) previa validación de propiedad BOLA (`AutorizacionAlmacenValidator`).
   * *Qué NO puede hacer:* Modificar almacenes de otros NITs (`403 Forbidden`), aprobar o rechazar su propia verificación ni crear/editar/desactivar fundaciones.
-* **`ROLE_ADMIN_STYLERADAR` (Administrador de Plataforma):**
+* **`ROLE_STYLERADAR_ADMIN` (Administrador de Plataforma):**
   * *Qué puede hacer:* Consultar y decidir la verificación documental de almacenes (`GET/PATCH /api/v1/admin/stores/{nit}/verification`, `solicitar-revision`), consultar contratos de administradores y gestionar el ciclo de vida de fundaciones (`POST/GET/PUT /api/v1/admin/foundations*`, `PATCH .../deactivate`).
   * *Qué NO puede hacer:* Aprobar un almacén sin documento RUT adjunto ni rechazar sin motivo explicativo.
 
@@ -1107,7 +1109,7 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
   1. **Filtro HTTP (`JwtAuthFilter`):** Valida el token `Bearer` cuando está presente (`401 Unauthorized` si es inválido o expiró). *(Nota: no se utiliza `Spring Security` / `@PreAuthorize` actualmente en `pom.xml`.)*
   2. **Validadores de Dominio (`domain/validator/`) ejecutados en los Casos de Uso:**
      - **Control BOLA/IDOR (`AutorizacionAlmacenValidator`):** En los casos de uso de catálogo y fotografías (`ConfigurarUmbralUltimasUnidadesUseCaseImpl`, `ConfigurarPeriodoNuevaLlegadaUseCaseImpl`, `RegistrarFotografiaTiendaUseCaseImpl`), verifica vía `AlmacenRepositoryPort.esAdministradorDeAlmacen(nit, usuarioId)` que el usuario pertenezca al NIT; de lo contrario lanza `AccesoDenegadoAlmacenException` (`403 Forbidden`).
-     - **Control de Rol Administrativo (`AutorizacionAdminStyleRadarValidator`):** En `VerificarAlmacenUseCaseImpl` y los casos de uso de `Fundacion` (`RegistrarFundacionUseCaseImpl`, `EditarFundacionUseCaseImpl`, `DesactivarFundacionUseCaseImpl`), exige el rol `ROLE_ADMIN_STYLERADAR`.
+     - **Control de Rol Administrativo (`AutorizacionAdminStyleRadarValidator`):** En `VerificarAlmacenUseCaseImpl` y los casos de uso de `Fundacion` (`RegistrarFundacionUseCaseImpl`, `EditarFundacionUseCaseImpl`, `DesactivarFundacionUseCaseImpl`), exige el rol `ROLE_STYLERADAR_ADMIN`.
 * **Riesgos encontrados:**  
   1. *Dependencia de validación en casos de uso en lugar de rechazo declarativo previo en borde Spring Security*: Si se agregan nuevos endpoints sin invocar explícitamente un validador en el caso de uso, quedarían expuestos por omisión.
   2. *Granularidad a nivel de NIT global*: La autorización restringe por NIT comercial y no por sucursales físicas individuales.
@@ -1149,7 +1151,7 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
 * **Cómo está hoy:**  
   * **Consistencia Relacional:** PostgreSQL 16 con restricciones `PK` (`almacenes.nit`, `fundaciones.id`), `UNIQUE (usuario_id, almacen_nit)`, `UNIQUE (nombre)`, más el índice `idx_fundaciones_representante` con unicidad verificada en aplicación/repositorio.
   * **Versionamiento DDL con Flyway:** Migraciones `V1` a `V4` acompañadas de `jpa.hibernate.ddl-auto: validate`.
-  * **Mensajería Asíncrona:** `RabbitMQFundacionEventPublisherAdapter` implementa publicación de `FundacionDesactivadaEvent` hacia `styleradar.fundaciones.exchange` (`fundacion.desactivada`) capturando `AmqpException` para no revertir ni fallar las transacciones SQL locales. Actualmente la conexión activa y el health indicator de RabbitMQ (`management.health.rabbit.enabled=false`) están deshabilitados en QA, PROD y DEV.
+  * **Mensajería Asíncrona:** `RabbitMQFundacionEventPublisherAdapter` implementa publicación de `FundacionDesactivadaEvent` hacia `styleradar.exchange` (`foundation.deactivated`) capturando `AmqpException` para no revertir ni fallar las transacciones SQL locales. Actualmente la conexión activa y el health indicator de RabbitMQ (`management.health.rabbit.enabled=false`) están deshabilitados en QA, PROD y DEV.
 * **Riesgos encontrados:**  
   1. *Ocho endpoints de contrato sin persistencia SQL aún* (`POST/GET /api/v1/stores`, `GET /api/v1/stores/{nit}`, `PATCH .../low-stock`, `PATCH .../new-arrival`, `PUT/GET .../administrators`, `GET /api/v1/foundations`).
   2. *Posible desincronización si se reactiva AMQP en el futuro sin patrón Outbox*: Una falla de broker tras commit SQL perdería el evento emitido en memoria.
@@ -1162,11 +1164,11 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
   `ms-tiendas` implementa control BOLA/IDOR (`SR-RNF-01`) en todos los casos de uso de catálogo y fotografías de tienda:
   1. `AutorizacionAlmacenValidator` valida vía `AlmacenRepositoryPort` que el `usuarioId` esté asociado al `nit` objetivo en `administradores_almacenes`.
   2. Si no coincide, se lanza `AccesoDenegadoAlmacenException` mapeada en `GlobalExceptionHandler` a HTTP `403 Forbidden`.
-  3. Los flujos administrativos (`VerificarAlmacenUseCaseImpl`, `Fundacion`) exigen `ROLE_ADMIN_STYLERADAR` en `AutorizacionAdminStyleRadarValidator`.
+  3. Los flujos administrativos (`VerificarAlmacenUseCaseImpl`, `Fundacion`) exigen `ROLE_STYLERADAR_ADMIN` en `AutorizacionAdminStyleRadarValidator`.
 * **Riesgos encontrados:**  
   1. *Endpoints de administración de vínculos (`PUT/GET .../administrators`) aún en modo contrato DTO*: La asociación dinámica aún requiere persistencia completa vía caso de uso dedicado.
 * **Qué se va a corregir:**  
-  1. Implementar el caso de uso persistente de asociación/revocación de administradores validando siempre `ROLE_ADMIN_STYLERADAR` o propiedad legítima del comercio.
+  1. Implementar el caso de uso persistente de asociación/revocación de administradores validando siempre `ROLE_STYLERADAR_ADMIN` o propiedad legítima del comercio.
 
 ---
 

@@ -40,7 +40,7 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
         int stockEfectivo = stockActual != null ? stockActual : almacen.getUmbralUltimasUnidadesEfectivo();
         boolean cumple = almacen.evaluarUltimasUnidades(stockEfectivo);
 
-        log.info("Prenda itemId={} del almacén NIT={} marcada como ULTIMAS_UNIDADES (stock={}, umbral={})",
+        log.info("Prenda itemId={} del almacén NIT={} marcada como LOW_STOCK (stock={}, umbral={})",
                 itemId, nit, stockEfectivo, almacen.getUmbralUltimasUnidadesEfectivo());
 
         return new DistintivoPrendaAlmacenResponseDTO(
@@ -50,7 +50,7 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
                 almacen.getUmbralUltimasUnidadesEfectivo(),
                 false,
                 almacen.getDiasNuevaLlegadaEfectivo(),
-                cumple ? "ULTIMAS_UNIDADES" : "NINGUNO",
+                cumple ? "LOW_STOCK" : "NONE",
                 Instant.now()
         );
     }
@@ -73,7 +73,7 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
         autorizacionValidator.validarAcceso(nit, usuarioId, repositoryPort);
 
         boolean cumple = almacen.calcularUltimasUnidades(request.getStockActual(), request.getDisponible());
-        String distintivo = cumple ? "ULTIMAS_UNIDADES" : "NINGUNO";
+        String distintivo = cumple ? "LOW_STOCK" : "NONE";
 
         log.info("Evaluación de últimas unidades itemId={} NIT={}: stock={}, disponible={}, cumple={}",
                 itemId, nit, request.getStockActual(), request.getDisponible(), cumple);
@@ -108,7 +108,7 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
         Instant fechaEfectiva = fechaIngreso != null ? fechaIngreso : ahora;
         boolean cumple = almacen.evaluarNuevaLlegada(fechaEfectiva, ahora);
 
-        log.info("Prenda itemId={} del almacén NIT={} marcada como NUEVA_PRENDA (fechaIngreso={}, diasVigencia={})",
+        log.info("Prenda itemId={} del almacén NIT={} marcada como NEW_ARRIVAL (fechaIngreso={}, diasVigencia={})",
                 itemId, nit, fechaEfectiva, almacen.getDiasNuevaLlegadaEfectivo());
 
         return new DistintivoPrendaAlmacenResponseDTO(
@@ -118,7 +118,7 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
                 almacen.getUmbralUltimasUnidadesEfectivo(),
                 cumple,
                 almacen.getDiasNuevaLlegadaEfectivo(),
-                cumple ? "NUEVA_PRENDA" : "NINGUNO",
+                cumple ? "NEW_ARRIVAL" : "NONE",
                 ahora
         );
     }
@@ -142,7 +142,7 @@ public class MarcarDistintivoPrendaUseCaseImpl implements MarcarDistintivoPrenda
 
         Instant ahora = Instant.now();
         boolean cumple = almacen.calcularNuevaLlegada(request.getFechaPublicacion(), request.getRetirada(), ahora);
-        String distintivo = cumple ? "NUEVA_PRENDA" : "NINGUNO";
+        String distintivo = cumple ? "NEW_ARRIVAL" : "NONE";
 
         log.info("Evaluación de nueva llegada itemId={} NIT={}: fechaPublicacion={}, retirada={}, cumple={}",
                 itemId, nit, request.getFechaPublicacion(), request.getRetirada(), cumple);

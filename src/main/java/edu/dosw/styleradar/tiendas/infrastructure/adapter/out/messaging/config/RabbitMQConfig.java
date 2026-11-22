@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String DEFAULT_EXCHANGE_FUNDACIONES = "styleradar.exchange";
-    public static final String DEFAULT_ROUTING_KEY_DESACTIVADA = "styleradar.tiendas.fundacion.desactivada";
-    public static final String DEFAULT_ROUTING_KEY_REACTIVADA = "styleradar.tiendas.fundacion.reactivada";
+    public static final String DEFAULT_ROUTING_KEY_DESACTIVADA = "foundation.deactivated";
+    public static final String DEFAULT_ROUTING_KEY_REACTIVADA = "foundation.reactivated";
 
     /**
      * Declara el exchange de eventos ({@code topic}, durable), igual al creado en el broker del curso. RabbitAdmin lo
