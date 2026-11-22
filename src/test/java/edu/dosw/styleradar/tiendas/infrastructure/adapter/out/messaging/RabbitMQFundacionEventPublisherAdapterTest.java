@@ -110,10 +110,18 @@ class RabbitMQFundacionEventPublisherAdapterTest {
         d.setMotivo("Cierre");
         org.assertj.core.api.Assertions.assertThat(RabbitMQFundacionEventPublisherAdapter.cuerpo(d))
                 .containsOnlyKeys("eventId", "foundationId", "foundationName", "representativeId", "deactivatedAt", "reason")
-                .containsEntry("foundationId", 7L).containsEntry("reason", "Cierre");
+                .containsEntry("foundationId", 7L).containsEntry("reason", "Cierre")
+                .containsEntry("deactivatedAt", "2026-11-17T10:00:00Z");
         edu.dosw.styleradar.tiendas.domain.event.FundacionReactivadaEvent r = new edu.dosw.styleradar.tiendas.domain.event.FundacionReactivadaEvent();
         r.setFundacionId(7L);
+        r.setFechaReactivacion(java.time.Instant.parse("2026-11-21T22:35:00.123456Z"));
         org.assertj.core.api.Assertions.assertThat(RabbitMQFundacionEventPublisherAdapter.cuerpo(r))
-                .containsOnlyKeys("eventId", "foundationId", "foundationName", "representativeId", "reactivatedAt", "reason");
+                .containsOnlyKeys("eventId", "foundationId", "foundationName", "representativeId", "reactivatedAt", "reason")
+                .containsEntry("reactivatedAt", "2026-11-21T22:35:00Z");
+        org.assertj.core.api.Assertions.assertThat(new String(new org.springframework.amqp.support.converter.Jackson2JsonMessageConverter()
+                        .toMessage(RabbitMQFundacionEventPublisherAdapter.cuerpo(r), new org.springframework.amqp.core.MessageProperties())
+                        .getBody(), java.nio.charset.StandardCharsets.UTF_8))
+                .contains("\"reactivatedAt\":\"2026-11-21T22:35:00Z\"");
+        org.assertj.core.api.Assertions.assertThat(RabbitMQFundacionEventPublisherAdapter.fechaUtc(null)).isNull();
     }
 }

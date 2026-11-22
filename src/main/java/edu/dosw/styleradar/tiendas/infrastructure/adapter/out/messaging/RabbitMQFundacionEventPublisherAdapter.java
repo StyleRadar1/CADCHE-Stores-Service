@@ -62,7 +62,7 @@ public class RabbitMQFundacionEventPublisherAdapter implements FundacionEventPub
         m.put("foundationId", evento.getFundacionId());
         m.put("foundationName", evento.getNombreFundacion());
         m.put("representativeId", evento.getRepresentanteId());
-        m.put("deactivatedAt", evento.getFechaDesactivacion());
+        m.put("deactivatedAt", fechaUtc(evento.getFechaDesactivacion()));
         m.put("reason", evento.getMotivo());
         return m;
     }
@@ -74,8 +74,14 @@ public class RabbitMQFundacionEventPublisherAdapter implements FundacionEventPub
         m.put("foundationId", evento.getFundacionId());
         m.put("foundationName", evento.getNombreFundacion());
         m.put("representativeId", evento.getRepresentanteId());
-        m.put("reactivatedAt", evento.getFechaReactivacion());
+        m.put("reactivatedAt", fechaUtc(evento.getFechaReactivacion()));
         m.put("reason", evento.getMotivo());
         return m;
+    }
+
+    /** Fecha en UTC con formato ISO-8601 ("2026-11-21T22:35:00Z"); sin esto Jackson la envía como número. */
+    static String fechaUtc(java.time.Instant fecha) {
+        return fecha == null ? null
+                : java.time.format.DateTimeFormatter.ISO_INSTANT.format(fecha.truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
     }
 }
