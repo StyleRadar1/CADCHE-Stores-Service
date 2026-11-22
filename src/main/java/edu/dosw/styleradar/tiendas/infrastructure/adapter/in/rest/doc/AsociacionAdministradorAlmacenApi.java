@@ -20,7 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Store administrators", description = "Association and lookup of STORE_ADMIN users authorized per NIT to prevent BOLA/IDOR (SR-RF-62 / SR-RNF-01)")
+@Tag(name = "Store administrators", description = "Association and lookup of STORE_ADMIN users authorized per NIT to prevent BOLA/IDOR")
 @SecurityRequirement(name = "bearerAuth")
 public interface AsociacionAdministradorAlmacenApi {
 

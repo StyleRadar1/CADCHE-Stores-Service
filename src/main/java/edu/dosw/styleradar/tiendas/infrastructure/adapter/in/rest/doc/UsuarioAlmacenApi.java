@@ -16,11 +16,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Stores", description = "Store registration with RUT in PDF (SR-RF-62-A / SR-RF-62), store lookup, catalog badge settings and evaluation (SR-RF-59, SR-RF-60) and physical-store photos (SR-RF-74)")
+@Tag(name = "Stores", description = "Store registration with RUT in PDF, store lookup, catalog badge settings and evaluation and physical-store photos")
 public interface UsuarioAlmacenApi {
 
     @Operation(
-            summary = "Get the store administered by a user (SR-RF-59 / SR-RF-62-A)",
+            summary = "Get the store administered by a user",
             description = "The user is named in the path. Only that same user (store) or a STYLERADAR_ADMIN can read it; any other identity gets 403.",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({

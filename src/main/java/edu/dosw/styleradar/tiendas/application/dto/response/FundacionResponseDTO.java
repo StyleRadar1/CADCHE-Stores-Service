@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Institutional information of a partner foundation (SR-RF-43 / SR-RF-63 / SR-RF-64 / SR-RF-65)")
+@Schema(description = "Institutional information of a partner foundation")
 public class FundacionResponseDTO {
 
     @Schema(description = "Foundation identifier", example = "3")
@@ -64,26 +64,26 @@ public class FundacionResponseDTO {
     @JsonProperty("representativeId")
     private Long representanteId;
 
-    @Schema(description = "URL of the registered legal-entity certificate (SR-RF-63)",
+    @Schema(description = "URL of the registered legal-entity certificate",
             example = "https://styleradarblob.blob.core.windows.net/fundaciones/certificado-abrigo-solidario.pdf")
     @JsonProperty("legalEntityCertificateUrl")
     private String urlCertificadoPersoneriaJuridica;
 
-    @Schema(description = "Supported social causes and geographic coverage (SR-RF-63)",
+    @Schema(description = "Supported social causes and geographic coverage",
             example = "Niñez vulnerable, población desplazada y adultos mayores en Bogotá y Cundinamarca")
     @JsonProperty("supportedCauses")
     private String causasApoyadas;
 
-    @Schema(description = "Opening hours (SR-RF-64)", example = "Lunes a Sábado de 08:00 a 17:00")
+    @Schema(description = "Opening hours", example = "Lunes a Sábado de 08:00 a 17:00")
     @JsonProperty("openingHours")
     private String horarioAtencion;
 
-    @Schema(description = "Donation policies (SR-RF-64)",
+    @Schema(description = "Donation policies",
             example = "Se reciben prendas limpias en estado Bueno, Muy bueno o Como nuevo")
     @JsonProperty("donationPolicies")
     private String politicasDonacion;
 
-    @Schema(description = "Whether the foundation accepts new donations (SR-RF-65)", example = "true")
+    @Schema(description = "Whether the foundation accepts new donations", example = "true")
     @JsonProperty("active")
     private boolean activa;
 

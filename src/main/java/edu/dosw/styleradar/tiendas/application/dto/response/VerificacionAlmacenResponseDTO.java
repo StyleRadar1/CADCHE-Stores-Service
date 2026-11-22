@@ -9,7 +9,7 @@ import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Verification status, legal entity (NIT and RUT in PDF) and registration data of a partner store (SR-RF-62 / SR-RF-62-A)")
+@Schema(description = "Verification status, legal entity (NIT and RUT in PDF) and registration data of a partner store")
 public record VerificacionAlmacenResponseDTO(
         @Schema(description = "Store NIT", example = "900123456-1")
         String nit,
@@ -53,7 +53,7 @@ public record VerificacionAlmacenResponseDTO(
         @Schema(description = "Reason or note of the verification decision", example = "Datos revisados")
         @JsonProperty("verificationReason") String motivoVerificacion,
 
-        @Schema(description = "URL of the attached RUT in PDF used to validate the legal entity (SR-RF-62)",
+        @Schema(description = "URL of the attached RUT in PDF used to validate the legal entity",
                 example = "https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut-atelier-urbano.pdf")
         @JsonProperty("rutPdfUrl") String urlRutPdf,
 

@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Publication data to evaluate the new-arrival badge of an item (SR-RF-60)")
+@Schema(description = "Publication data to evaluate the new-arrival badge of an item")
 public class EvaluarNuevaLlegadaRequestDTO {
 
     @NotNull(message = "La fecha de publicación es obligatoria")

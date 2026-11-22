@@ -33,12 +33,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "Partner foundations", description = "Registration, lookup, edition, deactivation and reactivation of partner foundations (SR-RF-63, SR-RF-64, SR-RF-65) and nearby lookup for donors (SR-RF-43)")
+@Tag(name = "Partner foundations", description = "Registration, lookup, edition, deactivation and reactivation of partner foundations and nearby lookup for donors")
 @SecurityRequirement(name = "bearerAuth")
 public interface FundacionApi {
 
     @Operation(
-            summary = "Upload the legal-entity certificate in PDF of a foundation (SR-RF-63)",
+            summary = "Upload the legal-entity certificate in PDF of a foundation",
             description = "ROLE_STYLERADAR_ADMIN. Receives a PDF of at most 5 MB and returns its public URL in object storage.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "PDF certificate stored successfully"),
@@ -54,7 +54,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Register a partner foundation (SR-RF-63)",
+            summary = "Register a partner foundation",
             description = "ROLE_STYLERADAR_ADMIN. Registers a partner foundation with NIT, neighborhood, legal-entity certificate, supported causes and coverage.")
     @PostMapping("/api/v1/admin/foundations")
     ResponseEntity<FundacionResponseDTO> registrar(
@@ -65,7 +65,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "List every partner foundation (SR-RF-63)",
+            summary = "List every partner foundation",
             description = "ROLE_STYLERADAR_ADMIN. Returns every foundation registered on the platform.")
     @GetMapping("/api/v1/admin/foundations")
     ResponseEntity<List<FundacionResponseDTO>> listarTodas(
@@ -75,7 +75,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Get a partner foundation by ID (SR-RF-64)",
+            summary = "Get a partner foundation by ID",
             description = "ROLE_STYLERADAR_ADMIN. Returns the full foundation data to prefill the edit form.")
     @GetMapping("/api/v1/admin/foundations/{id}")
     ResponseEntity<FundacionResponseDTO> obtenerPorId(
@@ -86,7 +86,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Edit a partner foundation (SR-RF-64)",
+            summary = "Edit a partner foundation",
             description = "ROLE_STYLERADAR_ADMIN. Updates the institutional information of a partner foundation.")
     @PutMapping("/api/v1/admin/foundations/{id}")
     ResponseEntity<FundacionResponseDTO> editar(
@@ -98,7 +98,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Deactivate a partner foundation (SR-RF-65)",
+            summary = "Deactivate a partner foundation",
             description = "ROLE_STYLERADAR_ADMIN. Logically deactivates a foundation without deleting its history and publishes foundation.deactivated.")
     @PatchMapping("/api/v1/admin/foundations/{id}/deactivate")
     ResponseEntity<FundacionResponseDTO> desactivar(
@@ -111,7 +111,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Reactivate a partner foundation (SR-RF-65)",
+            summary = "Reactivate a partner foundation",
             description = "ROLE_STYLERADAR_ADMIN. Reactivates a deactivated foundation, makes it visible again in the donation directory and publishes foundation.reactivated.")
     @PatchMapping("/api/v1/admin/foundations/{id}/activate")
     ResponseEntity<FundacionResponseDTO> activar(
@@ -124,7 +124,7 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "List active partner foundations (SR-RF-43)",
+            summary = "List active partner foundations",
             description = "Public. Returns only active partner foundations. With latitude and longitude they are sorted by distance; without them, by name. Optional type filter.")
     @GetMapping("/api/v1/foundations")
     ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(

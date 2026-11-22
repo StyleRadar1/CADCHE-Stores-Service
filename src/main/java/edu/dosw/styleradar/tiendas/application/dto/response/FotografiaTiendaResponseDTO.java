@@ -6,7 +6,7 @@ import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Physical-store photo of a partner store (SR-RF-74)")
+@Schema(description = "Physical-store photo of a partner store")
 public record FotografiaTiendaResponseDTO(
         @Schema(description = "Photo identifier", example = "1")
         Long id,

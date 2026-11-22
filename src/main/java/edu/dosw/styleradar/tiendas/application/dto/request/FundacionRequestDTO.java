@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Data to register or update a partner foundation that receives donations (SR-RF-63 / SR-RF-64)")
+@Schema(description = "Data to register or update a partner foundation that receives donations")
 public class FundacionRequestDTO {
 
     @NotBlank(message = "El nombre es obligatorio")
@@ -55,7 +55,7 @@ public class FundacionRequestDTO {
     private String direccion;
 
     @Size(max = 30, message = "El teléfono no puede superar 30 caracteres")
-    @Schema(description = "Contact phone (SR-RF-64)", example = "+57 601 742 8899")
+    @Schema(description = "Contact phone", example = "+57 601 742 8899")
     @JsonProperty("phone")
     private String telefono;
 
@@ -89,25 +89,25 @@ public class FundacionRequestDTO {
     private Long representanteId;
 
     @Size(max = 300, message = "La URL del certificado no puede superar 300 caracteres")
-    @Schema(description = "URL of the legal-entity certificate of the foundation (SR-RF-63)",
+    @Schema(description = "URL of the legal-entity certificate of the foundation",
             example = "https://styleradarblob.blob.core.windows.net/fundaciones/certificado-abrigo-solidario.pdf")
     @JsonProperty("legalEntityCertificateUrl")
     private String urlCertificadoPersoneriaJuridica;
 
     @Size(max = 250, message = "Las causas apoyadas no pueden superar 250 caracteres")
-    @Schema(description = "Supported social causes and geographic coverage (SR-RF-63)",
+    @Schema(description = "Supported social causes and geographic coverage",
             example = "Niñez vulnerable, población desplazada y adultos mayores en Bogotá y Cundinamarca")
     @JsonProperty("supportedCauses")
     private String causasApoyadas;
 
     @Size(max = 150, message = "El horario de atención no puede superar 150 caracteres")
-    @Schema(description = "Opening hours for donations (SR-RF-64)",
+    @Schema(description = "Opening hours for donations",
             example = "Lunes a Sábado de 08:00 a 17:00")
     @JsonProperty("openingHours")
     private String horarioAtencion;
 
     @Size(max = 500, message = "Las políticas de donación no pueden superar 500 caracteres")
-    @Schema(description = "Donation policies and required condition of donated garments (SR-RF-64)",
+    @Schema(description = "Donation policies and required condition of donated garments",
             example = "Se reciben prendas limpias en estado Bueno, Muy bueno o Como nuevo")
     @JsonProperty("donationPolicies")
     private String politicasDonacion;

@@ -15,20 +15,20 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Low-stock threshold (SR-RF-59) and new-arrival window (SR-RF-60) of a store")
+@Schema(description = "Low-stock threshold and new-arrival window of a store")
 public class ConfiguracionCatalogoAlmacenRequestDTO {
 
     @NotNull(message = "El umbral de últimas unidades es obligatorio")
     @Min(value = 0, message = "El umbral de últimas unidades no puede ser negativo")
     @Max(value = 50, message = "El umbral de últimas unidades no puede superar 50")
-    @Schema(description = "Maximum units in stock to mark an item as LOW_STOCK (SR-RF-59)", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Maximum units in stock to mark an item as LOW_STOCK", example = "3", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("lowStockThreshold")
     private Integer umbralUltimasUnidades;
 
     @NotNull(message = "El periodo en días de nueva llegada es obligatorio")
     @Min(value = 1, message = "El periodo de nueva llegada debe ser de al menos 1 día")
     @Max(value = 60, message = "El periodo de nueva llegada no puede superar 60 días")
-    @Schema(description = "Days after publication during which an item keeps the NEW_ARRIVAL badge (SR-RF-60)", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Days after publication during which an item keeps the NEW_ARRIVAL badge", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("newArrivalDays")
     private Integer diasNuevaLlegada;
 }

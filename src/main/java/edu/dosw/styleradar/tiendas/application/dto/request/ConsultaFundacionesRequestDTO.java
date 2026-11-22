@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Optional parameters of the public list of active partner foundations (SR-RF-43)")
+@Schema(description = "Optional parameters of the public list of active partner foundations")
 public class ConsultaFundacionesRequestDTO {
 
     @DecimalMin(value = "-90.0", message = "La latitud debe estar entre -90 y 90")

@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "Store verification", description = "Review and approval of partner stores (SR-RF-62). Requires ROLE_STYLERADAR_ADMIN")
+@Tag(name = "Store verification", description = "Review and approval of partner stores. Requires ROLE_STYLERADAR_ADMIN")
 @SecurityRequirement(name = "bearerAuth")
 @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Successful operation"),
@@ -42,7 +42,7 @@ import jakarta.validation.Valid;
 public interface VerificacionAlmacenApi {
 
     @Operation(
-            summary = "List stores for verification (SR-RF-62)",
+            summary = "List stores for verification",
             description = "ROLE_STYLERADAR_ADMIN. Optional status filter; without it, pending and decided stores are included. page=0, size=20, max 100. Sorted by tradeName ASC, nit ASC.")
     @GetMapping("/verifications")
     ResponseEntity<PageResponseDTO<VerificacionAlmacenResponseDTO>> consultar(
@@ -53,7 +53,7 @@ public interface VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Review a store by NIT (SR-RF-62)",
+            summary = "Review a store by NIT",
             description = "ROLE_STYLERADAR_ADMIN. Returns the registration, contact and legal-entity data (NIT and RUT PDF) and the last verification decision.")
     @GetMapping("/{nit}/verification")
     ResponseEntity<VerificacionAlmacenResponseDTO> consultarUno(
@@ -64,7 +64,7 @@ public interface VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Approve or reject a pending store (SR-RF-62)",
+            summary = "Approve or reject a pending store",
             description = "ROLE_STYLERADAR_ADMIN. Only applies to PENDING stores. APPROVED requires a RUT in PDF (otherwise 422). An already decided store returns 409. REJECTED requires a reason.")
     @PatchMapping("/{nit}/verification")
     ResponseEntity<VerificacionAlmacenResponseDTO> decidir(
@@ -83,7 +83,7 @@ public interface VerificacionAlmacenApi {
             @RequestHeader(value = "X-User-Id", required = false) Long adminId);
 
     @Operation(
-            summary = "Start or reopen the review of a store (SR-RF-62)",
+            summary = "Start or reopen the review of a store",
             description = "ROLE_STYLERADAR_ADMIN. Moves an APPROVED or REJECTED store back to PENDING. If it is already PENDING it returns 422.")
     @PostMapping("/{nit}/verification/review-request")
     ResponseEntity<VerificacionAlmacenResponseDTO> solicitarRevision(

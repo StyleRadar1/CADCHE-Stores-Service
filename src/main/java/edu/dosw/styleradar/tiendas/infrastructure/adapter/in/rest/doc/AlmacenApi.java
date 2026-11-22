@@ -45,7 +45,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "Stores", description = "Store registration with RUT in PDF (SR-RF-62-A / SR-RF-62), store lookup, catalog badge settings and evaluation (SR-RF-59, SR-RF-60) and physical-store photos (SR-RF-74)")
+@Tag(name = "Stores", description = "Store registration with RUT in PDF, store lookup, catalog badge settings and evaluation and physical-store photos")
 public interface AlmacenApi {
 
     @Operation(
@@ -61,7 +61,7 @@ public interface AlmacenApi {
             @Valid @ParameterObject @ModelAttribute ConsultaAlmacenRequestDTO request);
 
     @Operation(
-            summary = "Upload the RUT in PDF before or during store registration (SR-RF-62-A)",
+            summary = "Upload the RUT in PDF before or during store registration",
             description = "ROLE_STORE_ADMIN. Receives a PDF of at most 5 MB, stores it in object storage and returns its public URL.",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
@@ -78,7 +78,7 @@ public interface AlmacenApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
-            summary = "Register a store for verification with NIT and RUT in PDF (SR-RF-62-A / SR-RF-62)",
+            summary = "Register a store for verification with NIT and RUT in PDF",
             description = "ROLE_STORE_ADMIN. Registers the store business data, NIT and RUT URL; the store starts as PENDING.",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @ApiResponses({
@@ -99,13 +99,13 @@ public interface AlmacenApi {
     ResponseEntity<AlmacenResponseDTO> obtenerPorNit(
             @Parameter(description = "NIT of the partner store", example = "900123456-1") @PathVariable String nit);
 
-    @Operation(summary = "Get the catalog settings and thresholds (SR-RF-59 / SR-RF-60)", security = {})
+    @Operation(summary = "Get the catalog settings and thresholds", security = {})
     @GetMapping("/{nit}/catalog-settings")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> obtenerConfiguracionCatalogo(
             @Parameter(description = "NIT of the partner store", example = "900123456-1") @PathVariable String nit);
 
     @Operation(
-            summary = "Set the low-stock threshold and new-arrival days (SR-RF-59 / SR-RF-60)",
+            summary = "Set the low-stock threshold and new-arrival days",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PutMapping("/{nit}/catalog-settings")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> configurarCatalogo(
@@ -114,7 +114,7 @@ public interface AlmacenApi {
             @Valid @RequestBody ConfiguracionCatalogoAlmacenRequestDTO request);
 
     @Operation(
-            summary = "Set only the low-stock threshold (SR-RF-59)",
+            summary = "Set only the low-stock threshold",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PutMapping("/{nit}/low-stock-threshold")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarUmbralUltimasUnidades(
@@ -122,13 +122,13 @@ public interface AlmacenApi {
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarUmbralRequestDTO request);
 
-    @Operation(summary = "Get the low-stock threshold (SR-RF-59)", security = {})
+    @Operation(summary = "Get the low-stock threshold", security = {})
     @GetMapping("/{nit}/low-stock-threshold")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarUmbralUltimasUnidades(
             @PathVariable String nit);
 
     @Operation(
-            summary = "Set only the new-arrival days (SR-RF-60)",
+            summary = "Set only the new-arrival days",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PutMapping("/{nit}/new-arrival-days")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> actualizarDiasNuevaLlegada(
@@ -136,13 +136,13 @@ public interface AlmacenApi {
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
             @Valid @RequestBody ActualizarPeriodoRequestDTO request);
 
-    @Operation(summary = "Get the new-arrival days (SR-RF-60)", security = {})
+    @Operation(summary = "Get the new-arrival days", security = {})
     @GetMapping("/{nit}/new-arrival-days")
     ResponseEntity<ConfiguracionCatalogoAlmacenResponseDTO> consultarDiasNuevaLlegada(
             @PathVariable String nit);
 
     @Operation(
-            summary = "Evaluate the low-stock badge of an item with the store threshold (SR-RF-59)",
+            summary = "Evaluate the low-stock badge of an item with the store threshold",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PatchMapping("/{nit}/items/{itemId}/low-stock")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarUltimasUnidades(
@@ -153,7 +153,7 @@ public interface AlmacenApi {
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
-            summary = "Evaluate the new-arrival badge of an item within the store period (SR-RF-60)",
+            summary = "Evaluate the new-arrival badge of an item within the store period",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PatchMapping("/{nit}/items/{itemId}/new-arrival")
     ResponseEntity<DistintivoPrendaAlmacenResponseDTO> marcarNuevaLlegada(
@@ -164,7 +164,7 @@ public interface AlmacenApi {
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
-            summary = "Upload a physical-store photo (SR-RF-74)",
+            summary = "Upload a physical-store photo",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PostMapping(value = "/{nit}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<FotografiaTiendaResponseDTO> registrarFotografia(
@@ -172,13 +172,13 @@ public interface AlmacenApi {
             @RequestPart("file") MultipartFile archivo,
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
-    @Operation(summary = "List the physical-store photos (SR-RF-74)", security = {})
+    @Operation(summary = "List the physical-store photos", security = {})
     @GetMapping("/{nit}/photos")
     ResponseEntity<List<FotografiaTiendaResponseDTO>> listarFotografias(
             @PathVariable String nit);
 
     @Operation(
-            summary = "Reorder the physical-store photos and update the cover (SR-RF-74)",
+            summary = "Reorder the physical-store photos and update the cover",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @PutMapping("/{nit}/photos/order")
     ResponseEntity<List<FotografiaTiendaResponseDTO>> reordenarFotografias(
@@ -187,7 +187,7 @@ public interface AlmacenApi {
             @RequestHeader(value = "X-User-Id", required = false) Long usuarioId);
 
     @Operation(
-            summary = "Delete a physical-store photo (SR-RF-74)",
+            summary = "Delete a physical-store photo",
             security = {@SecurityRequirement(name = "bearerAuth")})
     @DeleteMapping("/{nit}/photos/{photoId}")
     ResponseEntity<Void> eliminarFotografia(

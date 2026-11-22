@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Data to register a store for verification with NIT and RUT in PDF (SR-RF-62)")
+@Schema(description = "Data to register a store for verification with NIT and RUT in PDF")
 public class RegistrarAlmacenRequestDTO {
 
     @NotBlank(message = "El NIT del almacén es obligatorio")
@@ -70,7 +70,7 @@ public class RegistrarAlmacenRequestDTO {
     private Set<CategoriaAlmacen> categorias;
 
     @NotBlank(message = "La URL o referencia del documento RUT en PDF es obligatoria para verificar la personería jurídica")
-    @Schema(description = "URL of the RUT document in PDF used to verify the legal entity (SR-RF-62)",
+    @Schema(description = "URL of the RUT document in PDF used to verify the legal entity",
             example = "https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut-atelier-urbano.pdf",
             requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("rutPdfUrl")

@@ -51,7 +51,7 @@ public class SwaggerConfig {
                 .servers(servers)
                 .info(new Info()
                         .title("StyleRadar - Stores Service API (ms-tiendas)")
-                        .description("OpenAPI 3.0 specification of the StyleRadar stores and partner foundations microservice: low-stock threshold (SR-RF-59), new-arrival days (SR-RF-60), store verification (SR-RF-62), registration, edition, deactivation and reactivation of partner foundations (SR-RF-63, SR-RF-64, SR-RF-65) and a gallery of up to 6 physical-store photos (SR-RF-74). Routes, fields, values and error codes are in English; only the user messages inside the JSON are in Spanish.")
+                        .description("OpenAPI 3.0 specification of the StyleRadar stores and partner foundations microservice: low-stock threshold, new-arrival days, store verification, registration, edition, deactivation and reactivation of partner foundations and a gallery of up to 6 physical-store photos. Routes, fields, values and error codes are in English; only the user messages inside the JSON are in Spanish.")
                         .version("v1")
                         .contact(new Contact()
                                 .name("CADche team - StyleRadar DOSW")

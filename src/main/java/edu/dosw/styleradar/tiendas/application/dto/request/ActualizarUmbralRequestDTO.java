@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Request to update only the low-stock threshold of a store (SR-RF-59)")
+@Schema(description = "Request to update only the low-stock threshold of a store")
 public class ActualizarUmbralRequestDTO {
 
     @NotNull(message = "El umbral de últimas unidades es obligatorio")

@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Request to reorder the physical-store photo gallery (SR-RF-74)")
+@Schema(description = "Request to reorder the physical-store photo gallery")
 public class ReordenarFotografiasRequestDTO {
 
     @NotEmpty(message = "El nuevo orden debe incluir todas las fotografías actuales del almacén")
