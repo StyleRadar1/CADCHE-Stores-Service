@@ -70,4 +70,10 @@ public class FundacionRepositoryAdapter implements FundacionRepositoryPort {
     public List<Fundacion> findAll() {
         return repository.findAll().stream().map(mapper::toDomain).toList();
     }
+
+    @Override
+    public void eliminarPorId(Long id) {
+        repository.deleteById(id);
+        repository.flush();
+    }
 }

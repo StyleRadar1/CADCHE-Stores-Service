@@ -67,7 +67,7 @@ class AsociarAdministradorAlmacenUseCaseTest {
         assertThat(creado.id()).isEqualTo(10L);
         assertThat(creado.usuarioId()).isEqualTo(15L);
         assertThat(creado.asignadoPorId()).isEqualTo(2L);
-        verify(adminValidator).validarEsAdministradorStyleRadar("ROLE_STYLERADAR_ADMIN");
+        verify(adminValidator).validarEsAdministradorParaOperacion("ROLE_STYLERADAR_ADMIN");
 
         List<AdministradorAlmacenResponseDTO> lista = useCase.listarAdministradores(NIT, 15L, null);
         assertThat(lista).hasSize(1);
@@ -99,9 +99,9 @@ class AsociarAdministradorAlmacenUseCaseTest {
     @DisplayName("CADCHE-130: el rol se valida siempre, también cuando no llega (antes se omitía)")
     void validaElRolAunqueNoLlegue() {
         doThrow(new FalloAutenticacionException("sin token"))
-                .when(adminValidator).validarEsAdministradorStyleRadar(null);
+                .when(adminValidator).validarEsAdministradorParaOperacion(null);
         doThrow(new AccesoDenegadoAlmacenException("rol"))
-                .when(adminValidator).validarEsAdministradorStyleRadar("ROLE_COMPRADOR");
+                .when(adminValidator).validarEsAdministradorParaOperacion("ROLE_COMPRADOR");
 
         assertThatThrownBy(() -> useCase.asociar(NIT, 15L, 2L, null))
                 .isInstanceOf(FalloAutenticacionException.class);

@@ -157,4 +157,10 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
     public void deleteFoto(Long fotoId, String almacenNit) {
         fotografiaRepository.deleteByIdAndAlmacenNit(fotoId, almacenNit);
     }
+
+    @Override
+    public void eliminarPorNit(String nit) {
+        almacenRepository.deleteById(nit);
+        almacenRepository.flush();
+    }
 }

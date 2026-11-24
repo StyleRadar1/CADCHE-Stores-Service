@@ -125,8 +125,25 @@ public interface FundacionApi {
 
     @Operation(
             summary = "List active partner foundations",
-            description = "Public. Returns only active partner foundations. With latitude and longitude they are sorted by distance; without them, by name. Optional type filter.")
+            description = "Public. Returns only active partner foundations, without the internal registration data (representative and certificate). With latitude and longitude they are sorted by distance; without them, by name. Optional type filter.")
     @GetMapping("/api/v1/foundations")
-    ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(
+    ResponseEntity<List<edu.dosw.styleradar.tiendas.application.dto.response.FundacionPublicaResponseDTO>> consultarCercanas(
             @Valid @ParameterObject @ModelAttribute ConsultaFundacionesRequestDTO request);
+
+    @Operation(
+            summary = "Delete a partner foundation",
+            description = "ROLE_STYLERADAR_ADMIN. Permanently deletes the foundation and its certificate and publishes foundation.deleted. To stop donations without losing history use deactivate.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Foundation deleted"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid token", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Requires ROLE_STYLERADAR_ADMIN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Foundation not found", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @org.springframework.web.bind.annotation.DeleteMapping("/api/v1/admin/foundations/{id}")
+    ResponseEntity<Void> eliminar(
+            @Parameter(description = "Identifier of the foundation to delete", example = "3") @PathVariable Long id,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 }

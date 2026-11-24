@@ -84,4 +84,25 @@ public class RabbitMQFundacionEventPublisherAdapter implements FundacionEventPub
         return fecha == null ? null
                 : java.time.format.DateTimeFormatter.ISO_INSTANT.format(fecha.truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
     }
+
+    @Override
+    public void publicarFundacionEliminada(edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent evento) {
+        try {
+            rabbitTemplate.convertAndSend(exchangeName, RabbitMQConfig.DEFAULT_ROUTING_KEY_FUNDACION_ELIMINADA,
+                    cuerpo(evento));
+            log.info("Evento foundation.deleted publicado para la fundación {}", evento.getFundacionId());
+        } catch (AmqpException ex) {
+            log.warn("No fue posible entregar foundation.deleted a RabbitMQ (broker no disponible): {}. "
+                    + "La fundación ya quedó eliminada en base de datos.", ex.getMessage());
+        }
+    }
+
+    /** Payload of foundation.deleted (requirements analysis v6, SR-RF-120). */
+    static java.util.Map<String, Object> cuerpo(edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent evento) {
+        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("eventId", evento.getEventoId());
+        m.put("foundationId", evento.getFundacionId());
+        m.put("deletedAt", fechaUtc(evento.getFechaEliminacion()));
+        return m;
+    }
 }
