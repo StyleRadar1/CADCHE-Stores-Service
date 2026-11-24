@@ -292,7 +292,7 @@ tiendas/
 * Sin token, las cabeceras `X-User-*` solo se aceptan con `TRUST_GATEWAY_HEADERS=true`. Use esa opción en local o cuando el servicio esté restringido a la red del Gateway; en QA y PROD el valor por defecto es `false`.
 * Las funciones restringidas sin identidad responden `401`; sin el rol o sin ser dueño del almacén responden `403`.
 
-### Endpoints Expuestos (34 rutas)
+### Endpoints Expuestos (33 rutas)
 
 | Método | Ruta | Historia | Acceso |
 | :---: | :--- | :--- | :--- |
