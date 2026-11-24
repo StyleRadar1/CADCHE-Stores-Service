@@ -156,15 +156,16 @@ class OwaspTop10SecurityTest {
     class A03SoftwareSupplyChainTests {
 
         @Test
-        @DisplayName("A03.1: Dockerfile define multi-stage build y ejecuta con usuario no-root appuser")
+        @DisplayName("A03.1: Dockerfile usa solo el JRE, copia el JAR validado en CI y ejecuta con usuario no-root appuser")
         void test_A03_SoftwareSupplyChain_DockerfileNonRoot() throws IOException {
             Path dockerfilePath = Path.of("Dockerfile");
             assertThat(Files.exists(dockerfilePath)).isTrue();
 
             String dockerfileContent = Files.readString(dockerfilePath);
             assertThat(dockerfileContent)
-                    .contains("AS builder")
-                    .contains("eclipse-temurin")
+                    .contains("FROM eclipse-temurin:21-jre-alpine")
+                    .contains("COPY --chown=appuser:appgroup target/ms-tiendas-*.jar app.jar")
+                    .doesNotContain("mvn ")
                     .contains("adduser -S appuser")
                     .contains("USER appuser:appgroup");
         }
