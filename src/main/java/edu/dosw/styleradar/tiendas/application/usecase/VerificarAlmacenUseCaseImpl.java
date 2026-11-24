@@ -9,25 +9,39 @@ import edu.dosw.styleradar.tiendas.application.dto.request.DecisionVerificacionR
 import edu.dosw.styleradar.tiendas.application.dto.request.VerificacionConsultaRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Almacen;
+import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.Pagina;
 import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 import edu.dosw.styleradar.tiendas.domain.port.in.VerificarAlmacenUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarValidator;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
 @Slf4j
 public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
 
     private final AlmacenRepositoryPort repositoryPort;
     private final AutorizacionAdminStyleRadarValidator adminValidator;
+    private final AlmacenEventPublisherPort eventPublisher;
+
+    public VerificarAlmacenUseCaseImpl(AlmacenRepositoryPort repositoryPort,
+            AutorizacionAdminStyleRadarValidator adminValidator) {
+        this(repositoryPort, adminValidator, null);
+    }
+
+    public VerificarAlmacenUseCaseImpl(AlmacenRepositoryPort repositoryPort,
+            AutorizacionAdminStyleRadarValidator adminValidator, AlmacenEventPublisherPort eventPublisher) {
+        this.repositoryPort = repositoryPort;
+        this.adminValidator = adminValidator;
+        this.eventPublisher = eventPublisher;
+    }
 
     @Override
     @Transactional
@@ -48,8 +62,10 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
         log.info("Decidiendo verificación para almacén NIT={} decisión={} adminId={}",
                 nit, request.getDecision(), adminId);
 
+        EstadoVerificacionAlmacen anterior = almacen.getEstadoVerificacion();
         almacen.decidirVerificacion(request.getDecision(), request.getMotivo(), adminId, Instant.now());
         Almacen guardado = repositoryPort.save(almacen);
+        publicarCambio(guardado, anterior);
 
         log.info("Almacén NIT={} decidido exitosamente como {}", nit, guardado.getEstadoVerificacion());
         return toResponseDTO(guardado);
@@ -106,10 +122,19 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
                 .orElseThrow(() -> new AlmacenNoEncontradoException("No se encontró ningún almacén registrado con el NIT: " + nit));
 
         log.info("Solicitando revisión de almacén NIT={} por adminId={}", nit, adminId);
+        EstadoVerificacionAlmacen anterior = almacen.getEstadoVerificacion();
         almacen.solicitarRevision();
         Almacen guardado = repositoryPort.save(almacen);
+        publicarCambio(guardado, anterior);
 
         return toResponseDTO(guardado);
+    }
+
+    private void publicarCambio(Almacen guardado, EstadoVerificacionAlmacen anterior) {
+        if (eventPublisher != null) {
+            eventPublisher.publicarVerificacionCambiada(VerificacionAlmacenCambiadaEvent.de(
+                    guardado.getNit(), anterior, guardado.getEstadoVerificacion(), Instant.now()));
+        }
     }
 
     private String resolverRepresentante(String nit) {

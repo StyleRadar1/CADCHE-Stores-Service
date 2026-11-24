@@ -17,6 +17,7 @@ public class RabbitMQConfig {
     public static final String DEFAULT_ROUTING_KEY_FUNDACION_ELIMINADA = "foundation.deleted";
     /** SR-RF-119 (análisis v6). */
     public static final String DEFAULT_ROUTING_KEY_ALMACEN_ELIMINADO = "store.deleted";
+    public static final String DEFAULT_ROUTING_KEY_VERIFICACION_ALMACEN = "store.verification.changed";
 
     /**
      * Declara el exchange de eventos ({@code topic}, durable), igual al creado en el broker del curso. RabbitAdmin lo

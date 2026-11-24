@@ -345,6 +345,7 @@ Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** 
 | **PUBLICA** | `styleradar.exchange` / `foundation.reactivated` | `FundacionReactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al reactivarla. |
 | **PUBLICA** | `styleradar.exchange` / `foundation.deleted` | `FundacionEliminadaEvent` | Donaciones y notificaciones | Al eliminar una fundación (SR-RF-120). |
 | **PUBLICA** | `styleradar.exchange` / `store.deleted` | `AlmacenEliminadoEvent` | Catálogo, inventario, geolocalización y pagos | Al eliminar un almacén (SR-RF-119). |
+| **PUBLICA** | `styleradar.exchange` / `store.verification.changed` | `VerificacionAlmacenCambiadaEvent` | `ms-estadisticas` | Al registrar un almacén (queda `PENDING`), al aprobarlo o rechazarlo (SR-RF-62) y al reabrir su revisión. |
 | **CONSUME** | — | — | — | ms-tiendas no consume eventos. |
 
 Cada evento lleva un `eventId` para que los consumidores sean idempotentes. Campos (análisis v2): `eventId`, `foundationId`, `foundationName`, `representativeId`, `deactivatedAt`/`reactivatedAt` y `reason`.
@@ -359,6 +360,13 @@ Eventos de eliminación (análisis v6), con fechas ISO-8601 en UTC:
 ```json
 { "eventId": "9c2e...", "foundationId": 7, "deletedAt": "2026-11-24T15:04:05Z" }
 { "eventId": "a71d...", "storeNit": "900123456-1", "deletedAt": "2026-11-24T15:04:05Z" }
+```
+
+Cambio de verificación de un almacén. `status` y `previousStatus` toman `PENDING`, `APPROVED` o `REJECTED`; `previousStatus` es `null` cuando el almacén se acaba de registrar:
+
+```json
+{ "eventId": "5d0b...", "eventType": "STORE_VERIFICATION_CHANGED", "storeNit": "900123456-1",
+  "status": "APPROVED", "previousStatus": "PENDING", "changedAt": "2026-11-24T15:04:05Z" }
 ```
 
 ---

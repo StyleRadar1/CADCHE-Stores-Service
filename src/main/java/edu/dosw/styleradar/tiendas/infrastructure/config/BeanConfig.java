@@ -137,8 +137,9 @@ public class BeanConfig {
     public RegistrarAlmacenUseCase registrarAlmacenUseCase(
             AlmacenRepositoryPort repositoryPort,
             AlmacenamientoBlobPort almacenamientoBlobPort,
-            AutorizacionAlmacenValidator autorizacionValidator) {
-        return new RegistrarAlmacenUseCaseImpl(repositoryPort, almacenamientoBlobPort, autorizacionValidator);
+            AutorizacionAlmacenValidator autorizacionValidator,
+            edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventPublisher) {
+        return new RegistrarAlmacenUseCaseImpl(repositoryPort, almacenamientoBlobPort, autorizacionValidator, eventPublisher);
     }
 
     @Bean
@@ -160,8 +161,9 @@ public class BeanConfig {
     @Bean
     public VerificarAlmacenUseCase verificarAlmacenUseCase(
             AlmacenRepositoryPort repositoryPort,
-            AutorizacionAdminStyleRadarValidator adminValidator) {
-        return new VerificarAlmacenUseCaseImpl(repositoryPort, adminValidator);
+            AutorizacionAdminStyleRadarValidator adminValidator,
+            edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventPublisher) {
+        return new VerificarAlmacenUseCaseImpl(repositoryPort, adminValidator, eventPublisher);
     }
 
     @Bean

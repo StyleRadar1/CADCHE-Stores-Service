@@ -1425,6 +1425,36 @@ class TrazabilidadRequerimientosTiendasTest {
                             + code.toLowerCase(java.util.Locale.ROOT).replace('_', '-')));
         }
 
+        // ---- Evento store.verification.changed (integración con ms-estadísticas)
+
+        @Test
+        @DisplayName("store.verification.changed: registrar (sin estado anterior), rechazar y reabrir publican cada cambio de estado")
+        void verificacionCambiadaPublicaCadaCambio() throws Exception {
+            registrarAlmacen();
+            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin,
+                    Map.of("decision", "REJECTED", "reason", "El RUT no corresponde al NIT registrado")).andExpect(status().isOk());
+            json(HttpMethod.POST, "/api/v1/admin/stores/" + NIT + "/verification/review-request", admin, null)
+                    .andExpect(status().isOk());
+
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent.class);
+            verify(eventosAlmacen, org.mockito.Mockito.times(3)).publicarVerificacionCambiada(ev.capture());
+            assertThat(ev.getAllValues()).extracting(e -> e.getAlmacenNit()).containsOnly(NIT);
+            assertThat(ev.getAllValues()).extracting(e -> e.getEstadoAnterior() + "->" + e.getEstado())
+                    .containsExactly("null->PENDING", "PENDING->REJECTED", "REJECTED->PENDING");
+            assertThat(ev.getAllValues()).extracting(e -> e.getEventoId()).doesNotHaveDuplicates();
+        }
+
+        @Test
+        @DisplayName("store.verification.changed: una decisión rechazada (403) no publica ningún cambio")
+        void verificacionCambiadaNoPublicaSiFalla() throws Exception {
+            registrarAlmacen();
+            org.mockito.Mockito.clearInvocations(eventosAlmacen);
+            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", tienda, Map.of("decision", "APPROVED"))
+                    .andExpect(status().isForbidden());
+            verify(eventosAlmacen, never()).publicarVerificacionCambiada(org.mockito.ArgumentMatchers.any());
+        }
+
         // ---- SR-RF-119 Eliminar almacén aliado
 
         @Test

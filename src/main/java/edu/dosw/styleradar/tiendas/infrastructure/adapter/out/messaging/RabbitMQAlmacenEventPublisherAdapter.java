@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import edu.dosw.styleradar.tiendas.domain.event.AlmacenEliminadoEvent;
+import edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent;
+import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,35 @@ public class RabbitMQAlmacenEventPublisherAdapter implements AlmacenEventPublish
             log.warn("No fue posible entregar store.deleted a RabbitMQ (broker no disponible): {}. "
                     + "El almacén ya quedó eliminado en base de datos.", ex.getMessage());
         }
+    }
+
+    @Override
+    public void publicarVerificacionCambiada(VerificacionAlmacenCambiadaEvent evento) {
+        try {
+            rabbitTemplate.convertAndSend(exchangeName, RabbitMQConfig.DEFAULT_ROUTING_KEY_VERIFICACION_ALMACEN,
+                    cuerpo(evento));
+            log.info("Evento store.verification.changed publicado para el almacén {}: {} -> {}",
+                    evento.getAlmacenNit(), evento.getEstadoAnterior(), evento.getEstado());
+        } catch (AmqpException ex) {
+            log.warn("No fue posible entregar store.verification.changed a RabbitMQ (broker no disponible): {}. "
+                    + "El estado del almacén ya quedó guardado en base de datos.", ex.getMessage());
+        }
+    }
+
+    /** Payload of store.verification.changed; previousStatus is null when the store was just registered. */
+    static Map<String, Object> cuerpo(VerificacionAlmacenCambiadaEvent evento) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("eventId", evento.getEventoId());
+        m.put("eventType", "STORE_VERIFICATION_CHANGED");
+        m.put("storeNit", evento.getAlmacenNit());
+        m.put("status", nombre(evento.getEstado()));
+        m.put("previousStatus", nombre(evento.getEstadoAnterior()));
+        m.put("changedAt", RabbitMQFundacionEventPublisherAdapter.fechaUtc(evento.getFechaCambio()));
+        return m;
+    }
+
+    private static String nombre(EstadoVerificacionAlmacen estado) {
+        return estado != null ? estado.name() : null;
     }
 
     /** Payload of store.deleted (requirements analysis v6, SR-RF-119). */

@@ -19,6 +19,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import edu.dosw.styleradar.tiendas.domain.event.AlmacenEliminadoEvent;
 import edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent;
+import edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent;
+import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging.config.RabbitMQConfig;
 
 @DisplayName("Eventos store.deleted y foundation.deleted (análisis v6)")
@@ -64,5 +66,35 @@ class EventosEliminacionPublisherTest {
         doThrow(new AmqpConnectException(new RuntimeException("broker caído"))).when(template)
                 .convertAndSend(any(String.class), any(String.class), any(Object.class));
         assertThatCode(() -> adapter.publicarFundacionEliminada(evento)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("store.verification.changed con eventType, storeNit, status, previousStatus y changedAt en UTC")
+    void verificacionCambiada() {
+        RabbitTemplate template = mock(RabbitTemplate.class);
+        RabbitMQAlmacenEventPublisherAdapter adapter = new RabbitMQAlmacenEventPublisherAdapter(template);
+        VerificacionAlmacenCambiadaEvent evento = VerificacionAlmacenCambiadaEvent.de(
+                "900123456-1", EstadoVerificacionAlmacen.PENDING, EstadoVerificacionAlmacen.APPROVED, fecha);
+
+        adapter.publicarVerificacionCambiada(evento);
+
+        verify(template).convertAndSend(eq(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES),
+                eq(RabbitMQConfig.DEFAULT_ROUTING_KEY_VERIFICACION_ALMACEN), any(Object.class));
+        assertThat(RabbitMQConfig.DEFAULT_ROUTING_KEY_VERIFICACION_ALMACEN).isEqualTo("store.verification.changed");
+        assertThat(RabbitMQAlmacenEventPublisherAdapter.cuerpo(evento))
+                .containsOnlyKeys("eventId", "eventType", "storeNit", "status", "previousStatus", "changedAt")
+                .containsEntry("eventType", "STORE_VERIFICATION_CHANGED")
+                .containsEntry("storeNit", "900123456-1")
+                .containsEntry("status", "APPROVED")
+                .containsEntry("previousStatus", "PENDING")
+                .containsEntry("changedAt", "2026-11-24T15:04:05Z");
+
+        VerificacionAlmacenCambiadaEvent registro = VerificacionAlmacenCambiadaEvent.de(
+                "900123456-1", null, EstadoVerificacionAlmacen.PENDING, fecha);
+        assertThat(RabbitMQAlmacenEventPublisherAdapter.cuerpo(registro)).containsEntry("previousStatus", null);
+
+        doThrow(new AmqpConnectException(new RuntimeException("broker caído"))).when(template)
+                .convertAndSend(any(String.class), any(String.class), any(Object.class));
+        assertThatCode(() -> adapter.publicarVerificacionCambiada(evento)).doesNotThrowAnyException();
     }
 }
