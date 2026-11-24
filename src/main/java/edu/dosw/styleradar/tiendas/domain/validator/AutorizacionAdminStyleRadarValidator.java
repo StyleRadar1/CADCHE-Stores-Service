@@ -20,6 +20,14 @@ public class AutorizacionAdminStyleRadarValidator {
     public static final String MENSAJE_GESTIONAR_FUNDACIONES =
             "Se requiere el rol ROLE_STYLERADAR_ADMIN para gestionar fundaciones aliadas";
 
+    /** SR-RF-118, SR-RF-119 y SR-RF-120 (análisis v6): asociar administradores y eliminar almacenes o fundaciones. */
+    public static final String MENSAJE_OPERACION =
+            "Se requiere el rol ROLE_STYLERADAR_ADMIN para esta operación";
+
+    public void validarEsAdministradorParaOperacion(String roles) {
+        validarRolConMensaje(roles, MENSAJE_OPERACION);
+    }
+
     public void validarEsAdministradorStyleRadar(String roles) {
         validarRolConMensaje(roles, MENSAJE_VERIFICAR_ALMACENES);
     }

@@ -8,4 +8,7 @@ public interface FundacionEventPublisherPort {
     void publicarFundacionDesactivada(FundacionDesactivadaEvent evento);
 
     void publicarFundacionReactivada(FundacionReactivadaEvent evento);
+
+    /** SR-RF-120: publica foundation.deleted. */
+    void publicarFundacionEliminada(edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent evento);
 }

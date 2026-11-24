@@ -94,6 +94,11 @@
 | **SR-RF-62** · Verificar almacén | El admin aprueba (RUT obligatorio) o rechaza (motivo de 10 a 1000 caracteres) y puede reabrir la revisión. |
 | **SR-RF-63 / 64 / 65** · Fundaciones | Registrar, editar, desactivar y reactivar fundaciones aliadas; publica eventos al desactivar o reactivar. |
 | **SR-RF-74** · Fotografías | Hasta `6` fotos por tienda (JPG, PNG o WEBP ≤ 6 MB), orden y portada. |
+| **SR-RF-116** · Consultar almacenes | Lista pública paginada de almacenes aprobados (filtro por categoría) y detalle por NIT. |
+| **SR-RF-117** · Consultar fundaciones | Lista pública de fundaciones activas, por cercanía o por nombre, sin datos internos de registro. |
+| **SR-RF-118** · Asociar administrador | El admin asocia cuentas como administradores de un almacén; el administrador ve los de su almacén. |
+| **SR-RF-119** · Eliminar almacén | El admin elimina un almacén con sus fotos, configuración y administradores; publica `store.deleted`. |
+| **SR-RF-120** · Eliminar fundación | El admin elimina una fundación y su certificado; publica `foundation.deleted`. |
 
 **Qué NO hace:** no autentica (los JWT los emite `ms-auth`), no guarda usuarios (`ms-usuarios`), ni inventario o catálogo de prendas (`ms-inventario`, `ms-item-catalogo`).
 
@@ -287,15 +292,15 @@ tiendas/
 * Sin token, las cabeceras `X-User-*` solo se aceptan con `TRUST_GATEWAY_HEADERS=true`. Use esa opción en local o cuando el servicio esté restringido a la red del Gateway; en QA y PROD el valor por defecto es `false`.
 * Las funciones restringidas sin identidad responden `401`; sin el rol o sin ser dueño del almacén responden `403`.
 
-### Endpoints Expuestos (32 rutas)
+### Endpoints Expuestos (34 rutas)
 
 | Método | Ruta | Historia | Acceso |
 | :---: | :--- | :--- | :--- |
-| `GET` | `/api/v1/stores` | Consulta de almacenes aprobados (paginada, filtro por categoría) | Público |
+| `GET` | `/api/v1/stores` | SR-RF-116 · Almacenes aprobados (paginada, filtro por categoría) | Público |
 | `POST` | `/api/v1/stores` | SR-RF-62-A · Registrar almacén | Tienda |
 | `GET` | `/api/v1/users/{userId}/store` | SR-RF-62-A · Almacén que administra el usuario | El mismo usuario o Admin |
 | `POST` | `/api/v1/stores/documents/rut` | SR-RF-62-A · Subir RUT (PDF) | Tienda |
-| `GET` | `/api/v1/stores/{nit}` | Detalle de un almacén | Público |
+| `GET` | `/api/v1/stores/{nit}` | SR-RF-116 · Detalle de un almacén | Público |
 | `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Dueño |
 | `GET` · `PUT` | `/api/v1/stores/{nit}/low-stock-threshold` | SR-RF-59 | Dueño |
 | `GET` · `PUT` | `/api/v1/stores/{nit}/new-arrival-days` | SR-RF-60 | Dueño |
@@ -307,14 +312,16 @@ tiendas/
 | `GET` | `/api/v1/admin/stores/verifications` | SR-RF-62 · Bandeja paginada por estado | Admin |
 | `GET` · `PATCH` | `/api/v1/admin/stores/{nit}/verification` | SR-RF-62 · Detalle / decidir | Admin |
 | `POST` | `/api/v1/admin/stores/{nit}/verification/review-request` | SR-RF-62 · Reabrir revisión | Admin / dueño |
-| `PUT` | `/api/v1/admin/stores/{nit}/administrators/{userId}` | Asociar administrador (BOLA) | Admin |
-| `GET` | `/api/v1/admin/stores/{nit}/administrators` | Listar administradores | Admin |
+| `DELETE` | `/api/v1/admin/stores/{nit}` | SR-RF-119 · Eliminar almacén (publica `store.deleted`) | Admin |
+| `PUT` | `/api/v1/admin/stores/{nit}/administrators/{userId}` | SR-RF-118 · Asociar administrador | Admin |
+| `GET` | `/api/v1/admin/stores/{nit}/administrators` | SR-RF-118 · Listar administradores | Admin o administrador del almacén |
 | `POST` | `/api/v1/admin/foundations/certificates` | SR-RF-63 · Subir certificado | Admin |
 | `GET` · `POST` | `/api/v1/admin/foundations` | SR-RF-63 · Listar / registrar | Admin |
 | `GET` · `PUT` | `/api/v1/admin/foundations/{id}` | SR-RF-64 · Detalle / editar | Admin |
 | `PATCH` | `/api/v1/admin/foundations/{id}/deactivate` | SR-RF-65 · Desactivar (publica evento) | Admin |
 | `PATCH` | `/api/v1/admin/foundations/{id}/activate` | SR-RF-65 · Reactivar (publica evento) | Admin |
-| `GET` | `/api/v1/foundations` | Fundaciones cercanas activas | Público |
+| `DELETE` | `/api/v1/admin/foundations/{id}` | SR-RF-120 · Eliminar fundación (publica `foundation.deleted`) | Admin |
+| `GET` | `/api/v1/foundations` | SR-RF-117 · Fundaciones activas por cercanía o nombre, sin representante ni certificado | Público |
 
 Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `code` y `errors` (claves en inglés, mensajes en español); `timestamp`, `error`, `message` y `path` quedan como alias de compatibilidad. `type` es `https://api.styleradar.com/errors/{code en minúsculas con guiones}`. Catálogo de `code`: `INVALID_DATA`, `BUSINESS_RULE_VIOLATION` (400), `UNAUTHENTICATED` (401), `ACCESS_DENIED` (403), `RESOURCE_NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `FILE_TOO_LARGE` (413), `UNPROCESSABLE_OPERATION` (422), `INTERNAL_ERROR` (500) y `SERVICE_UNAVAILABLE` (503).
 
@@ -336,6 +343,8 @@ Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** 
 | :--- | :--- | :--- | :--- | :--- |
 | **PUBLICA** | `styleradar.exchange` / `foundation.deactivated` | `FundacionDesactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al desactivar una fundación (SR-RF-65). |
 | **PUBLICA** | `styleradar.exchange` / `foundation.reactivated` | `FundacionReactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al reactivarla. |
+| **PUBLICA** | `styleradar.exchange` / `foundation.deleted` | `FundacionEliminadaEvent` | Donaciones y notificaciones | Al eliminar una fundación (SR-RF-120). |
+| **PUBLICA** | `styleradar.exchange` / `store.deleted` | `AlmacenEliminadoEvent` | Catálogo, inventario, geolocalización y pagos | Al eliminar un almacén (SR-RF-119). |
 | **CONSUME** | — | — | — | ms-tiendas no consume eventos. |
 
 Cada evento lleva un `eventId` para que los consumidores sean idempotentes. Campos (análisis v2): `eventId`, `foundationId`, `foundationName`, `representativeId`, `deactivatedAt`/`reactivatedAt` y `reason`.
@@ -343,6 +352,13 @@ Cada evento lleva un `eventId` para que los consumidores sean idempotentes. Camp
 ```json
 { "eventId": "4b1f...", "foundationId": 7, "foundationName": "Fundación Abrigar",
   "representativeId": 30, "deactivatedAt": "2026-11-13T15:04:05Z", "reason": "..." }
+```
+
+Eventos de eliminación (análisis v6), con fechas ISO-8601 en UTC:
+
+```json
+{ "eventId": "9c2e...", "foundationId": 7, "deletedAt": "2026-11-24T15:04:05Z" }
+{ "eventId": "a71d...", "storeNit": "900123456-1", "deletedAt": "2026-11-24T15:04:05Z" }
 ```
 
 ---
@@ -521,10 +537,26 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
   </table>
 </div>
 
-### Requerimientos Funcionales Asignados
+### Requerimientos Funcionales Asignados (análisis de requerimientos v6)
 
 | Código RF | Nombre del Requerimiento | Actor Principal | Criterio de Aceptación Clave |
 | :---: | :--- | :--- | :--- |
+| `SR-RF-59` | Marcar prenda como últimas unidades | Administrador de almacén | Umbral de `0` a `50` (por defecto `3`); `LOW_STOCK` si la prenda está disponible y `1 ≤ currentStock ≤ umbral`. |
+| `SR-RF-60` | Marcar prenda como nueva llegada | Administrador de almacén | Periodo de `1` a `60` días (por defecto `7`); `NEW_ARRIVAL` mientras no esté retirada y no venza el periodo. |
+| `SR-RF-62` | Verificar almacén aliado | Administrador StyleRadar | Aprobar exige RUT en PDF; rechazar exige motivo de `10` a `1000` caracteres; una decisión tomada solo se reabre con la revisión. |
+| `SR-RF-63` | Registrar fundación aliada | Administrador StyleRadar | Nombre y NIT únicos, un representante por fundación y certificado en PDF obligatorio; queda activa. |
+| `SR-RF-64` | Editar fundación aliada | Administrador StyleRadar | Mismas validaciones del registro; no cambia la fecha de registro ni el estado. |
+| `SR-RF-65` | Desactivar fundación aliada | Administrador StyleRadar | Desactiva o reactiva conservando el historial (motivo de máximo `500` caracteres) y publica el evento. |
+| `SR-RF-74` | Registrar fotografías de la tienda física | Administrador de almacén | Hasta `6` fotos JPEG, PNG o WebP de máximo `6 MB`; la primera es la portada. |
+| `SR-RF-116` | Consultar almacenes aliados | Usuario comprador | Pública y paginada; solo almacenes aprobados y sin datos privados. |
+| `SR-RF-117` | Consultar fundaciones aliadas activas | Usuario comprador | Pública; solo activas, por cercanía o por nombre, sin representante ni certificado. |
+| `SR-RF-118` | Asociar administrador de almacén | Administrador StyleRadar / Administrador de almacén | Solo el admin asocia; se guarda quién y cuándo; el administrador ve solo los de su almacén. |
+| `SR-RF-119` | Eliminar almacén aliado | Administrador StyleRadar | Elimina el almacén con fotos, configuración y administradores y publica `store.deleted`. |
+| `SR-RF-120` | Eliminar fundación aliada | Administrador StyleRadar | Elimina la fundación y su certificado y publica `foundation.deleted`. |
+
+Cada flujo alterno de estos requerimientos tiene su prueba en `TrazabilidadRequerimientosTiendasTest` (clase anidada `AnalisisV6` para lo nuevo de la v6).
+
+---: | :--- | :--- | :--- |
 | `SR-RF-17`, `SR-RF-18`, `SR-RF-22` | Visualización de almacenes verificados en mapa y filtro por categoría | `BUYER` / Público | Retorna únicamente almacenes con `estadoVerificacion = APPROVED`, permitiendo filtrar por `CategoriaAlmacen` y consultar el detalle por NIT. |
 | `SR-RF-21` | Cálculo de distancia entre comprador y almacén | `BUYER` / Público | Calcula la distancia en línea recta (`distanciaKm`) mediante la fórmula de Haversine validando rangos geográficos de `latitud` y `longitud`. |
 | `SR-RF-59`, `SR-RF-60` | Configuración de umbrales `LOW_STOCK` y `NEW_ARRIVAL` (Deuda Técnica #8) | `STORE_ADMIN` | Permite parametrizar por tienda el umbral de unidades (`1..50`) y días de vigencia de nueva llegada (`1..60`), así como marcar o desmarcar manualmente prendas. |

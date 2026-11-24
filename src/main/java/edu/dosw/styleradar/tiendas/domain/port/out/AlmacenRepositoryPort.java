@@ -42,4 +42,7 @@ public interface AlmacenRepositoryPort {
     int countFotosByAlmacenNit(String nit);
 
     void deleteFoto(Long fotoId, String almacenNit);
+
+    /** SR-RF-119: borra el almacén; la base de datos elimina en cascada fotos, categorías y administradores. */
+    void eliminarPorNit(String nit);
 }

@@ -27,7 +27,7 @@ public class AsociarAdministradorAlmacenUseCaseImpl implements AsociarAdministra
     @Override
     @Transactional
     public AdministradorAlmacenResponseDTO asociar(String nit, Long usuarioId, Long adminId, String rol) {
-        adminValidator.validarEsAdministradorStyleRadar(rol);
+        adminValidator.validarEsAdministradorParaOperacion(rol);
         if (adminId == null || adminId <= 0) {
             throw new FalloAutenticacionException(AutorizacionAdminStyleRadarValidator.MENSAJE_SIN_IDENTIDAD);
         }

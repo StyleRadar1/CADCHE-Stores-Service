@@ -32,6 +32,7 @@ public class FundacionController implements FundacionApi {
     private final EditarFundacionUseCase editarFundacionUseCase;
     private final DesactivarFundacionUseCase desactivarFundacionUseCase;
     private final ReactivarFundacionUseCase reactivarFundacionUseCase;
+    private final edu.dosw.styleradar.tiendas.domain.port.in.EliminarFundacionUseCase eliminarFundacionUseCase;
 
     public FundacionController(
             RegistrarFundacionUseCase registrarFundacionUseCase,
@@ -40,12 +41,22 @@ public class FundacionController implements FundacionApi {
         this(registrarFundacionUseCase, editarFundacionUseCase, desactivarFundacionUseCase, null);
     }
 
+    public FundacionController(
+            RegistrarFundacionUseCase registrarFundacionUseCase,
+            EditarFundacionUseCase editarFundacionUseCase,
+            DesactivarFundacionUseCase desactivarFundacionUseCase,
+            ReactivarFundacionUseCase reactivarFundacionUseCase) {
+        this(registrarFundacionUseCase, editarFundacionUseCase, desactivarFundacionUseCase, reactivarFundacionUseCase, null);
+    }
+
     @Autowired
     public FundacionController(
             RegistrarFundacionUseCase registrarFundacionUseCase,
             EditarFundacionUseCase editarFundacionUseCase,
             DesactivarFundacionUseCase desactivarFundacionUseCase,
-            @Autowired(required = false) ReactivarFundacionUseCase reactivarFundacionUseCase) {
+            @Autowired(required = false) ReactivarFundacionUseCase reactivarFundacionUseCase,
+            @Autowired(required = false) edu.dosw.styleradar.tiendas.domain.port.in.EliminarFundacionUseCase eliminarFundacionUseCase) {
+        this.eliminarFundacionUseCase = eliminarFundacionUseCase;
         this.registrarFundacionUseCase = registrarFundacionUseCase;
         this.editarFundacionUseCase = editarFundacionUseCase;
         this.desactivarFundacionUseCase = desactivarFundacionUseCase;
@@ -135,8 +146,20 @@ public class FundacionController implements FundacionApi {
     }
 
     @Override
-    public ResponseEntity<List<FundacionResponseDTO>> consultarCercanas(
+    public ResponseEntity<List<edu.dosw.styleradar.tiendas.application.dto.response.FundacionPublicaResponseDTO>> consultarCercanas(
             @Valid @ModelAttribute ConsultaFundacionesRequestDTO request) {
-        return ResponseEntity.ok(registrarFundacionUseCase.consultarCercanas(request));
+        return ResponseEntity.ok(registrarFundacionUseCase.consultarCercanas(request).stream()
+                .map(edu.dosw.styleradar.tiendas.application.dto.response.FundacionPublicaResponseDTO::de)
+                .toList());
+    }
+
+    @Override
+    public ResponseEntity<Void> eliminar(
+            Long id,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
+        eliminarFundacionUseCase.eliminar(id, rol);
+        return ResponseEntity.noContent().build();
     }
 }
