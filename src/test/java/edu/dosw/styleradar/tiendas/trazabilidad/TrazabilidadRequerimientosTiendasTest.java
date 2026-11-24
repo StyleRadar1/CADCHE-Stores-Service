@@ -104,6 +104,8 @@ class TrazabilidadRequerimientosTiendasTest {
     private JdbcTemplate jdbc;
     @MockBean
     private FundacionEventPublisherPort eventos;
+    @MockBean
+    private edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventosAlmacen;
 
     private final String tienda = token(20, "STORE_ADMIN");
     private final String otraTienda = token(21, "STORE_ADMIN");
@@ -114,7 +116,7 @@ class TrazabilidadRequerimientosTiendasTest {
     void limpiar() {
         jdbc.execute("TRUNCATE almacen_fotos, administradores_almacenes, almacen_categorias, almacenes, "
                 + "fundacion_categorias_aceptadas, fundaciones RESTART IDENTITY CASCADE");
-        reset(eventos);
+        reset(eventos, eventosAlmacen);
     }
 
     // ---------------------------------------------------------------- utilidades
@@ -1397,6 +1399,226 @@ class TrazabilidadRequerimientosTiendasTest {
                 subir(fotos, tienda, "c" + i + ".png", "image/png", png());
             }
             codigo(subir(fotos, tienda, "x.png", "image/png", png()), 422, "UNPROCESSABLE_OPERATION", null);
+        }
+    }
+
+    // ---------------------------------------------------------------- Análisis v6 (24/11/2026)
+
+    @Nested
+    @DisplayName("Análisis v6: SR-RF-116 a SR-RF-120 y salidas precisadas de SR-RF-59, 60, 62, 65 y 118")
+    class AnalisisV6 {
+
+        private static final String PARA_OPERACION = "Se requiere el rol ROLE_STYLERADAR_ADMIN para esta operación";
+
+        private JsonNode cuerpo(ResultActions r) throws Exception {
+            return objectMapper.readTree(r.andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        private void aprobar(String nit) throws Exception {
+            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + nit + "/verification", admin, Map.of("decision", "APPROVED"))
+                    .andExpect(status().isOk());
+        }
+
+        private ResultActions problema(ResultActions r, int http, String code, String mensaje) throws Exception {
+            return error(r, http, mensaje).andExpect(jsonPath("$.code").value(code))
+                    .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errors/"
+                            + code.toLowerCase(java.util.Locale.ROOT).replace('_', '-')));
+        }
+
+        // ---- SR-RF-119 Eliminar almacén aliado
+
+        @Test
+        @DisplayName("SR-RF-119 flujo básico, RN-03 y RN-05: 204; se borran fotos, categorías y administradores y se publica store.deleted")
+        void rf119FlujoBasico() throws Exception {
+            registrarAlmacen();
+            subir("/api/v1/stores/" + NIT + "/photos", tienda, "f.png", "image/png", png()).andExpect(status().isCreated());
+            json(HttpMethod.DELETE, "/api/v1/admin/stores/" + NIT, admin, null).andExpect(status().isNoContent())
+                    .andExpect(r -> assertThat(r.getResponse().getContentAsString()).isEmpty());
+            problema(json(HttpMethod.GET, "/api/v1/stores/" + NIT, null, null), 404, "RESOURCE_NOT_FOUND",
+                    "No se encontró ningún almacén registrado con el NIT: " + NIT);
+            for (String tabla : List.of("almacen_fotos", "administradores_almacenes", "almacen_categorias")) {
+                assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM " + tabla + " WHERE almacen_nit = ?", Integer.class, NIT))
+                        .as(tabla).isZero();
+            }
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.AlmacenEliminadoEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.AlmacenEliminadoEvent.class);
+            verify(eventosAlmacen).publicarAlmacenEliminado(ev.capture());
+            assertThat(ev.getValue().getAlmacenNit()).isEqualTo(NIT);
+            assertThat(java.util.UUID.fromString(ev.getValue().getEventoId()).version()).isEqualTo(4);
+            assertThat(ev.getValue().getFechaEliminacion()).isNotNull();
+            assertThat(edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging.RabbitMQAlmacenEventPublisherAdapter
+                    .class).isNotNull();
+        }
+
+        @Test
+        @DisplayName("SR-RF-119 FA-01, FA-02 y FA-03: 401 sin token, 403 sin rol de administrador y 404 si no existe")
+        void rf119Errores() throws Exception {
+            registrarAlmacen();
+            String ruta = "/api/v1/admin/stores/" + NIT;
+            problema(json(HttpMethod.DELETE, ruta, null, null), 401, "UNAUTHENTICATED",
+                    "Se requiere un token de acceso válido para esta operación");
+            problema(json(HttpMethod.DELETE, ruta, tienda, null), 403, "ACCESS_DENIED", PARA_OPERACION);
+            problema(json(HttpMethod.DELETE, "/api/v1/admin/stores/900999999-9", admin, null), 404, "RESOURCE_NOT_FOUND",
+                    "No se encontró ningún almacén registrado con el NIT: 900999999-9");
+            verify(eventosAlmacen, never()).publicarAlmacenEliminado(org.mockito.ArgumentMatchers.any());
+        }
+
+        // ---- SR-RF-120 Eliminar fundación aliada
+
+        @Test
+        @DisplayName("SR-RF-120 flujo básico y RN-05: 204; la fundación deja de existir y se publica foundation.deleted")
+        void rf120FlujoBasico() throws Exception {
+            long id = registrarFundacion("Fundación Eliminar", "900111222-3", 40);
+            json(HttpMethod.DELETE, "/api/v1/admin/foundations/" + id, admin, null).andExpect(status().isNoContent());
+            problema(json(HttpMethod.GET, "/api/v1/admin/foundations/" + id, admin, null), 404, "RESOURCE_NOT_FOUND",
+                    "No existe una fundación aliada con ID: " + id);
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM fundacion_categorias_aceptadas WHERE fundacion_id = ?",
+                    Integer.class, id)).isZero();
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent.class);
+            verify(eventos).publicarFundacionEliminada(ev.capture());
+            assertThat(ev.getValue().getFundacionId()).isEqualTo(id);
+            assertThat(ev.getValue().getEventoId()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("SR-RF-120 FA-01, FA-02 y FA-03: 401, 403 «para esta operación» y 404 «No existe una fundación aliada con ID»")
+        void rf120Errores() throws Exception {
+            long id = registrarFundacion("Fundación Errores", "900111333-4", 41);
+            String ruta = "/api/v1/admin/foundations/" + id;
+            problema(json(HttpMethod.DELETE, ruta, null, null), 401, "UNAUTHENTICATED",
+                    "Se requiere un token de acceso válido para esta operación");
+            problema(json(HttpMethod.DELETE, ruta, comprador, null), 403, "ACCESS_DENIED", PARA_OPERACION);
+            problema(json(HttpMethod.DELETE, "/api/v1/admin/foundations/999999", admin, null), 404, "RESOURCE_NOT_FOUND",
+                    "No existe una fundación aliada con ID: 999999");
+        }
+
+        // ---- SR-RF-118 Asociar administrador de almacén
+
+        @Test
+        @DisplayName("SR-RF-118: asociar devuelve id, userId, storeNit, assignedById y assignedAt; FA-02 a FA-05")
+        void rf118() throws Exception {
+            registrarAlmacen();
+            String base = "/api/v1/admin/stores/" + NIT + "/administrators";
+            JsonNode a = cuerpo(json(HttpMethod.PUT, base + "/55", admin, null).andExpect(status().isOk()));
+            assertThat(a.get("id").asLong()).isPositive();
+            assertThat(a.get("userId").asLong()).isEqualTo(55);
+            assertThat(a.get("storeNit").asText()).isEqualTo(NIT);
+            assertThat(a.get("assignedById").asLong()).isEqualTo(1);
+            assertThat(a.get("assignedAt").asText()).matches("\\d{4}-\\d{2}-\\d{2}T.*Z");
+            problema(json(HttpMethod.PUT, base + "/56", tienda, null), 403, "ACCESS_DENIED", PARA_OPERACION);
+            problema(json(HttpMethod.PUT, base + "/0", admin, null), 400, "BUSINESS_RULE_VIOLATION",
+                    "El identificador del usuario administrador debe ser mayor a cero");
+            problema(json(HttpMethod.PUT, "/api/v1/admin/stores/900999999-9/administrators/57", admin, null), 404,
+                    "RESOURCE_NOT_FOUND", "No se encontró ningún almacén registrado con el NIT: 900999999-9");
+            json(HttpMethod.GET, base, tienda, null).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+            problema(json(HttpMethod.GET, base, otraTienda, null), 403, "ACCESS_DENIED", null);
+        }
+
+        // ---- SR-RF-117 Consultar fundaciones aliadas activas
+
+        @Test
+        @DisplayName("SR-RF-117: pública, solo activas, sin representante, certificado ni fecha de registro; orden por nombre")
+        void rf117Salida() throws Exception {
+            registrarFundacion("Fundación Zeta", "900111444-5", 42);
+            long inactiva = registrarFundacion("Fundación Alfa Inactiva", "900111555-6", 43);
+            registrarFundacion("Fundación Beta", "900111666-7", 44);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + inactiva + "/deactivate", admin, null).andExpect(status().isOk());
+            JsonNode lista = cuerpo(json(HttpMethod.GET, "/api/v1/foundations", null, null).andExpect(status().isOk()));
+            assertThat(lista).hasSize(2);
+            assertThat(lista.get(0).get("name").asText()).isEqualTo("Fundación Beta");
+            List<String> campos = new java.util.ArrayList<>();
+            lista.get(0).fieldNames().forEachRemaining(campos::add);
+            assertThat(campos).contains("id", "name", "nit", "neighborhood", "address", "email", "latitude", "longitude",
+                    "acceptedCategories", "active").doesNotContain("representativeId", "legalEntityCertificateUrl", "registeredAt");
+            assertThat(lista.get(0).get("active").asBoolean()).isTrue();
+        }
+
+        @Test
+        @DisplayName("SR-RF-117 FA-01 a FA-03: latitud, longitud o tipo inválidos → 400 INVALID_DATA")
+        void rf117Errores() throws Exception {
+            problema(json(HttpMethod.GET, "/api/v1/foundations?latitude=95&longitude=1", null, null), 400, "INVALID_DATA",
+                    INVALID_DATA).andExpect(jsonPath("$.errors.latitude").value("La latitud debe estar entre -90 y 90"));
+            problema(json(HttpMethod.GET, "/api/v1/foundations?latitude=1&longitude=200", null, null), 400, "INVALID_DATA",
+                    INVALID_DATA).andExpect(jsonPath("$.errors.longitude").value("La longitud debe estar entre -180 y 180"));
+            problema(json(HttpMethod.GET, "/api/v1/foundations?type=ZAPATO", null, null), 400, "INVALID_DATA", INVALID_DATA);
+        }
+
+        // ---- SR-RF-116 Consultar almacenes aliados
+
+        @Test
+        @DisplayName("SR-RF-116: lista paginada solo de aprobados con content, page, size, totalElements, totalPages, first y last")
+        void rf116Salida() throws Exception {
+            registrarAlmacen();
+            json(HttpMethod.POST, "/api/v1/stores", otraTienda, almacen("900654321-2")).andExpect(status().isCreated());
+            aprobar(NIT);
+            JsonNode p = cuerpo(json(HttpMethod.GET, "/api/v1/stores?page=0&size=10", null, null).andExpect(status().isOk()));
+            for (String c : List.of("content", "page", "size", "totalElements", "totalPages", "first", "last")) {
+                assertThat(p.has(c)).as(c).isTrue();
+            }
+            assertThat(p.get("totalElements").asInt()).isEqualTo(1);
+            assertThat(p.get("content").get(0).get("nit").asText()).isEqualTo(NIT);
+            assertThat(p.get("first").asBoolean()).isTrue();
+            List<String> campos = new java.util.ArrayList<>();
+            p.get("content").get(0).fieldNames().forEachRemaining(campos::add);
+            assertThat(campos).contains("nit", "tradeName", "categories")
+                    .doesNotContain("rutPdfUrl", "representative", "administrators");
+            json(HttpMethod.GET, "/api/v1/stores/" + NIT, null, null).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tradeName").value("Atelier Urbano"));
+        }
+
+        @Test
+        @DisplayName("SR-RF-116 FA-01 y FA-02: categoría, página o tamaño inválidos → 400; NIT inexistente → 404")
+        void rf116Errores() throws Exception {
+            for (String q : List.of("category=ZAPATOS", "page=-1", "size=0", "size=101")) {
+                problema(json(HttpMethod.GET, "/api/v1/stores?" + q, null, null), 400, "INVALID_DATA", INVALID_DATA);
+            }
+            problema(json(HttpMethod.GET, "/api/v1/stores/900888777-1", null, null), 404, "RESOURCE_NOT_FOUND",
+                    "No se encontró ningún almacén registrado con el NIT: 900888777-1");
+        }
+
+        // ---- SR-RF-62, 59, 60 y 65 (detalles precisados en la v6)
+
+        @Test
+        @DisplayName("SR-RF-62: listado paginado; motivo de menos de 10 caracteres → 400; FA-08 retirar verificación de una pendiente → 422")
+        void rf62() throws Exception {
+            registrarAlmacen();
+            JsonNode p = cuerpo(json(HttpMethod.GET, "/api/v1/admin/stores/verifications?status=PENDING&page=0&size=5", admin, null)
+                    .andExpect(status().isOk()));
+            assertThat(p.get("content").get(0).get("verificationStatus").asText()).isEqualTo("PENDING");
+            assertThat(p.get("size").asInt()).isEqualTo(5);
+            problema(json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin,
+                    Map.of("decision", "REJECTED", "reason", "Corto")), 400, "BUSINESS_RULE_VIOLATION",
+                    "El motivo debe tener entre 10 y 1000 caracteres");
+            problema(json(HttpMethod.POST, "/api/v1/admin/stores/" + NIT + "/verification/review-request", admin, null), 422,
+                    "UNPROCESSABLE_OPERATION", "El almacén ya se encuentra pendiente de revisión");
+        }
+
+        @Test
+        @DisplayName("SR-RF-59 y SR-RF-60: alternativas ?currentStock= y ?arrivalDate= sin cuerpo JSON")
+        void rf59Rf60Alternativas() throws Exception {
+            registrarAlmacen();
+            String base = "/api/v1/stores/" + NIT + "/items/7";
+            json(HttpMethod.PATCH, base + "/low-stock?currentStock=2", tienda, null).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.lowStock").value(true)).andExpect(jsonPath("$.activeBadge").value("LOW_STOCK"))
+                    .andExpect(jsonPath("$.itemId").value(7));
+            json(HttpMethod.PATCH, base + "/new-arrival?arrivalDate=" + Instant.now().minus(1, ChronoUnit.DAYS), tienda, null)
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.newArrival").value(true))
+                    .andExpect(jsonPath("$.activeBadge").value("NEW_ARRIVAL"));
+        }
+
+        @Test
+        @DisplayName("SR-RF-65: motivo de más de 500 caracteres → 400; sin motivo se usa el texto por defecto")
+        void rf65Motivo() throws Exception {
+            long id = registrarFundacion("Fundación Motivo", "900111777-8", 45);
+            problema(json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate?reason=" + "x".repeat(501),
+                    admin, null), 400, "BUSINESS_RULE_VIOLATION", "El motivo no puede superar 500 caracteres");
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", admin, null).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false));
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.FundacionDesactivadaEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.FundacionDesactivadaEvent.class);
+            verify(eventos).publicarFundacionDesactivada(ev.capture());
+            assertThat(ev.getValue().getMotivo()).isEqualTo("Desactivación institucional por administrador StyleRadar");
         }
     }
 }

@@ -26,4 +26,7 @@ public interface FundacionRepositoryPort {
     boolean existsByRepresentanteIdAndIdNot(Long representanteId, Long id);
 
     List<Fundacion> findAll();
+
+    /** SR-RF-120: borra la fundación; la base de datos elimina en cascada sus categorías aceptadas. */
+    void eliminarPorId(Long id);
 }

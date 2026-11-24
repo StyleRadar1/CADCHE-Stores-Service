@@ -163,4 +163,24 @@ public class BeanConfig {
             AutorizacionAdminStyleRadarValidator adminValidator) {
         return new VerificarAlmacenUseCaseImpl(repositoryPort, adminValidator);
     }
+
+    @Bean
+    public edu.dosw.styleradar.tiendas.domain.port.in.EliminarAlmacenUseCase eliminarAlmacenUseCase(
+            AlmacenRepositoryPort repositoryPort,
+            AlmacenamientoBlobPort almacenamientoBlobPort,
+            edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventPublisher,
+            AutorizacionAdminStyleRadarValidator adminValidator) {
+        return new edu.dosw.styleradar.tiendas.application.usecase.EliminarAlmacenUseCaseImpl(
+                repositoryPort, almacenamientoBlobPort, eventPublisher, adminValidator);
+    }
+
+    @Bean
+    public edu.dosw.styleradar.tiendas.domain.port.in.EliminarFundacionUseCase eliminarFundacionUseCase(
+            FundacionRepositoryPort repositoryPort,
+            AlmacenamientoBlobPort almacenamientoBlobPort,
+            edu.dosw.styleradar.tiendas.domain.port.out.FundacionEventPublisherPort eventPublisher,
+            AutorizacionAdminStyleRadarValidator adminValidator) {
+        return new edu.dosw.styleradar.tiendas.application.usecase.EliminarFundacionUseCaseImpl(
+                repositoryPort, almacenamientoBlobPort, eventPublisher, adminValidator);
+    }
 }
