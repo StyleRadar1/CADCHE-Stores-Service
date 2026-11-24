@@ -1,22 +1,11 @@
 # ==============================================================================
-# STYLE RADAR - PRODUCTION-GRADE MULTI-STAGE DOCKERFILE
+# STYLE RADAR - PRODUCTION-GRADE DOCKERFILE
 # Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
 # Estándares: OCI, CIS Benchmark, Non-Root User, JVM Container-Aware
 # ==============================================================================
 
-# ─── Etapa 1: Compilación con Maven (Build Environment Ligero Alpine) ─────────
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
-
-WORKDIR /build
-
-# 1. Copiar pom.xml y código fuente
-COPY pom.xml .
-COPY src ./src
-
-# 2. Compilar binario optimizado omitiendo pruebas repetidas (ya validadas en CI)
-RUN mvn package -DskipTests -Dmaven.test.skip=true -q
-
-# ─── Etapa 2: Imagen Final Ultraligera y Segura (Runtime Environment) ─────────
+# Runtime de la aplicación. El JAR se compila y valida en CI antes de construir la imagen,
+# así el build de Docker no descarga dependencias de Maven Central.
 FROM eclipse-temurin:21-jre-alpine
 
 # Metadatos estándar OCI (Open Container Initiative)
@@ -35,8 +24,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY rabbitmq-ca.pem /tmp/rabbitmq-ca.pem
 RUN keytool -importcert -trustcacerts -cacerts -storepass changeit -noprompt -alias styleradar-rabbitmq-ca -file /tmp/rabbitmq-ca.pem && rm -f /tmp/rabbitmq-ca.pem
 
-# Copiar el ejecutable JAR desde la etapa de compilación
-COPY --from=builder --chown=appuser:appgroup /build/target/*.jar app.jar
+# Copiar el JAR validado en CI
+COPY --chown=appuser:appgroup target/ms-tiendas-*.jar app.jar
 
 # Variables de entorno por defecto (adaptadas a los estándares de microservicios)
 ENV SPRING_PROFILES_ACTIVE=docker \
