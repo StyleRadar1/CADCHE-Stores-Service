@@ -13,7 +13,7 @@ import lombok.Data;
 
 @Data
 @MotivoDeRechazoValido
-@Schema(description = "Admin decision to approve or reject a pending store")
+@Schema(name = "VerificationDecisionRequest", description = "Admin decision to approve or reject a pending store")
 public class DecisionVerificacionRequestDTO {
 
     @NotNull

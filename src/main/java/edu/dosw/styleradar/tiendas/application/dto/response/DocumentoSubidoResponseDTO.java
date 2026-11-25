@@ -6,7 +6,7 @@ import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Upload result of a PDF document (store RUT or foundation legal-entity certificate) in Azure Blob Storage")
+@Schema(name = "UploadedDocumentResponse", description = "Upload result of a PDF document (store RUT or foundation legal-entity certificate) in Azure Blob Storage")
 public record DocumentoSubidoResponseDTO(
         @Schema(description = "Public URL of the stored PDF", example = "https://styleradarblob.blob.core.windows.net/documentos-rut/rut-900123456-1.pdf")
         String url,

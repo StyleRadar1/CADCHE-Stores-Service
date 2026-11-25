@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Institutional information of a partner foundation")
+@Schema(name = "FoundationResponse", description = "Institutional information of a partner foundation")
 public class FundacionResponseDTO {
 
     @Schema(description = "Foundation identifier", example = "3")

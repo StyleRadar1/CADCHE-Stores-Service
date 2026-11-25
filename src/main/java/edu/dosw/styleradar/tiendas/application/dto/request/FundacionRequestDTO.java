@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Data to register or update a partner foundation that receives donations")
+@Schema(name = "FoundationRequest", description = "Data to register or update a partner foundation that receives donations")
 public class FundacionRequestDTO {
 
     @NotBlank(message = "El nombre es obligatorio")

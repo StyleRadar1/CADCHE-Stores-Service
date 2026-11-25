@@ -6,7 +6,7 @@ import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Result of the store catalog badge evaluation: low stock and new arrival")
+@Schema(name = "GarmentBadgeResponse", description = "Result of the store catalog badge evaluation: low stock and new arrival")
 public record DistintivoPrendaAlmacenResponseDTO(
         @Schema(description = "NIT of the store that owns the item", example = "900123456-1")
         String nit,
