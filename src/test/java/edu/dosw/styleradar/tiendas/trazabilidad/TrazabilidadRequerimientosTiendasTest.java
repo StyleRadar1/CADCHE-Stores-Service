@@ -69,7 +69,8 @@ import io.jsonwebtoken.security.Keys;
         "spring.autoconfigure.exclude=",
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.flyway.enabled=true",
-        "styleradar.security.trust-gateway-headers=false"
+        "styleradar.security.trust-gateway-headers=false",
+        "styleradar.internal.donaciones.password=clave-interna-de-prueba"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -1482,6 +1483,48 @@ class TrazabilidadRequerimientosTiendasTest {
             json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", tienda, null)
                     .andExpect(status().isForbidden());
             verify(eventos, never()).publicarEstadoCambiado(org.mockito.ArgumentMatchers.any());
+        }
+
+        // ---- Rutas internas para ms-segunda-vida-donaciones (Basic de servicio)
+
+        private ResultActions interna(String ruta, String autorizacion) throws Exception {
+            var peticion = org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(ruta);
+            if (autorizacion != null) {
+                peticion.header(org.springframework.http.HttpHeaders.AUTHORIZATION, autorizacion);
+            }
+            return mockMvc.perform(peticion);
+        }
+
+        private String basicDonaciones(String clave) {
+            return "Basic " + java.util.Base64.getEncoder().encodeToString(
+                    ("ms-donaciones:" + clave).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        @Test
+        @DisplayName("Internas: con Basic de ms-donaciones devuelven la fundación con representativeId, por ID y por representante")
+        void internasDevuelvenFundacionCompleta() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            String basic = basicDonaciones("clave-interna-de-prueba");
+
+            interna("/api/v1/internal/foundations/" + id, basic).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(id)).andExpect(jsonPath("$.representativeId").value(24))
+                    .andExpect(jsonPath("$.active").value(true));
+            interna("/api/v1/internal/foundations?representativeId=24", basic).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(id)).andExpect(jsonPath("$.representativeId").value(24));
+            problema(interna("/api/v1/internal/foundations?representativeId=99", basic), 404, "RESOURCE_NOT_FOUND",
+                    "No existe una fundación aliada para el representante con ID: 99");
+            problema(interna("/api/v1/internal/foundations/999999", basic), 404, "RESOURCE_NOT_FOUND",
+                    "No existe una fundación aliada con ID: 999999");
+        }
+
+        @Test
+        @DisplayName("Internas: sin Basic, con clave errada o con JWT (incluso de admin) responden 401")
+        void internasExigenCredencialDeServicio() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            String ruta = "/api/v1/internal/foundations/" + id;
+            for (String cabecera : new String[]{null, basicDonaciones("otra"), "Bearer " + admin}) {
+                problema(interna(ruta, cabecera), 401, "UNAUTHENTICATED", "Se requieren credenciales de servicio válidas");
+            }
         }
 
         // ---- SR-RF-119 Eliminar almacén aliado

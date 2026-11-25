@@ -186,4 +186,11 @@ public class BeanConfig {
         return new edu.dosw.styleradar.tiendas.application.usecase.EliminarFundacionUseCaseImpl(
                 repositoryPort, almacenamientoBlobPort, eventPublisher, adminValidator);
     }
+
+    @Bean
+    public edu.dosw.styleradar.tiendas.domain.port.in.ConsultarFundacionInternaUseCase consultarFundacionInternaUseCase(
+            FundacionRepositoryPort repositoryPort, RegistrarFundacionUseCase registrarFundacionUseCase) {
+        return new edu.dosw.styleradar.tiendas.application.usecase.ConsultarFundacionInternaUseCaseImpl(
+                repositoryPort, registrarFundacionUseCase);
+    }
 }

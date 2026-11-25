@@ -177,6 +177,14 @@ jobs:
             elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='AZURE_STORAGE_CONNECTION_STRING'].name" -o tsv)" ]; then
               echo "::warning::Falta AZURE_STORAGE_CONNECTION_STRING. Configure el secreto AZURE_STORAGE_CONNECTION_STRING_QA; las subidas responderán 503."
             fi
+            # Credencial Basic de ms-segunda-vida-donaciones para /api/v1/internal/**; sin ella esas rutas responden 503.
+            INTERNAL_PASS="${{ secrets.DONACIONES_INTERNAL_PASSWORD_QA }}"
+            if [ -n "$INTERNAL_PASS" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings DONACIONES_INTERNAL_USERNAME=ms-donaciones DONACIONES_INTERNAL_PASSWORD="$INTERNAL_PASS"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='DONACIONES_INTERNAL_PASSWORD'].name" -o tsv)" ]; then
+              echo "::warning::Falta DONACIONES_INTERNAL_PASSWORD. Configure el secreto DONACIONES_INTERNAL_PASSWORD_QA; /api/v1/internal/** responderá 503."
+            fi
             JWT_SECRET="${{ secrets.JWT_QA || secrets.JWT_SECRET_BASE64_QA || secrets.JWT_SECRET_QA }}"
             if [ -n "$JWT_SECRET" ]; then
               az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \

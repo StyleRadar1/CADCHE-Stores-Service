@@ -20,6 +20,8 @@ public interface SpringDataFundacionRepository extends JpaRepository<FundacionEn
 
     boolean existsByRepresentanteId(Long representanteId);
 
+    java.util.Optional<FundacionEntity> findFirstByRepresentanteIdOrderByIdAsc(Long representanteId);
+
     boolean existsByRepresentanteIdAndIdNot(Long representanteId, Long id);
 
     Optional<FundacionEntity> findByNombreIgnoreCase(String nombre);
