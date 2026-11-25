@@ -135,9 +135,9 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en la suite de pruebas del microservicio (`./mvnw -B clean verify` y SpotBugs) y en los pipelines `ci.yml` (cada PR), `ci-qa.yml` y `ci-prod.yml`:
 
 1. **Métricas Verificadas de la Suite de Pruebas y Calidad**:
-   - **Total de pruebas ejecutadas**: `534 pruebas` con Docker (`0` fallos, `0` errores, `0` ignoradas); 439 en GitHub Actions, donde no hay Docker para Testcontainers.
+   - **Total de pruebas ejecutadas**: `545 pruebas` con Docker (`0` fallos, `0` errores, `0` ignoradas); 449 en GitHub Actions, donde no hay Docker para Testcontainers.
    - **Cobertura de instrucciones (JaCoCo)**: `96.0%` (umbral bloqueante `>= 85%` en `pom.xml`).
-   - **Cobertura de líneas y ramas (JaCoCo)**: `96.7%` y `84.7%` (umbrales bloqueantes `>= 85%` y `>= 80%`).
+   - **Cobertura de líneas y ramas (JaCoCo)**: `96.8%` y `84.8%` (umbrales bloqueantes `>= 85%` y `>= 80%`).
    - **Análisis estático SpotBugs**: `0 bugs` / `0 errores` (`spotbugs:check`).
 
 2. **Matriz de Pruebas Automatizadas por Categoría OWASP Top 10:2025**:
