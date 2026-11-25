@@ -5,16 +5,19 @@
 ## 8. PRUEBAS Y COBERTURA (≥ 85%)
 
 ```bash
-mvn -B clean verify
-mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.excludeFilterFile=spotbugs-exclude.xml
+./mvnw -B clean verify                                                         # pruebas + JaCoCo (≥ 85 % líneas, ≥ 80 % ramas)
+./mvnw -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.excludeFilterFile=spotbugs-exclude.xml
 ```
 
-| Métrica (`mvn verify`, rama `feature/arreglos`) | Resultado | Umbral |
+| Métrica (`./mvnw verify` con Docker, rama `feature/arreglos`) | Resultado | Umbral (rompe el build) |
 | :--- | :---: | :---: |
-| Pruebas | **408**, 0 fallos | 100 % en verde |
-| Cobertura de instrucciones | **94.5 %** | ≥ 85 % (rompe el build) |
-| Cobertura de ramas | **76.4 %** | — |
+| Pruebas | **493**, 0 fallos | 100 % en verde |
+| Cobertura de líneas (JaCoCo) | **96.3 %** | ≥ 85 % |
+| Cobertura de ramas (JaCoCo) | **81.0 %** | ≥ 80 % |
+| Cobertura de instrucciones (JaCoCo) | **95.5 %** | ≥ 85 % |
 | SpotBugs | 0 hallazgos | 0 |
+
+La regla vive en `pom.xml` (`jacoco-maven-plugin`, objetivo `check` en la fase `verify`) con los mismos umbrales del repo base: 85 % de líneas y 80 % de ramas, más 85 % de instrucciones. Los tres pipelines ejecutan `./mvnw verify`, así que una caída de cobertura detiene el PR o el despliegue.
 
 | Nivel | Qué cubre |
 | :--- | :--- |
@@ -32,7 +35,7 @@ mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.exclud
 
 <div align="center">
   <img src="../evidencias/jacoco-cobertura.png" alt="JaCoCo ms-tiendas" width="90%" />
-  <p><sub><b>Figura 8.1:</b> reporte JaCoCo de `mvn verify` (con Docker): líneas 96.0 %, instrucciones 95.2 %, ramas 78.2 %.</sub></p>
+  <p><sub><b>Figura 8.1:</b> reporte JaCoCo de `./mvnw verify` (con Docker): líneas 96.3 %, ramas 81.0 %, instrucciones 95.5 %.</sub></p>
 </div>
 
 <!-- /evidencias -->

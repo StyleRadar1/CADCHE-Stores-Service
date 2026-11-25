@@ -15,7 +15,7 @@
 | Almacenamiento | Azure Blob Storage SDK (`azure-storage-blob`) | `12.29.1` | Subida real de RUT, fotos y certificados (CADCHE-117); Azurite en `docker` y en `AzureBlobStorageAdapterIntegrationTest`. |
 | Documentación | springdoc-openapi | `2.3.0` | Swagger UI y OpenAPI 3. |
 | Pruebas | JUnit 5, Mockito, Testcontainers | `5.10 / 5.7 / 1.19.8` | Unitarias, WebMvc e integración con **PostgreSQL 16 real**. |
-| Calidad | JaCoCo, SpotBugs, SonarCloud | `0.8.12 / 4.8.6 / –` | Cobertura ≥ 85 % y análisis estático. |
+| Calidad | JaCoCo, SpotBugs, SonarCloud | `0.8.12 / 4.8.6 / –` | Cobertura ≥ 85 % de líneas y ≥ 80 % de ramas, y análisis estático. |
 | Contenedor | Eclipse Temurin JRE Alpine | `21` | Imagen OCI no-root con el JAR validado en CI. |
 
 ### Análisis De Tecnologías Del Servicio (Plantilla Maestra Oficial)

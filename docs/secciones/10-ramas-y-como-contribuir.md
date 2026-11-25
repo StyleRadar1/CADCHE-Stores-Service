@@ -16,7 +16,7 @@ main        <-- Producción (despliega PROD)
 ### Checklist para Pull Requests
 
 - [ ] La rama parte del `develop` más reciente.
-- [ ] `mvn -B clean verify` pasa (pruebas y JaCoCo ≥ 85 %).
+- [ ] `./mvnw -B clean verify` pasa (pruebas y JaCoCo ≥ 85 % de líneas y ≥ 80 % de ramas).
 - [ ] SpotBugs sin hallazgos y Sonar en A.
 - [ ] Las migraciones nuevas son `V<n>__descripcion.sql` y nunca se edita una ya aplicada.
 - [ ] Swagger actualizado si cambió un contrato (y aviso a los equipos que lo consumen).

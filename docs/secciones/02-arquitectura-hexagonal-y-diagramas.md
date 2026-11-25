@@ -47,7 +47,7 @@ flowchart LR
 
 **Justificación del diagrama de capas.** Resume la regla de dependencia de la arquitectura hexagonal: el front y ms-auth (que emite el JWT) llegan por los adaptadores de entrada; PostgreSQL, Azure Blob y RabbitMQ quedan detrás de puertos de salida. Permite verificar de un vistazo que los casos de uso no conocen JPA, el SDK de Azure ni AMQP, y que cambiar un proveedor solo exige otro adaptador.
 
-### 3.1 Diagrama de Clases
+### 2.1 Diagrama de Clases
 
 <div align="center">
   <img src="../uml/DiagramaClases.png" alt="Diagrama de Clases ms-tiendas" width="100%" />
@@ -56,7 +56,7 @@ flowchart LR
 
 **Justificación del diagrama de clases.** Se genera desde el código fuente y muestra los dos agregados del servicio: `Almacen` (con sus fotografías, administradores, umbral y periodo de nueva llegada) y `Fundacion`. Ahí viven las reglas del análisis de requerimientos (máximo 6 fotos y portada, «agotado prevalece», motivo de rechazo de 10 a 1000 caracteres, desactivar y reactivar), además de los validadores de autorización (dueño del almacén, Admin de StyleRadar y dueño del recurso en `/users/{userId}`) y los eventos que se publican.
 
-### 3.2 Diagrama de Base de Datos
+### 2.2 Diagrama de Base de Datos
 
 <div align="center">
   <img src="../uml/DiagramaBaseDatos.png" alt="Modelo de base de datos ms-tiendas" width="100%" />
@@ -74,7 +74,7 @@ flowchart LR
 | `fundaciones` | `id` | `nombre` y `nit` únicos; `activa` para la desactivación lógica. |
 | `fundacion_categorias_aceptadas` | — | FK `fundacion_id` → `fundaciones.id`; `UNIQUE (fundacion_id, categoria)`. |
 
-### 3.3 Diagrama de Componentes Específico
+### 2.3 Diagrama de Componentes Específico
 
 <div align="center">
   <img src="../uml/DiagramaComponentesEspecifico.png" alt="Componentes ms-tiendas" width="100%" />
@@ -83,7 +83,7 @@ flowchart LR
 
 **Justificación del diagrama de componentes específico.** Detalla cada controlador, caso de uso, puerto y adaptador real de ms-tiendas y las interfaces que los unen. Sirve para ubicar dónde se implementa cada historia (SR-RF-59 a SR-RF-74) y para comprobar que cada puerto de salida tiene su adaptador: JPA para los datos, Azure Blob (o memoria en pruebas) para los archivos y RabbitMQ para los eventos.
 
-### 3.4 Diagrama de Componentes General (ecosistema StyleRadar)
+### 2.4 Diagrama de Componentes General (ecosistema StyleRadar)
 
 <div align="center">
   <img src="../uml/DiagramaComponentesGeneral.webp" alt="Diagrama de componentes general de StyleRadar" width="100%" />
@@ -98,7 +98,7 @@ flowchart LR
 * **RabbitMQ:** ms-tiendas publica `foundation.deactivated` y `foundation.reactivated` para que el servicio de donaciones deje de ofrecer la fundación o la vuelva a ofrecer.
 * **ms-auth** no se llama en cada petición: ms-tiendas valida el JWT localmente con el mismo secreto.
 
-### 3.5 Diagrama de Despliegue
+### 2.5 Diagrama de Despliegue
 
 <div align="center">
   <img src="../uml/DiagramaDespliegue.webp" alt="Diagrama de despliegue de StyleRadar" width="100%" />
@@ -116,6 +116,15 @@ flowchart LR
 1. ms-tiendas hoy se despliega en **Azure App Service** (`styleradar-tiendas-qa` y `styleradar-tiendas-prod`), no en Container Apps. El diagrama representa la arquitectura objetivo.
 2. El diagrama de despliegue no muestra **Azure Blob Storage**, que ms-tiendas sí usa (el de componentes general sí lo incluye).
 3. `Donations` y `Virtual Try-on` aparecen con el mismo puerto `8520`; uno de los dos debe cambiar.
+
+### 2.6 Diagrama de Secuencia
+
+Flujo principal de `ms-tiendas`: registro y aprobación de un almacén: subida del RUT a Azure Blob, registro en estado `PENDING`, decisión del admin StyleRadar y evento `store.verification.changed`. Fuente editable en Mermaid: [`DiagramaSecuencia.mmd`](../uml/secuencia/DiagramaSecuencia.mmd).
+
+<div align="center">
+  <img src="../uml/secuencia/DiagramaSecuencia.png" alt="Diagrama de secuencia ms-tiendas" width="90%" />
+  <p><sub><b>Figura 2.6:</b> diagrama de secuencia de `ms-tiendas` con la plantilla StyleRadar (logo, título y colores).</sub></p>
+</div>
 
 ### Estructura de Paquetes en `src/main/java/edu/dosw/styleradar/tiendas/`
 

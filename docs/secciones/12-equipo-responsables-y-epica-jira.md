@@ -22,33 +22,19 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 
 ### Enlaces de Gestión, Repositorios y Evidencias
 
-* **Épica Oficial del Microservicio (Jira):** [https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog](https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog)
+* **Épica Oficial del Microservicio (Jira):** [CADCHE-3](https://mail-team-nyjtgqcj.atlassian.net/browse/CADCHE-3)
 * **Tablero Scrum del Squad CADche (Jira):** [https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog](https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog)
 * **API Swagger en Producción (PROD):** [https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html](https://styleradar-tiendas-prod.azurewebsites.net/swagger-ui/index.html)
 * **API Swagger en Calidad (QA):** [https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html](https://styleradar-tiendas-qa.azurewebsites.net/swagger-ui/index.html)
 * **Video de Respaldo de la Demostración:** [Demostración Funcional en Google Drive](https://drive.google.com/file/d/1W6dklNVi8Bp8LQUx1dkGrkMlly0gRjd7/view?usp=sharing)
 
 
+
+### Evidencia: épica en Jira
+
 <div align="center">
-  <table width="100%" style="margin: 18px 0; border: 2px solid #5600EF; border-radius: 8px; background-color: #FBFBFE;">
-    <tr>
-      <td align="center" style="padding: 22px;">
-        <p>
-          <img src="https://img.shields.io/badge/EVIDENCIA-TABLERO_JIRA-5600EF?style=for-the-badge&logo=jira&logoColor=white" alt="Evidencia Jira" />&nbsp;
-          <img src="https://img.shields.io/badge/ESTADO-100%25_HECHO-16A34A?style=for-the-badge" alt="Estado Hecho" /><br />
-          <strong><font color="#5600EF" size="3">TABLERO SCRUM Y SEGUIMIENTO DE LA ÉPICA EN JIRA</font></strong>
-        </p>
-        <p>
-          <sub>Seguimiento activo en el tablero oficial de Jira: <strong>Épica CADCHE-Stores-Service</strong> con 7 de 7 Historias de Usuario completadas en estado <em>Hecho</em>, con criterios de aceptación verificados, sets de pruebas automatizadas y evidencias adjuntas.</sub>
-        </p>
-        <p>
-          <a href="https://mail-team-nyjtgqcj.atlassian.net/jira/software/projects/CADCHE/boards/75/backlog" target="_blank">
-            <img src="https://img.shields.io/badge/Acceder_al_Tablero_Jira-StyleRadar_CADCHE-0052CC?style=for-the-badge&logo=jira&logoColor=white" alt="Ver Tablero Jira" />
-          </a>
-        </p>
-      </td>
-    </tr>
-  </table>
+  <img src="../evidencias/jira-epica.png" alt="Épica CADCHE-3 en Jira" width="90%" />
+  <p><sub><b>Figura 12.1:</b> épica <code>CADCHE-3</code> en Jira: 7 de 7 historias y 33 de 34 actividades en «Listo»; la única pendiente es la integración del Front (CADCHE-126), a cargo del equipo Front.</sub></p>
 </div>
 
 ### Requerimientos Funcionales Asignados (análisis de requerimientos v6)

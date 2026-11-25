@@ -4,12 +4,14 @@
 
 ## 9. CI/CD CON EL BADGE DEL PIPELINE
 
+[![CI](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci.yml/badge.svg)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci.yml)
 [![CI/CD QA](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml/badge.svg?branch=develop)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-qa.yml)
 [![CD PROD](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-prod.yml/badge.svg?branch=main)](https://github.com/StyleRadar1/CADCHE-Stores-Service/actions/workflows/ci-prod.yml)
 
 | Workflow | Disparador | Etapas | Destino |
 | :--- | :--- | :--- | :--- |
-| [`ci-qa.yml`](../../.github/workflows/ci-qa.yml) | Push a `develop` y `feature/**`; PR a `develop` y `main` | Pruebas + JaCoCo → SpotBugs → Sonar (Quality Gate obligatorio) → imagen `qa-<sha>` → Azure QA → smoke test | `styleradar-tiendas-qa` |
+| [`ci.yml`](../../.github/workflows/ci.yml) | PR a `develop` y `main`; push a `feature/**`, `fix/**`, `docs/**` | `./mvnw verify` (JaCoCo ≥ 85 % líneas / ≥ 80 % ramas) → SpotBugs → Sonar → build de la imagen sin publicar | Solo revisión, no despliega |
+| [`ci-qa.yml`](../../.github/workflows/ci-qa.yml) | Push a `develop` o manual | Pruebas + JaCoCo → SpotBugs → Sonar (Quality Gate obligatorio) → imagen `qa-<sha>` → Azure QA → smoke test | `styleradar-tiendas-qa` |
 | [`ci-prod.yml`](../../.github/workflows/ci-prod.yml) | Push a `main`, tag `vX.Y.Z` o manual | Quality Gate → imagen `prod-<sha>` → aprobación del *environment* `production` → Azure PROD → smoke test | `styleradar-tiendas-prod` |
 
 * Se despliega siempre la imagen inmutable del commit (`qa-<sha>` / `prod-<sha>`).
