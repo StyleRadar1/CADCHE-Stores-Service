@@ -406,28 +406,4 @@ class AlmacenRepositoryAdapterTest {
         assertThat(exAlm2.getValidationErrors()).isEmpty();
         assertThat(exAlm3.getValidationErrors()).containsEntry("userId", "Ya administra");
     }
-
-    @Test
-    @DisplayName("BUG-013: Debe resolver almacén por UUID determinístico generado desde el NIT")
-    void debeResolverAlmacenPorUuidDeterministico() {
-        AlmacenEntity entidad = AlmacenEntity.builder()
-                .nit(NIT)
-                .nombreComercial("Tienda Centro")
-                .umbralUltimasUnidades(5)
-                .diasNuevaLlegada(12)
-                .estadoVerificacion(EstadoVerificacionAlmacen.APPROVED)
-                .build();
-
-        when(almacenRepository.findAll()).thenReturn(List.of(entidad));
-
-        java.util.UUID uuid = AlmacenRepositoryAdapter.uuidDeterministicoParaNit(NIT);
-        Optional<Almacen> encontrado = adapter.findByDeterministicUuid(uuid);
-        Optional<Almacen> noEncontrado = adapter.findByDeterministicUuid(java.util.UUID.randomUUID());
-        Optional<Almacen> nulo = adapter.findByDeterministicUuid(null);
-
-        assertThat(encontrado).isPresent();
-        assertThat(encontrado.get().getNit()).isEqualTo(NIT);
-        assertThat(noEncontrado).isEmpty();
-        assertThat(nulo).isEmpty();
-    }
 }

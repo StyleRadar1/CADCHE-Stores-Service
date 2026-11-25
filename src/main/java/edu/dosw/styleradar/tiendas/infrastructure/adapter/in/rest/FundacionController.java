@@ -146,16 +146,6 @@ public class FundacionController implements FundacionApi {
     }
 
     @Override
-    public ResponseEntity<FundacionResponseDTO> obtenerPorRepresentanteAutenticado(
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
-            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
-        Long resolvedId = AuthRequestContextResolver.resolveUserId(usuarioId);
-        String rol = AuthRequestContextResolver.resolveRole(rolesHeader, roleHeader);
-        return ResponseEntity.ok(registrarFundacionUseCase.obtenerPorRepresentante(resolvedId, rol));
-    }
-
-    @Override
     public ResponseEntity<List<edu.dosw.styleradar.tiendas.application.dto.response.FundacionPublicaResponseDTO>> consultarCercanas(
             @Valid @ModelAttribute ConsultaFundacionesRequestDTO request) {
         return ResponseEntity.ok(registrarFundacionUseCase.consultarCercanas(request).stream()

@@ -2,7 +2,6 @@ package edu.dosw.styleradar.tiendas.domain.port.out;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
@@ -15,10 +14,6 @@ import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 public interface AlmacenRepositoryPort {
 
     Optional<Almacen> findByNit(String nit);
-
-    default Optional<Almacen> findByDeterministicUuid(UUID uuid) {
-        return Optional.empty();
-    }
 
     Optional<Almacen> findByAdministradorUsuarioId(Long usuarioId);
 

@@ -1,9 +1,7 @@
 package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.persistence;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,23 +37,6 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
     @Override
     public Optional<Almacen> findByNit(String nit) {
         return almacenRepository.findByNit(nit).map(mapper::toDomain);
-    }
-
-    @Override
-    public Optional<Almacen> findByDeterministicUuid(UUID uuid) {
-        if (uuid == null) {
-            return Optional.empty();
-        }
-        return almacenRepository.findAll().stream()
-                .filter(entity -> entity.getNit() != null && !entity.getNit().isBlank())
-                .filter(entity -> uuid.equals(uuidDeterministicoParaNit(entity.getNit())))
-                .findFirst()
-                .map(mapper::toDomain);
-    }
-
-    public static UUID uuidDeterministicoParaNit(String nit) {
-        return UUID.nameUUIDFromBytes(
-                ("ms-tiendas:almacen:" + nit.trim()).getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
