@@ -62,6 +62,11 @@ public class FundacionRepositoryAdapter implements FundacionRepositoryPort {
     }
 
     @Override
+    public Optional<Fundacion> findByRepresentanteId(Long representanteId) {
+        return repository.findFirstByRepresentanteIdOrderByIdAsc(representanteId).map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByRepresentanteIdAndIdNot(Long representanteId, Long id) {
         return repository.existsByRepresentanteIdAndIdNot(representanteId, id);
     }

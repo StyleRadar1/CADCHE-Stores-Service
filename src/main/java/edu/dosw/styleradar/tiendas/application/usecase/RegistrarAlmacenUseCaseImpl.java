@@ -16,6 +16,7 @@ import edu.dosw.styleradar.tiendas.application.dto.response.AlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenNoEncontradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.AlmacenYaRegistradoException;
 import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
@@ -28,6 +29,7 @@ import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.PeriodoNuevaLlegada;
 import edu.dosw.styleradar.tiendas.domain.model.UmbralUltimasUnidades;
 import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarAlmacenUseCase;
+import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAlmacenValidator;
@@ -41,6 +43,7 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
     private final AlmacenRepositoryPort repositoryPort;
     private final AlmacenamientoBlobPort almacenamientoBlobPort;
     private final AutorizacionAlmacenValidator autorizacionValidator;
+    private final AlmacenEventPublisherPort eventPublisher;
 
     public RegistrarAlmacenUseCaseImpl(AlmacenRepositoryPort repositoryPort) {
         this(repositoryPort, null, new AutorizacionAlmacenValidator());
@@ -50,6 +53,15 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
             AlmacenRepositoryPort repositoryPort,
             AlmacenamientoBlobPort almacenamientoBlobPort,
             AutorizacionAlmacenValidator autorizacionValidator) {
+        this(repositoryPort, almacenamientoBlobPort, autorizacionValidator, null);
+    }
+
+    public RegistrarAlmacenUseCaseImpl(
+            AlmacenRepositoryPort repositoryPort,
+            AlmacenamientoBlobPort almacenamientoBlobPort,
+            AutorizacionAlmacenValidator autorizacionValidator,
+            AlmacenEventPublisherPort eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.repositoryPort = repositoryPort;
         this.almacenamientoBlobPort = almacenamientoBlobPort;
         this.autorizacionValidator = autorizacionValidator != null ? autorizacionValidator : new AutorizacionAlmacenValidator();
@@ -108,6 +120,11 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
         if (usuarioId != null) {
             repositoryPort.asociarAdministrador(guardado.getNit(), usuarioId);
             log.info("Asociado usuarioId={} como administrador del almacén NIT={}", usuarioId, guardado.getNit());
+        }
+
+        if (eventPublisher != null) {
+            eventPublisher.publicarVerificacionCambiada(VerificacionAlmacenCambiadaEvent.de(
+                    guardado.getNit(), null, guardado.getEstadoVerificacion(), Instant.now()));
         }
 
         String representante = usuarioId != null ? "Usuario #" + usuarioId : resolverRepresentante(guardado.getNit());

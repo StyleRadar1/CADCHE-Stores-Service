@@ -59,6 +59,14 @@ jobs:
       - name: Compilar y ejecutar pruebas completas con JaCoCo
         run: mvn -B clean verify --no-transfer-progress
 
+      - name: Guardar JAR validado para la imagen Docker
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: ms-tiendas-jar
+          path: target/ms-tiendas-*.jar
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
         run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check "-Dspotbugs.excludeFilterFile=spotbugs-exclude.xml"
 
@@ -78,6 +86,12 @@ jobs:
     steps:
       - name: Checkout del codigo fuente
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Descargar JAR validado
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ms-tiendas-jar
+          path: target
 
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
@@ -164,6 +178,14 @@ jobs:
                 --output none --settings AZURE_STORAGE_CONNECTION_STRING="$BLOB_CS"
             elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='AZURE_STORAGE_CONNECTION_STRING'].name" -o tsv)" ]; then
               echo "::warning::Falta AZURE_STORAGE_CONNECTION_STRING. Configure el secreto AZURE_STORAGE_CONNECTION_STRING_PROD; las subidas responderán 503."
+            fi
+            # Credencial Basic de ms-segunda-vida-donaciones para /api/v1/internal/**; sin ella esas rutas responden 503.
+            INTERNAL_PASS="${{ secrets.DONACIONES_INTERNAL_PASSWORD_PROD }}"
+            if [ -n "$INTERNAL_PASS" ]; then
+              az webapp config appsettings set --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" \
+                --output none --settings DONACIONES_INTERNAL_USERNAME=ms-donaciones DONACIONES_INTERNAL_PASSWORD="$INTERNAL_PASS"
+            elif [ -z "$(az webapp config appsettings list --name "${{ env.AZURE_WEBAPP_NAME }}" --resource-group "$RG" --query "[?name=='DONACIONES_INTERNAL_PASSWORD'].name" -o tsv)" ]; then
+              echo "::warning::Falta DONACIONES_INTERNAL_PASSWORD. Configure el secreto DONACIONES_INTERNAL_PASSWORD_PROD; /api/v1/internal/** responderá 503."
             fi
             JWT_SECRET="${{ secrets.JWT_PROD || secrets.JWT_SECRET_BASE64_PROD || secrets.JWT_SECRET_PROD }}"
             if [ -n "$JWT_SECRET" ]; then

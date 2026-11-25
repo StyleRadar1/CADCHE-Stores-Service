@@ -292,7 +292,7 @@ tiendas/
 * Sin token, las cabeceras `X-User-*` solo se aceptan con `TRUST_GATEWAY_HEADERS=true`. Use esa opción en local o cuando el servicio esté restringido a la red del Gateway; en QA y PROD el valor por defecto es `false`.
 * Las funciones restringidas sin identidad responden `401`; sin el rol o sin ser dueño del almacén responden `403`.
 
-### Endpoints Expuestos (34 rutas)
+### Endpoints Expuestos (35 rutas)
 
 | Método | Ruta | Historia | Acceso |
 | :---: | :--- | :--- | :--- |
@@ -301,12 +301,12 @@ tiendas/
 | `GET` | `/api/v1/users/{userId}/store` | SR-RF-62-A · Almacén que administra el usuario | El mismo usuario o Admin |
 | `POST` | `/api/v1/stores/documents/rut` | SR-RF-62-A · Subir RUT (PDF) | Tienda |
 | `GET` | `/api/v1/stores/{nit}` | SR-RF-116 · Detalle de un almacén | Público |
-| `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Dueño |
-| `GET` · `PUT` | `/api/v1/stores/{nit}/low-stock-threshold` | SR-RF-59 | Dueño |
-| `GET` · `PUT` | `/api/v1/stores/{nit}/new-arrival-days` | SR-RF-60 | Dueño |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Público (GET) · Dueño (PUT) |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/low-stock-threshold` | SR-RF-59 | Público (GET) · Dueño (PUT) |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/new-arrival-days` | SR-RF-60 | Público (GET) · Dueño (PUT) |
 | `PATCH` | `/api/v1/stores/{nit}/items/{itemId}/low-stock` | SR-RF-59 · Distintivo | Dueño |
 | `PATCH` | `/api/v1/stores/{nit}/items/{itemId}/new-arrival` | SR-RF-60 · Distintivo | Dueño |
-| `GET` · `POST` | `/api/v1/stores/{nit}/photos` | SR-RF-74 · Listar / subir foto | Dueño (subir) |
+| `GET` · `POST` | `/api/v1/stores/{nit}/photos` | SR-RF-74 · Listar / subir foto | Público (GET) · Dueño (POST) |
 | `PUT` | `/api/v1/stores/{nit}/photos/order` | SR-RF-74 · Reordenar | Dueño |
 | `DELETE` | `/api/v1/stores/{nit}/photos/{photoId}` | SR-RF-74 · Eliminar | Dueño |
 | `GET` | `/api/v1/admin/stores/verifications` | SR-RF-62 · Bandeja paginada por estado | Admin |
@@ -322,6 +322,8 @@ tiendas/
 | `PATCH` | `/api/v1/admin/foundations/{id}/activate` | SR-RF-65 · Reactivar (publica evento) | Admin |
 | `DELETE` | `/api/v1/admin/foundations/{id}` | SR-RF-120 · Eliminar fundación (publica `foundation.deleted`) | Admin |
 | `GET` | `/api/v1/foundations` | SR-RF-117 · Fundaciones activas por cercanía o nombre, sin representante ni certificado | Público |
+| `GET` | `/api/v1/internal/foundations/{id}` | Fundación completa (con `representativeId` y `active`) para ms-segunda-vida-donaciones | Servicio (Basic `ms-donaciones`) |
+| `GET` | `/api/v1/internal/foundations?representativeId={userId}` | Fundación del representante autenticado en ms-segunda-vida-donaciones | Servicio (Basic `ms-donaciones`) |
 
 Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `code` y `errors` (claves en inglés, mensajes en español); `timestamp`, `error`, `message` y `path` quedan como alias de compatibilidad. `type` es `https://api.styleradar.com/errors/{code en minúsculas con guiones}`. Catálogo de `code`: `INVALID_DATA`, `BUSINESS_RULE_VIOLATION` (400), `UNAUTHENTICATED` (401), `ACCESS_DENIED` (403), `RESOURCE_NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `FILE_TOO_LARGE` (413), `UNPROCESSABLE_OPERATION` (422), `INTERNAL_ERROR` (500) y `SERVICE_UNAVAILABLE` (503).
 
@@ -345,6 +347,8 @@ Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** 
 | **PUBLICA** | `styleradar.exchange` / `foundation.reactivated` | `FundacionReactivadaEvent` | `ms-segunda-vida-donaciones` (:8520) | Al reactivarla. |
 | **PUBLICA** | `styleradar.exchange` / `foundation.deleted` | `FundacionEliminadaEvent` | Donaciones y notificaciones | Al eliminar una fundación (SR-RF-120). |
 | **PUBLICA** | `styleradar.exchange` / `store.deleted` | `AlmacenEliminadoEvent` | Catálogo, inventario, geolocalización y pagos | Al eliminar un almacén (SR-RF-119). |
+| **PUBLICA** | `styleradar.exchange` / `foundation.status.changed` | `FundacionEstadoCambiadoEvent` | `ms-estadisticas` | +1 al registrar o reactivar una fundación; -1 al desactivarla o al eliminar una que estaba activa. |
+| **PUBLICA** | `styleradar.exchange` / `store.verification.changed` | `VerificacionAlmacenCambiadaEvent` | `ms-estadisticas` | Al registrar un almacén (queda `PENDING`), al aprobarlo o rechazarlo (SR-RF-62) y al reabrir su revisión. |
 | **CONSUME** | — | — | — | ms-tiendas no consume eventos. |
 
 Cada evento lleva un `eventId` para que los consumidores sean idempotentes. Campos (análisis v2): `eventId`, `foundationId`, `foundationName`, `representativeId`, `deactivatedAt`/`reactivatedAt` y `reason`.
@@ -359,6 +363,20 @@ Eventos de eliminación (análisis v6), con fechas ISO-8601 en UTC:
 ```json
 { "eventId": "9c2e...", "foundationId": 7, "deletedAt": "2026-11-24T15:04:05Z" }
 { "eventId": "a71d...", "storeNit": "900123456-1", "deletedAt": "2026-11-24T15:04:05Z" }
+```
+
+Cambio en el conteo de fundaciones activas. `action` toma `REGISTERED`, `DEACTIVATED`, `REACTIVATED` o `DELETED`; eliminar una fundación ya inactiva no publica este evento:
+
+```json
+{ "eventId": "1e9a...", "eventType": "FOUNDATION_STATUS_CHANGED", "foundationId": 7,
+  "action": "DEACTIVATED", "active": false, "delta": -1, "occurredAt": "2026-11-25T15:04:05Z" }
+```
+
+Cambio de verificación de un almacén. `status` y `previousStatus` toman `PENDING`, `APPROVED` o `REJECTED`; `previousStatus` es `null` cuando el almacén se acaba de registrar:
+
+```json
+{ "eventId": "5d0b...", "eventType": "STORE_VERIFICATION_CHANGED", "storeNit": "900123456-1",
+  "status": "APPROVED", "previousStatus": "PENDING", "changedAt": "2026-11-24T15:04:05Z" }
 ```
 
 ---
@@ -379,7 +397,7 @@ Eventos de eliminación (análisis v6), con fechas ISO-8601 en UTC:
 | Documentación | springdoc-openapi | `2.3.0` | Swagger UI y OpenAPI 3. |
 | Pruebas | JUnit 5, Mockito, Testcontainers | `5.10 / 5.7 / 1.19.8` | Unitarias, WebMvc e integración con **PostgreSQL 16 real**. |
 | Calidad | JaCoCo, SpotBugs, SonarCloud | `0.8.12 / 4.8.6 / –` | Cobertura ≥ 85 % y análisis estático. |
-| Contenedor | Eclipse Temurin (multi-stage) | `21` | Imagen OCI no-root. |
+| Contenedor | Eclipse Temurin JRE Alpine | `21` | Imagen OCI no-root con el JAR validado en CI. |
 
 ---
 
@@ -420,6 +438,7 @@ Plantilla en [`.env.example`](.env.example). En Azure, los pipelines configuran 
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | PostgreSQL 16 (TLS `sslmode=require` en Azure) | `jdbc:postgresql://localhost:5432/styleradar_tiendas` |
 | `JWT_SECRET_BASE64` | **Mismo secreto Base64 de ms-auth** (≥ 256 bits). Obligatorio en QA y PROD; sin él, o con un secreto de ejemplo, el servicio no arranca. | Solo dev/docker tienen un valor de ejemplo |
 | `TRUST_GATEWAY_HEADERS` | Acepta `X-User-*` sin token. Solo `true` en local o con red restringida al Gateway | `false` (`true` en dev/docker) |
+| `DONACIONES_INTERNAL_USERNAME` / `DONACIONES_INTERNAL_PASSWORD` | Credencial Basic de ms-segunda-vida-donaciones para `/api/v1/internal/**`. Sin contraseña esas rutas responden `503` y nunca quedan abiertas | `ms-donaciones` / — |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USER` / `RABBITMQ_PASSWORD` / `RABBITMQ_SSL_ENABLED` | Broker | `localhost` / `5672` |
 | `AZURE_STORAGE_CONNECTION_STRING` | Cadena de conexión de Azure Blob Storage (secreto `AZURE_STORAGE_CONNECTION_STRING_QA/PROD`). Sin ella, en QA/PROD las subidas responden `503` | Azurite en `docker`; memoria en `dev`/`test` |
 | `AZURE_STORAGE_CONTENEDORES_PUBLICOS` | Contenedores con lectura anónima por blob (la URL devuelta abre; no se pueden listar) | `tiendas,documentos-almacenes,documentos-fundaciones` |
@@ -471,6 +490,7 @@ mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check -Dspotbugs.exclud
 | [`ci-prod.yml`](.github/workflows/ci-prod.yml) | Push a `main`, tag `vX.Y.Z` o manual | Quality Gate → imagen `prod-<sha>` → aprobación del *environment* `production` → Azure PROD → smoke test | `styleradar-tiendas-prod` |
 
 * Se despliega siempre la imagen inmutable del commit (`qa-<sha>` / `prod-<sha>`).
+* El pipeline configura en Azure `DONACIONES_INTERNAL_PASSWORD` desde los secretos `DONACIONES_INTERNAL_PASSWORD_QA` / `_PROD`; si no existen deja un aviso y las rutas internas responden `503`.
 * El pipeline configura en Azure `JWT_SECRET_BASE64` (secretos `JWT_QA` / `JWT_PROD`) y `TRUST_GATEWAY_HEADERS` (variables `TRUST_GATEWAY_HEADERS_QA` / `_PROD`, `false` si no existen). Si el secreto no está ni en GitHub ni en Azure, falla con un error claro.
 * `az webapp start` asegura que el App Service esté encendido antes de desplegar.
 
@@ -950,7 +970,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 | :---: | :--- | :---: | :---: | :---: | :--- |
 | **A01:2025** | **Broken Access Control** *(inc. BOLA / IDOR / SSRF)* | Crítica | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Validación de propiedad BOLA (`SR-RNF-01`) mediante `AutorizacionAlmacenValidator` contrastando claim `userId` de JWT vs NIT. RBAC con roles `STYLERADAR_ADMIN` y `STORE_ADMIN`. URLs de Blob fijas sin SSRF. |
 | **A02:2025** | **Security Misconfiguration** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Configuración CORS en `CorsConfig`, cabeceras defensivas (`HSTS`, `CSP`, `X-Frame-Options`, `X-Content-Type-Options`) inyectadas en `SecurityHeadersFilter`, y Actuator limitado en `application.yml` (`health`, `info`, `metrics`). |
-| **A03:2025** | **Software Supply Chain Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Análisis estático continuo en pipeline GitHub Actions (`ci-qa.yml`) con **SpotBugs (0 bugs)** y calidad en SonarQube Cloud. Imagen Docker multi-stage mínima `eclipse-temurin:21-jre-alpine` ejecutando como usuario no-root (`appuser`). |
+| **A03:2025** | **Software Supply Chain Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Análisis estático continuo en pipeline GitHub Actions (`ci-qa.yml`) con **SpotBugs (0 bugs)** y calidad en SonarQube Cloud. Imagen Docker mínima `eclipse-temurin:21-jre-alpine` que copia el JAR ya validado en CI (sin Maven dentro del build) y ejecuta como usuario no-root (`appuser`). |
 | **A04:2025** | **Cryptographic Failures** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Cifrado obligatorio en tránsito mediante TLS 1.3/HTTPS, PostgreSQL en Azure con `sslmode=require`, tokens JWT firmados con HMAC-SHA256 (clave de 256 bits en variable de entorno) y cifrado en reposo AES-256 en Azure Blob Storage. |
 | **A05:2025** | **Injection** *(SQLi, Command, Express.)* | Crítica | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Persistencia 100% parametrizada con Spring Data JPA y `PreparedStatement` (cero SQL concatenado). Validación sintáctica Bean Validation (`@Pattern`, `@DecimalMin`, `@NotBlank`) en DTOs. Cero ejecución de comandos de SO. |
 | **A06:2025** | **Insecure Design** | Alta | **SÍ** | <span style="color:#16A34A;font-weight:700">PASS (Mitigado)</span> | Límites de cuotas en dominio: máx. 6 fotos por vitrina (`Almacen.MAXIMO_FOTOGRAFIAS = 6`), límites multipart (`6 MB` por archivo / `7 MB` por petición), validación MIME (`MIMES_IMAGEN_PERMITIDOS`) e invariantes que exigen RUT PDF para aprobación y motivo para rechazo. |
@@ -1071,7 +1091,7 @@ El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en
 | :---: | :--- | :--- | :---: |
 | **A01:2025** | **Broken Access Control** | • `OwaspTop10SecurityTest.test_A01_BrokenAccessControl_BOLA_Mitigated`<br>• `OwaspTop10SecurityTest.test_A01_BrokenAccessControl_RBAC_Enforced`<br>• `AutorizacionAlmacenValidatorTest`<br>• `AutorizacionAdminStyleRadarValidatorTest` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
 | **A02:2025** | **Security Misconfiguration** | • `OwaspTop10SecurityTest.test_A02_SecurityMisconfiguration_HeadersEnforced`<br>• `OwaspTop10SecurityTest.test_A02_SecurityMisconfiguration_CorsConfigRestricted`<br>• `SecurityHeadersFilterTest` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
-| **A03:2025** | **Software Supply Chain Failures** | • `OwaspTop10SecurityTest.test_A03_SoftwareSupplyChain_DockerfileNonRoot`<br>• Inspección de multi-stage build Java 21 Alpine JRE y usuario `appuser` en `Dockerfile` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
+| **A03:2025** | **Software Supply Chain Failures** | • `OwaspTop10SecurityTest.test_A03_SoftwareSupplyChain_DockerfileNonRoot`<br>• Inspección del `Dockerfile`: JRE Java 21 Alpine, copia del JAR validado en CI, sin Maven y usuario `appuser` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
 | **A04:2025** | **Cryptographic Failures** | • `OwaspTop10SecurityTest.test_A04_CryptographicFailures_JwtKeyEntropyEnforced`<br>• `OwaspTop10SecurityTest.test_A04_CryptographicFailures_SslRequiredInProdProfile`<br>• `JwtSecurityValidatorTest` (clave mínima 32 bytes / 256 bits) | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
 | **A05:2025** | **Injection** | • `OwaspTop10SecurityTest.test_A05_Injection_SqlInjectionPreventedByNitPattern`<br>• `OwaspTop10SecurityTest.test_A05_Injection_CoordinateRangeValidation`<br>• Parametrización JPA en `AlmacenRepositoryAdapterTest` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |
 | **A06:2025** | **Insecure Design** | • `OwaspTop10SecurityTest.test_A06_InsecureDesign_PhotoQuotaLimit` (Máx. 6 vitrina)<br>• `OwaspTop10SecurityTest.test_A06_InsecureDesign_RutMandatoryForApproval`<br>• `OwaspTop10SecurityTest.test_A06_InsecureDesign_RejectionRequiresMotive`<br>• `AlmacenTest` y `VerificacionAlmacenDominioTest` | <span style="color:#16A34A;font-weight:700">PASS (100%)</span> |

@@ -105,4 +105,29 @@ public class RabbitMQFundacionEventPublisherAdapter implements FundacionEventPub
         m.put("deletedAt", fechaUtc(evento.getFechaEliminacion()));
         return m;
     }
+
+    @Override
+    public void publicarEstadoCambiado(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent evento) {
+        try {
+            rabbitTemplate.convertAndSend(exchangeName, RabbitMQConfig.DEFAULT_ROUTING_KEY_FUNDACION_ESTADO, cuerpo(evento));
+            log.info("Evento foundation.status.changed publicado para la fundación {}: {} (delta {})",
+                    evento.getFundacionId(), evento.getAccion(), evento.getDelta());
+        } catch (AmqpException ex) {
+            log.warn("No fue posible entregar foundation.status.changed a RabbitMQ (broker no disponible): {}. "
+                    + "El estado de la fundación ya quedó guardado en base de datos.", ex.getMessage());
+        }
+    }
+
+    /** Payload of foundation.status.changed: delta +1 when a foundation becomes active, -1 when it stops being active. */
+    static java.util.Map<String, Object> cuerpo(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent evento) {
+        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("eventId", evento.getEventoId());
+        m.put("eventType", "FOUNDATION_STATUS_CHANGED");
+        m.put("foundationId", evento.getFundacionId());
+        m.put("action", evento.getAccion() != null ? evento.getAccion().name() : null);
+        m.put("active", evento.isActiva());
+        m.put("delta", evento.getDelta());
+        m.put("occurredAt", fechaUtc(evento.getFecha()));
+        return m;
+    }
 }

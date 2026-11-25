@@ -23,6 +23,8 @@ public interface FundacionRepositoryPort {
 
     boolean existsByRepresentanteId(Long representanteId);
 
+    Optional<Fundacion> findByRepresentanteId(Long representanteId);
+
     boolean existsByRepresentanteIdAndIdNot(Long representanteId, Long id);
 
     List<Fundacion> findAll();
