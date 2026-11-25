@@ -2,6 +2,7 @@ package edu.dosw.styleradar.tiendas.domain.port.out;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 import edu.dosw.styleradar.tiendas.domain.model.AdministradorAlmacen;
@@ -14,6 +15,10 @@ import edu.dosw.styleradar.tiendas.domain.model.SolicitudPagina;
 public interface AlmacenRepositoryPort {
 
     Optional<Almacen> findByNit(String nit);
+
+    default Optional<Almacen> findByDeterministicUuid(UUID uuid) {
+        return Optional.empty();
+    }
 
     Optional<Almacen> findByAdministradorUsuarioId(Long usuarioId);
 
@@ -45,4 +50,7 @@ public interface AlmacenRepositoryPort {
 
     /** SR-RF-119: borra el almacén; la base de datos elimina en cascada fotos, categorías y administradores. */
     void eliminarPorNit(String nit);
+
+    /** Borra todos los vínculos de administrador de almacén del usuario y devuelve cuántos había. */
+    long eliminarAsociacionesDeUsuario(Long usuarioId);
 }

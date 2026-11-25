@@ -175,9 +175,21 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
     @Transactional(readOnly = true)
     public AlmacenResponseDTO obtenerPorNit(String nit) {
         Almacen almacen = repositoryPort.findByNit(nit)
+                .or(() -> parsearUuid(nit).flatMap(repositoryPort::findByDeterministicUuid))
                 .orElseThrow(() -> new AlmacenNoEncontradoException(
                         "No se encontró ningún almacén registrado con el NIT: " + nit));
         return toAlmacenResponseDTO(almacen);
+    }
+
+    private static java.util.Optional<UUID> parsearUuid(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return java.util.Optional.of(UUID.fromString(valor.trim()));
+        } catch (IllegalArgumentException ex) {
+            return java.util.Optional.empty();
+        }
     }
 
     @Override

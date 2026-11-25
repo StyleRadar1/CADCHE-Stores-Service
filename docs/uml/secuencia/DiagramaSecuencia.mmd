@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor T as Admin almacén<br/>STORE_ADMIN
+    actor S as Admin StyleRadar<br/>STYLERADAR_ADMIN
+    participant GW as API Gateway :8080
+    participant C as ms-tiendas :8140<br/>JwtAuthFilter · Controller
+    participant UC as RegistrarAlmacen /<br/>VerificarAlmacen
+    participant B as Azure Blob Storage
+    participant DB as PostgreSQL 16
+    participant MQ as RabbitMQ<br/>styleradar.exchange
+
+    T->>GW: POST /api/v1/stores/documents/rut (multipart, PDF ≤ 5 MB)
+    GW->>C: Bearer JWT de ms-auth (HS256 validado en el servicio)
+    C->>UC: subirDocumentoRut(...)
+    UC->>B: sube el PDF del RUT
+    UC-->>T: 201 {url}
+    T->>GW: POST /api/v1/stores {nit, tradeName, ..., rutPdfUrl}
+    GW->>C: Bearer JWT
+    C->>UC: registrarAlmacen(request, userId, rol)
+    UC->>UC: Almacen.validarDatosObligatoriosRegistro()
+    UC->>DB: existsByNit(nit)
+    alt NIT ya registrado
+        UC-->>T: 409 CONFLICT (errors.nit)
+    else NIT nuevo
+        UC->>DB: INSERT almacenes (PENDING) + administradores_almacenes
+        UC-)MQ: store.verification.changed (PENDING)
+        UC-->>T: 201 {verificationStatus: PENDING}
+    end
+    S->>GW: PATCH /api/v1/admin/stores/{nit}/verification {decision, reason}
+    GW->>C: Bearer JWT (rol STYLERADAR_ADMIN)
+    C->>UC: decidir(nit, decisión, adminId, rol)
+    UC->>DB: findByNit → decidirVerificacion → UPDATE
+    UC-)MQ: store.verification.changed (APPROVED · REJECTED, previousStatus)
+    UC-->>S: 200 {verificationStatus}
+    Note over C,DB: Solo los almacenes APPROVED aparecen en GET /api/v1/stores (público)

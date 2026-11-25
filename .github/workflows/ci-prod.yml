@@ -57,7 +57,9 @@ jobs:
             ${{ runner.os }}-m2-
 
       - name: Compilar y ejecutar pruebas completas con JaCoCo
-        run: mvn -B clean verify --no-transfer-progress
+        run: |
+          chmod +x mvnw
+          ./mvnw -B clean verify --no-transfer-progress
 
       - name: Guardar JAR validado para la imagen Docker
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
@@ -68,13 +70,13 @@ jobs:
           retention-days: 1
 
       - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
-        run: mvn -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check "-Dspotbugs.excludeFilterFile=spotbugs-exclude.xml"
+        run: ./mvnw -B com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check "-Dspotbugs.excludeFilterFile=spotbugs-exclude.xml"
 
       - name: Analisis estatico SonarQube Cloud (Quality Gate A)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service -Dsonar.qualitygate.wait=true
+        run: ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service -Dsonar.qualitygate.wait=true
 
   build-prod:
     name: 2. Build y Push Imagen OCI Produccion

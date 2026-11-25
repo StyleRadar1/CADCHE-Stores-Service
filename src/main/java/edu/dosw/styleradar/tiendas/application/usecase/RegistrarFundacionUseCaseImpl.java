@@ -15,6 +15,8 @@ import edu.dosw.styleradar.tiendas.application.dto.request.ConsultaFundacionesRe
 import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
+import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
@@ -24,6 +26,7 @@ import edu.dosw.styleradar.tiendas.domain.port.in.RegistrarFundacionUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.out.AlmacenamientoBlobPort;
 import edu.dosw.styleradar.tiendas.domain.port.out.FundacionRepositoryPort;
 import edu.dosw.styleradar.tiendas.domain.validator.AutorizacionAdminStyleRadarValidator;
+import edu.dosw.styleradar.tiendas.domain.validator.RolesUsuario;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -142,6 +145,25 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
         }
         Fundacion fundacion = repositoryPort.findById(id)
                 .orElseThrow(() -> new FundacionNoEncontradaException("No existe una fundación aliada con ID: " + id));
+        return toResponseDTO(fundacion);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FundacionResponseDTO obtenerPorRepresentante(Long representanteId, String rol) {
+        if (representanteId == null || rol == null || rol.isBlank()) {
+            throw new FalloAutenticacionException(AutorizacionAdminStyleRadarValidator.MENSAJE_SIN_IDENTIDAD);
+        }
+        if (!RolesUsuario.contieneAlguno(rol,
+                "FOUNDATION_REPRESENTATIVE", "ROLE_FOUNDATION_REPRESENTATIVE",
+                AutorizacionAdminStyleRadarValidator.ROL_ADMIN_CORTO,
+                AutorizacionAdminStyleRadarValidator.ROL_ADMIN_STYLERADAR)) {
+            throw new AccesoDenegadoAlmacenException(
+                    "Se requiere el rol FOUNDATION_REPRESENTATIVE o STYLERADAR_ADMIN para consultar su fundación");
+        }
+        Fundacion fundacion = repositoryPort.findByRepresentanteId(representanteId)
+                .orElseThrow(() -> new FundacionNoEncontradaException(
+                        "No existe una fundación aliada para el representante con ID: " + representanteId));
         return toResponseDTO(fundacion);
     }
 

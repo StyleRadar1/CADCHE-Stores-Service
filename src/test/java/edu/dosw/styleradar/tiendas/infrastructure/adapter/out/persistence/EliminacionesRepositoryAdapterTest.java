@@ -31,6 +31,16 @@ class EliminacionesRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("Cuenta eliminada: borra todos los vínculos de administrador del usuario y devuelve cuántos había")
+    void eliminarAsociacionesDeUsuario() {
+        SpringDataAdministradorAlmacenRepository administradores = mock(SpringDataAdministradorAlmacenRepository.class);
+        org.mockito.Mockito.when(administradores.deleteByUsuarioId(42L)).thenReturn(3L);
+        AlmacenRepositoryAdapter adapter = new AlmacenRepositoryAdapter(mock(SpringDataAlmacenRepository.class),
+                administradores, mock(SpringDataFotografiaTiendaRepository.class), mock(AlmacenPersistenceMapper.class));
+        org.assertj.core.api.Assertions.assertThat(adapter.eliminarAsociacionesDeUsuario(42L)).isEqualTo(3L);
+    }
+
+    @Test
     @DisplayName("SR-RF-120: borra la fundación por id y confirma de inmediato")
     void eliminarFundacion() {
         SpringDataFundacionRepository fundaciones = mock(SpringDataFundacionRepository.class);

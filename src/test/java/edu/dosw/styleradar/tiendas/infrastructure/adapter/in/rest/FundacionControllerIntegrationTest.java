@@ -525,4 +525,23 @@ class FundacionControllerIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
     }
+
+    @Test
+    @DisplayName("BUG-003: GET /api/v1/foundations/representative retorna la fundación del representante autenticado")
+    void debeRetornarFundacionDelRepresentanteAutenticado() throws Exception {
+        FundacionResponseDTO dto = FundacionResponseDTO.builder()
+                .id(7L)
+                .nombre("Fundación Abrigo")
+                .representanteId(24L)
+                .activa(true)
+                .build();
+        when(useCase.obtenerPorRepresentante(24L, "ROLE_FOUNDATION_REPRESENTATIVE")).thenReturn(dto);
+
+        mockMvc.perform(get("/api/v1/foundations/representative")
+                        .header("X-User-Id", "24")
+                        .header("X-User-Roles", "ROLE_FOUNDATION_REPRESENTATIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(7))
+                .andExpect(jsonPath("$.name").value("Fundación Abrigo"));
+    }
 }

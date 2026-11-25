@@ -237,4 +237,24 @@ class RegistrarAlmacenUseCaseTest {
         assertThatThrownBy(() -> useCase.consultarAlmacenes(reqInvalido))
                 .isInstanceOf(ReglaDeNegocioException.class);
     }
+
+    @Test
+    @DisplayName("BUG-013: Debe resolver almacén por UUID determinístico cuando findByNit no lo encuentra")
+    void debeObtenerPorUuidDeterministico() {
+        java.util.UUID uuid = java.util.UUID.nameUUIDFromBytes(
+                ("ms-tiendas:almacen:" + NIT).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Almacen almacen = Almacen.builder()
+                .nit(NIT)
+                .nombreComercial("Atelier Urbano")
+                .reputacion(4.8)
+                .categorias(Set.of(CategoriaAlmacen.CASUAL))
+                .build();
+
+        when(repositoryPort.findByNit(uuid.toString())).thenReturn(Optional.empty());
+        when(repositoryPort.findByDeterministicUuid(uuid)).thenReturn(Optional.of(almacen));
+
+        AlmacenResponseDTO dto = useCase.obtenerPorNit(uuid.toString());
+        assertThat(dto.nit()).isEqualTo(NIT);
+        assertThat(dto.nombreComercial()).isEqualTo("Atelier Urbano");
+    }
 }

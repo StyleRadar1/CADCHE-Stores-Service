@@ -103,6 +103,8 @@ class TrazabilidadRequerimientosTiendasTest {
     private ObjectMapper objectMapper;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private edu.dosw.styleradar.tiendas.domain.port.in.LimpiarUsuarioEliminadoUseCase limpiarUsuarioEliminado;
     @MockBean
     private FundacionEventPublisherPort eventos;
     @MockBean
@@ -1593,6 +1595,31 @@ class TrazabilidadRequerimientosTiendasTest {
             problema(json(HttpMethod.DELETE, ruta, comprador, null), 403, "ACCESS_DENIED", PARA_OPERACION);
             problema(json(HttpMethod.DELETE, "/api/v1/admin/foundations/999999", admin, null), 404, "RESOURCE_NOT_FOUND",
                     "No existe una fundación aliada con ID: 999999");
+        }
+
+        // ---- Cuenta eliminada en ms-usuarios
+
+        @Test
+        @DisplayName("Cuenta eliminada: se borran sus vínculos de administrador y se desactiva la fundación que representaba")
+        void cuentaEliminada() throws Exception {
+            registrarAlmacen();
+            String base = "/api/v1/admin/stores/" + NIT + "/administrators";
+            json(HttpMethod.PUT, base + "/55", admin, null).andExpect(status().isOk());
+            long id = registrarFundacion("Fundación Representante", "900111444-5", 20);
+
+            var r = limpiarUsuarioEliminado.limpiar(20L);
+
+            assertThat(r.asociacionesEliminadas()).isEqualTo(1);
+            assertThat(r.fundacionDesactivadaId()).isEqualTo(id);
+            assertThat(jdbc.queryForList("SELECT usuario_id FROM administradores_almacenes WHERE almacen_nit = ?",
+                    Long.class, NIT)).containsExactly(55L);
+            problema(json(HttpMethod.GET, base, tienda, null), 403, "ACCESS_DENIED", null);
+            json(HttpMethod.GET, "/api/v1/admin/foundations/" + id, admin, null).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false));
+            verify(eventos).publicarFundacionDesactivada(any());
+            reset(eventos);
+            assertThat(limpiarUsuarioEliminado.limpiar(20L).asociacionesEliminadas()).isZero();
+            verify(eventos, never()).publicarFundacionDesactivada(any());
         }
 
         // ---- SR-RF-118 Asociar administrador de almacén

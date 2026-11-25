@@ -1,0 +1,35 @@
+[⬅ Volver al README Principal](../../README.md)
+
+---
+
+## 6. CÓMO EJECUTAR LOCAL Y CON DOCKER
+
+### Local con Maven (perfil `dev`, PostgreSQL 16 en Docker)
+
+```bash
+git clone https://github.com/StyleRadar1/CADCHE-Stores-Service.git
+cd CADCHE-Stores-Service
+docker compose up -d tiendas-db tiendas-blob tiendas-rabbitmq
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+Flyway aplica las migraciones al arrancar. En `dev`, `TRUST_GATEWAY_HEADERS=true` permite probar en Swagger con `X-User-Id` y `X-User-Roles`, o con un token de ms-auth en `dev`, que usa el mismo secreto de ejemplo.
+
+### Stack completo con Docker Compose
+
+```bash
+./mvnw -B -DskipTests package   # la imagen copia el JAR ya validado
+docker compose up -d --build   # ms-tiendas :8140 · PostgreSQL 16 :5432 · Azurite :10000 · RabbitMQ :5672/:15672
+curl http://localhost:8140/actuator/health
+```
+
+### Evidencia: contenedores en ejecución
+
+<div align="center">
+  <img src="../evidencias/docker-compose.png" alt="docker compose ps" width="90%" />
+  <p><sub><b>Figura 6.1:</b> `docker compose ps` con todos los contenedores de `ms-tiendas` en estado *healthy* y `/actuator/health` respondiendo `UP`.</sub></p>
+</div>
+
+---
+
+[⬅ Volver al README Principal](../../README.md)
