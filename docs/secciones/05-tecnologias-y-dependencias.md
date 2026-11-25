@@ -294,7 +294,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 
 ##### 8.1 Resumen de Decisiones y Factores de Éxito
 
-La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 96.8 % de líneas y 84.8 % de ramas sobre 545 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V7` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
+La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 96.8 % de líneas y 84.8 % de ramas sobre 546 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V7` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
 
 ##### 8.2 Roadmap de Evolución Tecnológica
 

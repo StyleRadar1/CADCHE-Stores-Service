@@ -66,6 +66,15 @@ class LimpiarUsuarioEliminadoUseCaseTest {
     }
 
     @Test
+    @DisplayName("Si el repositorio no devuelve la fundación guardada, los eventos usan la fundación ya desactivada")
+    void guardadoSinRespuesta() {
+        when(fundaciones.findByRepresentanteId(42L)).thenReturn(Optional.of(fundacion(true)));
+
+        assertThat(useCase.limpiar(42L)).isEqualTo(new ResultadoLimpiezaUsuario(0, 7L));
+        verify(eventos).publicarFundacionDesactivada(any());
+    }
+
+    @Test
     @DisplayName("Idempotente: si la fundación ya estaba inactiva no la toca ni publica eventos")
     void fundacionYaInactiva() {
         when(fundaciones.findByRepresentanteId(42L)).thenReturn(Optional.of(fundacion(false)));

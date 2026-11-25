@@ -1,6 +1,7 @@
 package edu.dosw.styleradar.tiendas.application.usecase;
 
 import java.time.Instant;
+import java.util.Objects;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +50,8 @@ public class LimpiarUsuarioEliminadoUseCaseImpl implements LimpiarUsuarioElimina
 
     private Long desactivar(Fundacion fundacion) {
         fundacion.desactivar();
-        Fundacion guardada = fundaciones.save(fundacion);
+        // El mapper de persistencia devuelve null si no recibe entidad; se conserva la fundación ya desactivada.
+        Fundacion guardada = Objects.requireNonNullElse(fundaciones.save(fundacion), fundacion);
         Instant ahora = Instant.now();
         eventosFundacion.publicarFundacionDesactivada(FundacionDesactivadaEvent.builder()
                 .fundacionId(guardada.getId())
