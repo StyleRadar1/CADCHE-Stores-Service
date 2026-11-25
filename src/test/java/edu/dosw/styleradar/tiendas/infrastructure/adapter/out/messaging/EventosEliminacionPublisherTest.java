@@ -97,4 +97,31 @@ class EventosEliminacionPublisherTest {
                 .convertAndSend(any(String.class), any(String.class), any(Object.class));
         assertThatCode(() -> adapter.publicarVerificacionCambiada(evento)).doesNotThrowAnyException();
     }
+
+    @Test
+    @DisplayName("foundation.status.changed con eventType, foundationId, action, active, delta y occurredAt en UTC")
+    void fundacionEstadoCambiado() {
+        RabbitTemplate template = mock(RabbitTemplate.class);
+        RabbitMQFundacionEventPublisherAdapter adapter = new RabbitMQFundacionEventPublisherAdapter(template);
+        ReflectionTestUtils.setField(adapter, "exchangeName", RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES);
+        edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent evento =
+                edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.desactivada(7L, fecha);
+
+        adapter.publicarEstadoCambiado(evento);
+
+        verify(template).convertAndSend(eq(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES),
+                eq("foundation.status.changed"), any(Object.class));
+        assertThat(RabbitMQFundacionEventPublisherAdapter.cuerpo(evento))
+                .containsOnlyKeys("eventId", "eventType", "foundationId", "action", "active", "delta", "occurredAt")
+                .containsEntry("eventType", "FOUNDATION_STATUS_CHANGED").containsEntry("foundationId", 7L)
+                .containsEntry("action", "DEACTIVATED").containsEntry("active", false).containsEntry("delta", -1)
+                .containsEntry("occurredAt", "2026-11-24T15:04:05Z");
+        assertThat(RabbitMQFundacionEventPublisherAdapter.cuerpo(
+                edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.registrada(7L, fecha)))
+                .containsEntry("action", "REGISTERED").containsEntry("active", true).containsEntry("delta", 1);
+
+        doThrow(new AmqpConnectException(new RuntimeException("broker caído"))).when(template)
+                .convertAndSend(any(String.class), any(String.class), any(Object.class));
+        assertThatCode(() -> adapter.publicarEstadoCambiado(evento)).doesNotThrowAnyException();
+    }
 }

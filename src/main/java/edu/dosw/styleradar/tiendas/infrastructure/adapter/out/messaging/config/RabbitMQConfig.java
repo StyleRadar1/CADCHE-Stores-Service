@@ -15,6 +15,7 @@ public class RabbitMQConfig {
     public static final String DEFAULT_ROUTING_KEY_REACTIVADA = "foundation.reactivated";
     /** SR-RF-120 (análisis v6). */
     public static final String DEFAULT_ROUTING_KEY_FUNDACION_ELIMINADA = "foundation.deleted";
+    public static final String DEFAULT_ROUTING_KEY_FUNDACION_ESTADO = "foundation.status.changed";
     /** SR-RF-119 (análisis v6). */
     public static final String DEFAULT_ROUTING_KEY_ALMACEN_ELIMINADO = "store.deleted";
     public static final String DEFAULT_ROUTING_KEY_VERIFICACION_ALMACEN = "store.verification.changed";

@@ -154,8 +154,9 @@ public class BeanConfig {
     public RegistrarFundacionUseCase registrarFundacionUseCase(
             FundacionRepositoryPort repositoryPort,
             AutorizacionAdminStyleRadarValidator adminValidator,
-            AlmacenamientoBlobPort almacenamientoBlobPort) {
-        return new RegistrarFundacionUseCaseImpl(repositoryPort, adminValidator, almacenamientoBlobPort);
+            AlmacenamientoBlobPort almacenamientoBlobPort,
+            FundacionEventPublisherPort eventPublisherPort) {
+        return new RegistrarFundacionUseCaseImpl(repositoryPort, adminValidator, almacenamientoBlobPort, eventPublisherPort);
     }
 
     @Bean

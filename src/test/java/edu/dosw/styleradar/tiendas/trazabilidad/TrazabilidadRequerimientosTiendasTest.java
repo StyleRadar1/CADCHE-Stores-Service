@@ -1455,6 +1455,35 @@ class TrazabilidadRequerimientosTiendasTest {
             verify(eventosAlmacen, never()).publicarVerificacionCambiada(org.mockito.ArgumentMatchers.any());
         }
 
+        // ---- Evento foundation.status.changed (integración con ms-estadísticas)
+
+        @Test
+        @DisplayName("foundation.status.changed: registrar +1, desactivar -1, reactivar +1 y eliminar activa -1, en orden")
+        void fundacionEstadoCambiadoPublicaCadaCambio() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", admin, null).andExpect(status().isOk());
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/activate", admin, null).andExpect(status().isOk());
+            json(HttpMethod.DELETE, "/api/v1/admin/foundations/" + id, admin, null).andExpect(status().isNoContent());
+
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.class);
+            verify(eventos, org.mockito.Mockito.times(4)).publicarEstadoCambiado(ev.capture());
+            assertThat(ev.getAllValues()).extracting(e -> e.getAccion() + ":" + e.getDelta())
+                    .containsExactly("REGISTERED:1", "DEACTIVATED:-1", "REACTIVATED:1", "DELETED:-1");
+            assertThat(ev.getAllValues()).extracting(e -> e.getFundacionId()).containsOnly(id);
+            assertThat(ev.getAllValues().stream().mapToInt(e -> e.getDelta()).sum()).isZero();
+        }
+
+        @Test
+        @DisplayName("foundation.status.changed: una desactivación rechazada (403) no publica")
+        void fundacionEstadoCambiadoNoPublicaSiFalla() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            org.mockito.Mockito.clearInvocations(eventos);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", tienda, null)
+                    .andExpect(status().isForbidden());
+            verify(eventos, never()).publicarEstadoCambiado(org.mockito.ArgumentMatchers.any());
+        }
+
         // ---- SR-RF-119 Eliminar almacén aliado
 
         @Test

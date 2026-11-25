@@ -34,6 +34,7 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
     private final FundacionRepositoryPort repositoryPort;
     private final AutorizacionAdminStyleRadarValidator adminValidator;
     private final AlmacenamientoBlobPort almacenamientoBlobPort;
+    private final edu.dosw.styleradar.tiendas.domain.port.out.FundacionEventPublisherPort eventPublisher;
 
     public RegistrarFundacionUseCaseImpl(
             FundacionRepositoryPort repositoryPort,
@@ -45,6 +46,15 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
             FundacionRepositoryPort repositoryPort,
             AutorizacionAdminStyleRadarValidator adminValidator,
             AlmacenamientoBlobPort almacenamientoBlobPort) {
+        this(repositoryPort, adminValidator, almacenamientoBlobPort, null);
+    }
+
+    public RegistrarFundacionUseCaseImpl(
+            FundacionRepositoryPort repositoryPort,
+            AutorizacionAdminStyleRadarValidator adminValidator,
+            AlmacenamientoBlobPort almacenamientoBlobPort,
+            edu.dosw.styleradar.tiendas.domain.port.out.FundacionEventPublisherPort eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.repositoryPort = repositoryPort;
         this.adminValidator = adminValidator;
         this.almacenamientoBlobPort = almacenamientoBlobPort;
@@ -110,6 +120,9 @@ public class RegistrarFundacionUseCaseImpl implements RegistrarFundacionUseCase 
         Fundacion guardada = repositoryPort.save(fundacion);
 
         log.info("Fundación '{}' registrada exitosamente con ID={}", guardada.getNombre(), guardada.getId());
+        if (eventPublisher != null) {
+            eventPublisher.publicarEstadoCambiado(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.registrada(guardada.getId(), Instant.now()));
+        }
         return toResponseDTO(guardada);
     }
 

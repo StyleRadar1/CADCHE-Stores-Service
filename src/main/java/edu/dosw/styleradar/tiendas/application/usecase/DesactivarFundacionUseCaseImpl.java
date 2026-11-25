@@ -60,6 +60,7 @@ public class DesactivarFundacionUseCaseImpl implements DesactivarFundacionUseCas
                 .build();
 
         eventPublisherPort.publicarFundacionDesactivada(evento);
+        eventPublisherPort.publicarEstadoCambiado(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.desactivada(guardada.getId(), Instant.now()));
         log.info("Evento FundacionDesactivadaEvent publicado para reasignar donaciones y notificar a usuarios");
 
         return mapearResponse(guardada);
