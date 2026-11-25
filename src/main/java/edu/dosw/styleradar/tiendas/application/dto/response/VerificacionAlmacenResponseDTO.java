@@ -9,7 +9,7 @@ import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Verification status, legal entity (NIT and RUT in PDF) and registration data of a partner store")
+@Schema(name = "StoreVerificationResponse", description = "Verification status, legal entity (NIT and RUT in PDF) and registration data of a partner store")
 public record VerificacionAlmacenResponseDTO(
         @Schema(description = "Store NIT", example = "900123456-1")
         String nit,

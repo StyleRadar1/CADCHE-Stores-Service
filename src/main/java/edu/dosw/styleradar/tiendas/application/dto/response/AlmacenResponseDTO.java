@@ -7,7 +7,7 @@ import java.util.Set;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Public information of a verified partner store")
+@Schema(name = "StoreResponse", description = "Public information of a verified partner store")
 public record AlmacenResponseDTO(
         @Schema(description = "Unique NIT of the partner store", example = "900123456-1")
         String nit,

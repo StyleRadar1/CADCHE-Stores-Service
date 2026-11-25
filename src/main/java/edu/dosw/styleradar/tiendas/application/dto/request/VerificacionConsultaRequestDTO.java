@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Schema(description = "Filters and pagination to query store verification requests")
+@Schema(name = "VerificationSearchQuery", description = "Filters and pagination to query store verification requests")
 public class VerificacionConsultaRequestDTO {
 
     @Schema(description = "Optional filter by verification status", example = "PENDING")

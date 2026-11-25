@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Inventory data to evaluate the low-stock badge of an item")
+@Schema(name = "LowStockEvaluationRequest", description = "Inventory data to evaluate the low-stock badge of an item")
 public class EvaluarUltimasUnidadesRequestDTO {
 
     @NotNull(message = "El stock actual es obligatorio")

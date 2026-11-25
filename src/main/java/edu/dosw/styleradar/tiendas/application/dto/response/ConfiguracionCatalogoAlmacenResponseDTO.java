@@ -6,7 +6,7 @@ import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Current stock threshold and new-arrival days of a store")
+@Schema(name = "StoreCatalogSettingsResponse", description = "Current stock threshold and new-arrival days of a store")
 public record ConfiguracionCatalogoAlmacenResponseDTO(
         @Schema(description = "NIT of the partner store", example = "900123456-1")
         String nit,

@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * SR-RF-117 (análisis v6): datos públicos de una fundación activa. No incluye los datos internos de registro
  * (representante, certificado ni fecha de registro).
  */
-@Schema(description = "Public information of an active partner foundation")
+@Schema(name = "PublicFoundationResponse", description = "Public information of an active partner foundation")
 public record FundacionPublicaResponseDTO(
         @Schema(example = "3") Long id,
         @Schema(example = "Fundación Abrigo Solidario") String name,
