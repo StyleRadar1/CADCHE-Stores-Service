@@ -204,4 +204,27 @@ class RegistrarFundacionUseCaseTest {
         assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(
                 ConsultaFundacionesRequestDTO.builder().latitude(4.6).build()));
     }
+
+    @Test
+    @DisplayName("BUG-003: obtenerPorRepresentante autoriza FOUNDATION_REPRESENTATIVE/STYLERADAR_ADMIN y rechaza otros roles o nulos")
+    void debeObtenerFundacionPorRepresentanteYValidarRoles() {
+        Fundacion f = Fundacion.builder().id(7L).nombre("Fundación Abrigo").representanteId(24L).activa(true).build();
+        when(repositoryPort.findByRepresentanteId(24L)).thenReturn(Optional.of(f));
+        when(repositoryPort.findByRepresentanteId(99L)).thenReturn(Optional.empty());
+
+        FundacionResponseDTO okRep = useCase.obtenerPorRepresentante(24L, "FOUNDATION_REPRESENTATIVE");
+        assertEquals(7L, okRep.getId());
+
+        FundacionResponseDTO okAdmin = useCase.obtenerPorRepresentante(24L, ADMIN_ROLE);
+        assertEquals(7L, okAdmin.getId());
+
+        assertThrows(edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException.class,
+                () -> useCase.obtenerPorRepresentante(null, "FOUNDATION_REPRESENTATIVE"));
+        assertThrows(edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException.class,
+                () -> useCase.obtenerPorRepresentante(24L, " "));
+        assertThrows(edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException.class,
+                () -> useCase.obtenerPorRepresentante(24L, "BUYER"));
+        assertThrows(FundacionNoEncontradaException.class,
+                () -> useCase.obtenerPorRepresentante(99L, "FOUNDATION_REPRESENTATIVE"));
+    }
 }
