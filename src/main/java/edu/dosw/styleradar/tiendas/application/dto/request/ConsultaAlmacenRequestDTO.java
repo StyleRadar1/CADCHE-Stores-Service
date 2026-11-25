@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 @Data
-@Schema(description = "Pagination and optional category filter to query approved stores")
+@Schema(name = "StoreSearchQuery", description = "Pagination and optional category filter to query approved stores")
 public class ConsultaAlmacenRequestDTO {
 
     @Schema(description = "Optional store category", example = "CASUAL")

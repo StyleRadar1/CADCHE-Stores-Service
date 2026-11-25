@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Low-stock threshold and new-arrival window of a store")
+@Schema(name = "StoreCatalogSettingsRequest", description = "Low-stock threshold and new-arrival window of a store")
 public class ConfiguracionCatalogoAlmacenRequestDTO {
 
     @NotNull(message = "El umbral de últimas unidades es obligatorio")

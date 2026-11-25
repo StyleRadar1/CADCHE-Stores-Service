@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Data to register a store for verification with NIT and RUT in PDF")
+@Schema(name = "StoreRegistrationRequest", description = "Data to register a store for verification with NIT and RUT in PDF")
 public class RegistrarAlmacenRequestDTO {
 
     @NotBlank(message = "El NIT del almacén es obligatorio")

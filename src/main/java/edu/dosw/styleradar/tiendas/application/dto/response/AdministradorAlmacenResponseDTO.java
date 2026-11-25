@@ -6,7 +6,7 @@ import java.time.Instant;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Stored association between a STORE_ADMIN user and a store NIT")
+@Schema(name = "StoreAdministratorResponse", description = "Stored association between a STORE_ADMIN user and a store NIT")
 public record AdministradorAlmacenResponseDTO(
         @Schema(description = "Association record identifier", example = "10")
         Long id,
