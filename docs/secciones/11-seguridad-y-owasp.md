@@ -21,7 +21,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 
 ---
 
-### 15.1 Resumen Ejecutivo y Matriz Consolidada de Cumplimiento
+### 11.1 Resumen Ejecutivo y Matriz Consolidada de Cumplimiento
 
 | Identificador OWASP | Categoría Oficial (OWASP Top 10:2025) | Severidad | ¿Aplica? | Estado | Controles Técnicos y Acciones Implementadas en `ms-tiendas` |
 | :---: | :--- | :---: | :---: | :---: | :--- |

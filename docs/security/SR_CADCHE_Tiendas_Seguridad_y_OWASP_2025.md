@@ -19,7 +19,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 
 ---
 
-### 15.1 Resumen Ejecutivo y Matriz Consolidada de Cumplimiento
+### 11.1 Resumen Ejecutivo y Matriz Consolidada de Cumplimiento
 
 | Identificador OWASP | Categoría Oficial (OWASP Top 10:2025) | Severidad | ¿Aplica? | Estado | Controles Técnicos y Acciones Implementadas en `ms-tiendas` |
 | :---: | :--- | :---: | :---: | :---: | :--- |
@@ -36,7 +36,7 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 
 ---
 
-### 15.2 Evaluación Detallada por Categoría OWASP Top 10:2025
+### 11.2 Evaluación Detallada por Categoría OWASP Top 10:2025
 
 #### A01:2025 – Broken Access Control (Control de Acceso Roto, BOLA / IDOR / SSRF)
 * **¿Aplica?**: **SÍ (Crítico)**. Al tratarse de un microservicio multi-inquilino de comercios con endpoints de administración y moderación, el riesgo de acceso o mutación cruzada entre tiendas es crítico.
@@ -130,14 +130,14 @@ A continuación se detalla la matriz de evaluación y el desglose técnico de co
 
 ---
 
-### 15.3 Verificación Automatizada en CI/CD y Matriz de Pruebas OWASP
+### 11.3 Verificación Automatizada en CI/CD y Matriz de Pruebas OWASP
 
-El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en la suite de pruebas del microservicio (`mvn -B clean verify spotbugs:check`) y en el pipeline de integración continua (`.github/workflows/ci-qa.yml`):
+El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en la suite de pruebas del microservicio (`./mvnw -B clean verify` y SpotBugs) y en los pipelines `ci.yml` (cada PR), `ci-qa.yml` y `ci-prod.yml`:
 
 1. **Métricas Verificadas de la Suite de Pruebas y Calidad**:
-   - **Total de pruebas ejecutadas**: `408 pruebas` (`0` fallos, `0` errores, `0` ignoradas).
-   - **Cobertura de instrucciones (JaCoCo)**: `94.46%` (`8.205 / 8.686`, umbral bloqueante `>= 85%` en `pom.xml`).
-   - **Cobertura de líneas (JaCoCo)**: `95.45%` (`1.785 / 1.870`).
+   - **Total de pruebas ejecutadas**: `534 pruebas` con Docker (`0` fallos, `0` errores, `0` ignoradas); 439 en GitHub Actions, donde no hay Docker para Testcontainers.
+   - **Cobertura de instrucciones (JaCoCo)**: `96.0%` (umbral bloqueante `>= 85%` en `pom.xml`).
+   - **Cobertura de líneas y ramas (JaCoCo)**: `96.7%` y `84.7%` (umbrales bloqueantes `>= 85%` y `>= 80%`).
    - **Análisis estático SpotBugs**: `0 bugs` / `0 errores` (`spotbugs:check`).
 
 2. **Matriz de Pruebas Automatizadas por Categoría OWASP Top 10:2025**:
@@ -157,13 +157,13 @@ El cumplimiento estricto de las 10 categorías de OWASP Top 10:2025 se valida en
 
 ---
 
-### 15.4 Análisis de Seguridad de Stores: Autenticación, Autorización e Integridad (`ms-tiendas`)
+### 11.4 Análisis de Seguridad de Stores: Autenticación, Autorización e Integridad (`ms-tiendas`)
 
 En cumplimiento de los requerimientos de entrega del **Sprint 2** (especificación de entregas pág. 16), a continuación se presenta el análisis exhaustivo de seguridad enfocado en el microservicio **`ms-tiendas` (`CADCHE-Stores-Service`)**, evaluando los tres pilares fundamentales de la arquitectura: **Autenticación**, **Autorización** e **Integridad**, detallando para cada punto: **cómo está hoy**, **riesgos encontrados** y **qué se va a corregir**.
 
 ---
 
-#### 15.4.1 Autenticación (Authentication)
+#### 11.4.1 Autenticación (Authentication)
 
 ##### A. Cómo se identifica el usuario
 * **Cómo está hoy (corregido en el Sprint 2):**  
@@ -194,7 +194,7 @@ En cumplimiento de los requerimientos de entrega del **Sprint 2** (especificaci�
 
 ---
 
-#### 15.4.2 Autorización (Authorization)
+#### 11.4.2 Autorización (Authorization)
 
 ##### A. Roles y qué puede hacer cada uno
 En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
@@ -225,7 +225,7 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
 
 ---
 
-#### 15.4.3 Integridad (Integrity)
+#### 11.4.3 Integridad (Integrity)
 
 ##### A. Validación de entradas
 * **Cómo está hoy:**  
@@ -278,7 +278,7 @@ En `ms-tiendas` operan los roles propagados en JWT / cabeceras:
 
 ---
 
-#### 15.4.4 Plan de Remediación y Priorización de Seguridad en Stores
+#### 11.4.4 Plan de Remediación y Priorización de Seguridad en Stores
 
 ```mermaid
 flowchart TD
