@@ -44,6 +44,8 @@ spring:
       simple:
         # Un evento que falla va a la DLQ de su cola en vez de reintentarse sin fin.
         default-requeue-rejected: false
+        # Si la cola no existe o no se puede declarar, el consumidor reintenta sin tumbar el arranque.
+        missing-queues-fatal: false
 
   servlet:
     multipart:
