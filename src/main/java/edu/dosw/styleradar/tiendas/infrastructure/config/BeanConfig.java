@@ -137,8 +137,9 @@ public class BeanConfig {
     public RegistrarAlmacenUseCase registrarAlmacenUseCase(
             AlmacenRepositoryPort repositoryPort,
             AlmacenamientoBlobPort almacenamientoBlobPort,
-            AutorizacionAlmacenValidator autorizacionValidator) {
-        return new RegistrarAlmacenUseCaseImpl(repositoryPort, almacenamientoBlobPort, autorizacionValidator);
+            AutorizacionAlmacenValidator autorizacionValidator,
+            edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventPublisher) {
+        return new RegistrarAlmacenUseCaseImpl(repositoryPort, almacenamientoBlobPort, autorizacionValidator, eventPublisher);
     }
 
     @Bean
@@ -153,15 +154,17 @@ public class BeanConfig {
     public RegistrarFundacionUseCase registrarFundacionUseCase(
             FundacionRepositoryPort repositoryPort,
             AutorizacionAdminStyleRadarValidator adminValidator,
-            AlmacenamientoBlobPort almacenamientoBlobPort) {
-        return new RegistrarFundacionUseCaseImpl(repositoryPort, adminValidator, almacenamientoBlobPort);
+            AlmacenamientoBlobPort almacenamientoBlobPort,
+            FundacionEventPublisherPort eventPublisherPort) {
+        return new RegistrarFundacionUseCaseImpl(repositoryPort, adminValidator, almacenamientoBlobPort, eventPublisherPort);
     }
 
     @Bean
     public VerificarAlmacenUseCase verificarAlmacenUseCase(
             AlmacenRepositoryPort repositoryPort,
-            AutorizacionAdminStyleRadarValidator adminValidator) {
-        return new VerificarAlmacenUseCaseImpl(repositoryPort, adminValidator);
+            AutorizacionAdminStyleRadarValidator adminValidator,
+            edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventPublisher) {
+        return new VerificarAlmacenUseCaseImpl(repositoryPort, adminValidator, eventPublisher);
     }
 
     @Bean
@@ -182,5 +185,12 @@ public class BeanConfig {
             AutorizacionAdminStyleRadarValidator adminValidator) {
         return new edu.dosw.styleradar.tiendas.application.usecase.EliminarFundacionUseCaseImpl(
                 repositoryPort, almacenamientoBlobPort, eventPublisher, adminValidator);
+    }
+
+    @Bean
+    public edu.dosw.styleradar.tiendas.domain.port.in.ConsultarFundacionInternaUseCase consultarFundacionInternaUseCase(
+            FundacionRepositoryPort repositoryPort, RegistrarFundacionUseCase registrarFundacionUseCase) {
+        return new edu.dosw.styleradar.tiendas.application.usecase.ConsultarFundacionInternaUseCaseImpl(
+                repositoryPort, registrarFundacionUseCase);
     }
 }

@@ -60,6 +60,7 @@ public class ReactivarFundacionUseCaseImpl implements ReactivarFundacionUseCase 
                 .build();
 
         eventPublisherPort.publicarFundacionReactivada(evento);
+        eventPublisherPort.publicarEstadoCambiado(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.reactivada(guardada.getId(), Instant.now()));
         log.info("Evento FundacionReactivadaEvent publicado exitosamente");
 
         return FundacionResponseDTO.builder()

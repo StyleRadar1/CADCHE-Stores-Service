@@ -44,6 +44,9 @@ public class EliminarFundacionUseCaseImpl implements EliminarFundacionUseCase {
             }
         }
         eventPublisher.publicarFundacionEliminada(FundacionEliminadaEvent.de(id, Instant.now()));
+        if (fundacion.isActiva()) {
+            eventPublisher.publicarEstadoCambiado(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.eliminada(id, Instant.now()));
+        }
         log.info("Fundación ID={} eliminada", id);
     }
 }

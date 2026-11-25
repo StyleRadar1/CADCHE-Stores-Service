@@ -11,4 +11,7 @@ public interface FundacionEventPublisherPort {
 
     /** SR-RF-120: publica foundation.deleted. */
     void publicarFundacionEliminada(edu.dosw.styleradar.tiendas.domain.event.FundacionEliminadaEvent evento);
+
+    /** Publica foundation.status.changed con el delta de fundaciones activas (+1 o -1). */
+    void publicarEstadoCambiado(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent evento);
 }

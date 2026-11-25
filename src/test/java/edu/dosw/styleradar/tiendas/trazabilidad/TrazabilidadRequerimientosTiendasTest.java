@@ -69,7 +69,8 @@ import io.jsonwebtoken.security.Keys;
         "spring.autoconfigure.exclude=",
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.flyway.enabled=true",
-        "styleradar.security.trust-gateway-headers=false"
+        "styleradar.security.trust-gateway-headers=false",
+        "styleradar.internal.donaciones.password=clave-interna-de-prueba"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -1423,6 +1424,107 @@ class TrazabilidadRequerimientosTiendasTest {
             return error(r, http, mensaje).andExpect(jsonPath("$.code").value(code))
                     .andExpect(jsonPath("$.type").value("https://api.styleradar.com/errors/"
                             + code.toLowerCase(java.util.Locale.ROOT).replace('_', '-')));
+        }
+
+        // ---- Evento store.verification.changed (integración con ms-estadísticas)
+
+        @Test
+        @DisplayName("store.verification.changed: registrar (sin estado anterior), rechazar y reabrir publican cada cambio de estado")
+        void verificacionCambiadaPublicaCadaCambio() throws Exception {
+            registrarAlmacen();
+            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", admin,
+                    Map.of("decision", "REJECTED", "reason", "El RUT no corresponde al NIT registrado")).andExpect(status().isOk());
+            json(HttpMethod.POST, "/api/v1/admin/stores/" + NIT + "/verification/review-request", admin, null)
+                    .andExpect(status().isOk());
+
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.VerificacionAlmacenCambiadaEvent.class);
+            verify(eventosAlmacen, org.mockito.Mockito.times(3)).publicarVerificacionCambiada(ev.capture());
+            assertThat(ev.getAllValues()).extracting(e -> e.getAlmacenNit()).containsOnly(NIT);
+            assertThat(ev.getAllValues()).extracting(e -> e.getEstadoAnterior() + "->" + e.getEstado())
+                    .containsExactly("null->PENDING", "PENDING->REJECTED", "REJECTED->PENDING");
+            assertThat(ev.getAllValues()).extracting(e -> e.getEventoId()).doesNotHaveDuplicates();
+        }
+
+        @Test
+        @DisplayName("store.verification.changed: una decisión rechazada (403) no publica ningún cambio")
+        void verificacionCambiadaNoPublicaSiFalla() throws Exception {
+            registrarAlmacen();
+            org.mockito.Mockito.clearInvocations(eventosAlmacen);
+            json(HttpMethod.PATCH, "/api/v1/admin/stores/" + NIT + "/verification", tienda, Map.of("decision", "APPROVED"))
+                    .andExpect(status().isForbidden());
+            verify(eventosAlmacen, never()).publicarVerificacionCambiada(org.mockito.ArgumentMatchers.any());
+        }
+
+        // ---- Evento foundation.status.changed (integración con ms-estadísticas)
+
+        @Test
+        @DisplayName("foundation.status.changed: registrar +1, desactivar -1, reactivar +1 y eliminar activa -1, en orden")
+        void fundacionEstadoCambiadoPublicaCadaCambio() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", admin, null).andExpect(status().isOk());
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/activate", admin, null).andExpect(status().isOk());
+            json(HttpMethod.DELETE, "/api/v1/admin/foundations/" + id, admin, null).andExpect(status().isNoContent());
+
+            ArgumentCaptor<edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent> ev =
+                    ArgumentCaptor.forClass(edu.dosw.styleradar.tiendas.domain.event.FundacionEstadoCambiadoEvent.class);
+            verify(eventos, org.mockito.Mockito.times(4)).publicarEstadoCambiado(ev.capture());
+            assertThat(ev.getAllValues()).extracting(e -> e.getAccion() + ":" + e.getDelta())
+                    .containsExactly("REGISTERED:1", "DEACTIVATED:-1", "REACTIVATED:1", "DELETED:-1");
+            assertThat(ev.getAllValues()).extracting(e -> e.getFundacionId()).containsOnly(id);
+            assertThat(ev.getAllValues().stream().mapToInt(e -> e.getDelta()).sum()).isZero();
+        }
+
+        @Test
+        @DisplayName("foundation.status.changed: una desactivación rechazada (403) no publica")
+        void fundacionEstadoCambiadoNoPublicaSiFalla() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            org.mockito.Mockito.clearInvocations(eventos);
+            json(HttpMethod.PATCH, "/api/v1/admin/foundations/" + id + "/deactivate", tienda, null)
+                    .andExpect(status().isForbidden());
+            verify(eventos, never()).publicarEstadoCambiado(org.mockito.ArgumentMatchers.any());
+        }
+
+        // ---- Rutas internas para ms-segunda-vida-donaciones (Basic de servicio)
+
+        private ResultActions interna(String ruta, String autorizacion) throws Exception {
+            var peticion = org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(ruta);
+            if (autorizacion != null) {
+                peticion.header(org.springframework.http.HttpHeaders.AUTHORIZATION, autorizacion);
+            }
+            return mockMvc.perform(peticion);
+        }
+
+        private String basicDonaciones(String clave) {
+            return "Basic " + java.util.Base64.getEncoder().encodeToString(
+                    ("ms-donaciones:" + clave).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        @Test
+        @DisplayName("Internas: con Basic de ms-donaciones devuelven la fundación con representativeId, por ID y por representante")
+        void internasDevuelvenFundacionCompleta() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            String basic = basicDonaciones("clave-interna-de-prueba");
+
+            interna("/api/v1/internal/foundations/" + id, basic).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(id)).andExpect(jsonPath("$.representativeId").value(24))
+                    .andExpect(jsonPath("$.active").value(true));
+            interna("/api/v1/internal/foundations?representativeId=24", basic).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(id)).andExpect(jsonPath("$.representativeId").value(24));
+            problema(interna("/api/v1/internal/foundations?representativeId=99", basic), 404, "RESOURCE_NOT_FOUND",
+                    "No existe una fundación aliada para el representante con ID: 99");
+            problema(interna("/api/v1/internal/foundations/999999", basic), 404, "RESOURCE_NOT_FOUND",
+                    "No existe una fundación aliada con ID: 999999");
+        }
+
+        @Test
+        @DisplayName("Internas: sin Basic, con clave errada o con JWT (incluso de admin) responden 401")
+        void internasExigenCredencialDeServicio() throws Exception {
+            long id = registrarFundacion("Fundación Abrigo", "900215884-1", 24);
+            String ruta = "/api/v1/internal/foundations/" + id;
+            for (String cabecera : new String[]{null, basicDonaciones("otra"), "Bearer " + admin}) {
+                problema(interna(ruta, cabecera), 401, "UNAUTHENTICATED", "Se requieren credenciales de servicio válidas");
+            }
         }
 
         // ---- SR-RF-119 Eliminar almacén aliado
