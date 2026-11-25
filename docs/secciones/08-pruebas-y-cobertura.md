@@ -11,13 +11,13 @@
 
 | Métrica (`./mvnw verify` con Docker, rama `feature/arreglos`) | Resultado | Umbral (rompe el build) |
 | :--- | :---: | :---: |
-| Pruebas | **493**, 0 fallos | 100 % en verde |
-| Cobertura de líneas (JaCoCo) | **96.3 %** | ≥ 85 % |
-| Cobertura de ramas (JaCoCo) | **81.0 %** | ≥ 80 % |
-| Cobertura de instrucciones (JaCoCo) | **95.5 %** | ≥ 85 % |
+| Pruebas | **534**, 0 fallos | 100 % en verde |
+| Cobertura de líneas (JaCoCo) | **96.7 %** | ≥ 85 % |
+| Cobertura de ramas (JaCoCo) | **84.7 %** | ≥ 80 % |
+| Cobertura de instrucciones (JaCoCo) | **96.0 %** | ≥ 85 % |
 | SpotBugs | 0 hallazgos | 0 |
 
-La regla vive en `pom.xml` (`jacoco-maven-plugin`, objetivo `check` en la fase `verify`) con los mismos umbrales del repo base: 85 % de líneas y 80 % de ramas, más 85 % de instrucciones. Los tres pipelines ejecutan `./mvnw verify`, así que una caída de cobertura detiene el PR o el despliegue.
+La regla vive en `pom.xml` (`jacoco-maven-plugin`, objetivo `check` en la fase `verify`) con los mismos umbrales del repo base: 85 % de líneas y 80 % de ramas, más 85 % de instrucciones. Los tres pipelines ejecutan `./mvnw verify`, así que una caída de cobertura detiene el PR o el despliegue. En GitHub Actions no hay Docker para Testcontainers, así que allí corren 439 pruebas y la cobertura es menor (94.4 % de líneas y 81.6 % de ramas), y aun así cumple ambos umbrales.
 
 | Nivel | Qué cubre |
 | :--- | :--- |
@@ -35,7 +35,7 @@ La regla vive en `pom.xml` (`jacoco-maven-plugin`, objetivo `check` en la fase `
 
 <div align="center">
   <img src="../evidencias/jacoco-cobertura.png" alt="JaCoCo ms-tiendas" width="90%" />
-  <p><sub><b>Figura 8.1:</b> reporte JaCoCo de `./mvnw verify` (con Docker): líneas 96.3 %, ramas 81.0 %, instrucciones 95.5 %.</sub></p>
+  <p><sub><b>Figura 8.1:</b> reporte JaCoCo de `./mvnw verify` (con Docker): líneas 96.7 %, ramas 84.7 %, instrucciones 96.0 %.</sub></p>
 </div>
 
 <!-- /evidencias -->
