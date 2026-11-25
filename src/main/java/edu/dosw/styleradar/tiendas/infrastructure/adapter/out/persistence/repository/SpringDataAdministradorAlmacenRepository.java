@@ -20,4 +20,6 @@ public interface SpringDataAdministradorAlmacenRepository extends JpaRepository<
     Optional<AdministradorAlmacenEntity> findFirstByUsuarioIdOrderByFechaAsignacionAsc(Long usuarioId);
 
     List<AdministradorAlmacenEntity> findByAlmacenNit(String almacenNit);
+
+    long deleteByUsuarioId(Long usuarioId);
 }

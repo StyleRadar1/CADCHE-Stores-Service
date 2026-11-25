@@ -163,4 +163,9 @@ public class AlmacenRepositoryAdapter implements AlmacenRepositoryPort {
         almacenRepository.deleteById(nit);
         almacenRepository.flush();
     }
+
+    @Override
+    public long eliminarAsociacionesDeUsuario(Long usuarioId) {
+        return administradorRepository.deleteByUsuarioId(usuarioId);
+    }
 }

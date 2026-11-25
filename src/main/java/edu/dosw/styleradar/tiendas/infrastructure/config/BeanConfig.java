@@ -168,6 +168,15 @@ public class BeanConfig {
     }
 
     @Bean
+    public edu.dosw.styleradar.tiendas.domain.port.in.LimpiarUsuarioEliminadoUseCase limpiarUsuarioEliminadoUseCase(
+            AlmacenRepositoryPort almacenRepositoryPort,
+            FundacionRepositoryPort fundacionRepositoryPort,
+            FundacionEventPublisherPort fundacionEventPublisherPort) {
+        return new edu.dosw.styleradar.tiendas.application.usecase.LimpiarUsuarioEliminadoUseCaseImpl(
+                almacenRepositoryPort, fundacionRepositoryPort, fundacionEventPublisherPort);
+    }
+
+    @Bean
     public edu.dosw.styleradar.tiendas.domain.port.in.EliminarAlmacenUseCase eliminarAlmacenUseCase(
             AlmacenRepositoryPort repositoryPort,
             AlmacenamientoBlobPort almacenamientoBlobPort,

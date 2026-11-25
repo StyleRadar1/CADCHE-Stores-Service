@@ -1,4 +1,9 @@
 spring:
+  rabbitmq:
+    listener:
+      simple:
+        # Sin broker en las pruebas: los consumidores se prueban invocándolos directamente.
+        auto-startup: false
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration

@@ -45,4 +45,7 @@ public interface AlmacenRepositoryPort {
 
     /** SR-RF-119: borra el almacén; la base de datos elimina en cascada fotos, categorías y administradores. */
     void eliminarPorNit(String nit);
+
+    /** Borra todos los vínculos de administrador de almacén del usuario y devuelve cuántos había. */
+    long eliminarAsociacionesDeUsuario(Long usuarioId);
 }
