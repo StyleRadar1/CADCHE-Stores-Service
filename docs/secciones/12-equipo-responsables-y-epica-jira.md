@@ -51,7 +51,7 @@ El seguimiento de requerimientos, evidencias y artefactos de entrega se centrali
 | `SR-RF-116` | Consultar almacenes aliados | Usuario comprador | Pública y paginada; solo almacenes aprobados y sin datos privados. |
 | `SR-RF-117` | Consultar fundaciones aliadas activas | Usuario comprador | Pública; solo activas, por cercanía o por nombre, sin representante ni certificado. |
 | `SR-RF-118` | Asociar administrador de almacén | Administrador StyleRadar / Administrador de almacén | Solo el admin asocia; se guarda quién y cuándo; el administrador ve solo los de su almacén. |
-| `SR-RF-119` | Eliminar almacén aliado | Administrador StyleRadar | Elimina el almacén con fotos, configuración y administradores y publica `store.deleted`. |
+| `SR-RF-119` | Eliminar almacén aliado | Administrador StyleRadar | Elimina el almacén con fotos, RUT, configuración y administradores (archivos incluidos en el Blob) y publica `store.deleted`. |
 | `SR-RF-120` | Eliminar fundación aliada | Administrador StyleRadar | Elimina la fundación y su certificado y publica `foundation.deleted`. |
 
 Cada flujo alterno de estos requerimientos tiene su prueba en `TrazabilidadRequerimientosTiendasTest` (clase anidada `AnalisisV6` para lo nuevo de la v6).

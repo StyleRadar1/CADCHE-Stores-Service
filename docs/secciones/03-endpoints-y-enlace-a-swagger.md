@@ -61,7 +61,7 @@
 | `GET` | `/api/v1/admin/stores/verifications` | SR-RF-62 · Bandeja paginada por estado | Admin |
 | `GET` · `PATCH` | `/api/v1/admin/stores/{nit}/verification` | SR-RF-62 · Detalle / decidir | Admin |
 | `POST` | `/api/v1/admin/stores/{nit}/verification/review-request` | SR-RF-62 · Reabrir revisión | Admin / dueño |
-| `DELETE` | `/api/v1/admin/stores/{nit}` | SR-RF-119 · Eliminar almacén (publica `store.deleted`) | Admin |
+| `DELETE` | `/api/v1/admin/stores/{nit}` | SR-RF-119 · Eliminar almacén: borra fotos y RUT del Blob y publica `store.deleted` | Admin |
 | `PUT` | `/api/v1/admin/stores/{nit}/administrators/{userId}` | SR-RF-118 · Asociar administrador | Admin |
 | `GET` | `/api/v1/admin/stores/{nit}/administrators` | SR-RF-118 · Listar administradores | Admin o administrador del almacén |
 | `POST` | `/api/v1/admin/foundations/certificates` | SR-RF-63 · Subir certificado | Admin |

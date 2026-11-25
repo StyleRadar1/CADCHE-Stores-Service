@@ -23,7 +23,7 @@
 | **SR-RF-116** · Consultar almacenes | Lista pública paginada de almacenes aprobados (filtro por categoría) y detalle por NIT. |
 | **SR-RF-117** · Consultar fundaciones | Lista pública de fundaciones activas, por cercanía o por nombre, sin datos internos de registro. |
 | **SR-RF-118** · Asociar administrador | El admin asocia cuentas como administradores de un almacén; el administrador ve los de su almacén. |
-| **SR-RF-119** · Eliminar almacén | El admin elimina un almacén con sus fotos, configuración y administradores; publica `store.deleted`. |
+| **SR-RF-119** · Eliminar almacén | El admin elimina un almacén con sus fotos, su RUT en PDF, configuración y administradores (los archivos también se borran del Blob); publica `store.deleted`. |
 | **SR-RF-120** · Eliminar fundación | El admin elimina una fundación y su certificado; publica `foundation.deleted`. |
 
 **Qué NO hace:** no autentica (los JWT los emite `ms-auth`), no guarda usuarios (`ms-usuarios`), ni inventario o catálogo de prendas (`ms-inventario`, `ms-item-catalogo`).
