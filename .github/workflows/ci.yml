@@ -1,0 +1,109 @@
+# ==============================================================================
+# STYLE RADAR - PIPELINE CI (revisión de Pull Requests y ramas de trabajo)
+# Microservicio: CADCHE-Stores-Service (ms-tiendas :8140)
+# Flujo: Build -> Pruebas (JaCoCo >= 85% líneas / >= 80% ramas) -> SpotBugs -> SonarQube -> Docker build (sin publicar)
+# No despliega: QA lo hace ci-qa.yml (develop) y PROD ci-prod.yml (main).
+# ==============================================================================
+
+name: CI - Tiendas
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-and-quality:
+    name: Build, Tests, JaCoCo (>= 85%) y SonarQube Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout del codigo fuente (Full History)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java 21 Temurin (LTS)
+        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Permiso de ejecucion para Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Compilar y ejecutar pruebas con JaCoCo (>= 85% lineas / >= 80% ramas)
+        run: ./mvnw -B clean verify --no-transfer-progress
+
+      - name: Guardar JAR validado para la imagen Docker
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: ms-tiendas-jar-ci
+          path: target/ms-tiendas-*.jar
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Analisis estatico con SpotBugs (0 advertencias toleradas)
+        run: ./mvnw -B --no-transfer-progress com.github.spotbugs:spotbugs-maven-plugin:4.8.6.6:check "-Dspotbugs.excludeFilterFile=spotbugs-exclude.xml"
+
+      - name: Analisis estatico SonarQube Cloud (Quality Gate A)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN no disponible (p. ej. PR desde un fork): se omite SonarCloud"
+            exit 0
+          fi
+          ./mvnw -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=StyleRadar1_CADCHE-Stores-Service -Dsonar.qualitygate.wait=true
+
+      - name: Publicar reporte de cobertura JaCoCo
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: coverage-report-ci
+          path: target/site/jacoco/
+          retention-days: 7
+
+  docker-build-check:
+    name: Verificar construccion de la imagen Docker
+    needs: build-test-and-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout del codigo fuente
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Descargar JAR validado
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ms-tiendas-jar-ci
+          path: target
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.8.0
+
+      - name: Construir imagen Docker (validacion, sin publicar)
+        uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6.11.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: styleradar-tiendas:ci-test
