@@ -115,7 +115,7 @@ jobs:
             type=raw,value=qa-${{ github.sha }}
             type=raw,value=qa-latest
 
-      - name: Compilar y publicar imagen OCI multi-stage
+      - name: Compilar y publicar imagen OCI
         uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6.11.0
         with:
           context: .
