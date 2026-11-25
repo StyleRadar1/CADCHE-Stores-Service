@@ -25,6 +25,7 @@
 | **SR-RF-118** · Asociar administrador | El admin asocia cuentas como administradores de un almacén; el administrador ve los de su almacén. |
 | **SR-RF-119** · Eliminar almacén | El admin elimina un almacén con sus fotos, su RUT en PDF, configuración y administradores (los archivos también se borran del Blob); publica `store.deleted`. |
 | **SR-RF-120** · Eliminar fundación | El admin elimina una fundación y su certificado; publica `foundation.deleted`. |
+| **Cuenta eliminada** · `ms-usuarios` | Al eliminarse una cuenta, se quitan sus vínculos de administrador de almacén y se desactiva la fundación activa que representaba. |
 
 **Qué NO hace:** no autentica (los JWT los emite `ms-auth`), no guarda usuarios (`ms-usuarios`), ni inventario o catálogo de prendas (`ms-inventario`, `ms-item-catalogo`).
 
