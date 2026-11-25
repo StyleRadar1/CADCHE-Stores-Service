@@ -59,9 +59,10 @@ class EliminacionesUseCaseTest {
     }
 
     @Test
-    @DisplayName("SR-RF-119: borra el almacén y sus fotos del Blob y publica store.deleted aunque una foto falle")
+    @DisplayName("SR-RF-119: borra el almacén, sus fotos y su RUT del Blob y publica store.deleted aunque una foto falle")
     void eliminaAlmacen() {
-        when(almacenes.existsByNit(NIT)).thenReturn(true);
+        when(almacenes.findByNit(NIT)).thenReturn(java.util.Optional.of(
+                edu.dosw.styleradar.tiendas.domain.model.Almacen.builder().nit(NIT).urlRutPdf("https://blob/rut.pdf").build()));
         when(almacenes.findFotosByAlmacenNit(NIT)).thenReturn(List.of(
                 FotografiaTienda.builder().url("https://blob/a.png").build(),
                 FotografiaTienda.builder().url("https://blob/b.png").build(),
@@ -72,11 +73,25 @@ class EliminacionesUseCaseTest {
 
         verify(almacenes).eliminarPorNit(NIT);
         verify(blob).eliminarArchivo("https://blob/b.png");
+        verify(blob).eliminarArchivo("https://blob/rut.pdf");
         ArgumentCaptor<AlmacenEliminadoEvent> ev = ArgumentCaptor.forClass(AlmacenEliminadoEvent.class);
         verify(eventosAlmacen).publicarAlmacenEliminado(ev.capture());
         assertThat(ev.getValue().getAlmacenNit()).isEqualTo(NIT);
         assertThat(ev.getValue().getEventoId()).isNotBlank();
         assertThat(ev.getValue().getFechaEliminacion()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("SR-RF-119: un almacén sin RUT ni fotos se elimina sin llamar al Blob")
+    void almacenSinArchivos() {
+        when(almacenes.findByNit(NIT)).thenReturn(java.util.Optional.of(
+                edu.dosw.styleradar.tiendas.domain.model.Almacen.builder().nit(NIT).urlRutPdf(" ").build()));
+        when(almacenes.findFotosByAlmacenNit(NIT)).thenReturn(List.of());
+
+        eliminarAlmacen.eliminar(NIT, ADMIN);
+
+        verify(almacenes).eliminarPorNit(NIT);
+        verify(blob, never()).eliminarArchivo(any());
     }
 
     @Test
