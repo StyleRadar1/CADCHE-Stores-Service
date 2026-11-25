@@ -20,25 +20,35 @@ class RabbitMQConfigTest {
     }
 
     @Test
-    @DisplayName("La cola de cuentas eliminadas escucha la clave actual de ms-usuarios y user.deleted, con DLQ")
+    @DisplayName("La cola de cuentas eliminadas escucha la clave actual de ms-usuarios y user.deleted, con DLQ por el exchange por defecto")
     void colaDeCuentasEliminadas() {
         RabbitMQConfig config = new RabbitMQConfig();
         var exchange = config.eventosExchange(RabbitMQConfig.DEFAULT_EXCHANGE_FUNDACIONES);
         var cola = config.usuarioEliminadoQueue();
         var dlq = config.usuarioEliminadoDeadLetterQueue();
-        var dlx = config.deadLetterExchange();
 
         assertThat(cola.getName()).isEqualTo("styleradar.tiendas.user-deleted.q");
         assertThat(cola.isDurable()).isTrue();
-        assertThat(cola.getArguments()).containsEntry("x-dead-letter-exchange", "styleradar.dlx")
+        assertThat(cola.getArguments()).containsEntry("x-dead-letter-exchange", "")
                 .containsEntry("x-dead-letter-routing-key", "styleradar.tiendas.user-deleted.dlq");
+        assertThat(dlq.getName()).isEqualTo("styleradar.tiendas.user-deleted.dlq");
         assertThat(dlq.isDurable()).isTrue();
-        assertThat(dlx.getType()).isEqualTo("direct");
         assertThat(config.cuentaEliminadaBinding(cola, exchange).getRoutingKey())
                 .isEqualTo("styleradar.usuarios.cuenta.eliminada");
         assertThat(config.usuarioEliminadoBinding(cola, exchange).getRoutingKey()).isEqualTo("user.deleted");
-        var dlqBinding = config.usuarioEliminadoDlqBinding(dlq, dlx);
-        assertThat(dlqBinding.getExchange()).isEqualTo("styleradar.dlx");
-        assertThat(dlqBinding.getDestination()).isEqualTo("styleradar.tiendas.user-deleted.dlq");
+    }
+
+    @Test
+    @DisplayName("El broker no puede tumbar el arranque: declaraciones toleradas y consumidores que reintentan")
+    void brokerNoTumbaElArranque() {
+        RabbitMQConfig config = new RabbitMQConfig();
+        var admin = config.rabbitAdmin(org.mockito.Mockito.mock(
+                org.springframework.amqp.rabbit.connection.ConnectionFactory.class));
+        assertThat(org.springframework.test.util.ReflectionTestUtils.getField(admin, "ignoreDeclarationExceptions")).isEqualTo(true);
+
+        var contenedor = new org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer();
+        config.consumidoresNoFatales().configure(contenedor);
+        assertThat(org.springframework.test.util.ReflectionTestUtils.getField(contenedor, "missingQueuesFatal")).isEqualTo(false);
+        assertThat(contenedor.isPossibleAuthenticationFailureFatal()).isFalse();
     }
 }

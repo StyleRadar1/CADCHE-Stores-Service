@@ -2,10 +2,13 @@ package edu.dosw.styleradar.tiendas.infrastructure.adapter.out.messaging.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.config.ContainerCustomizer;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +31,8 @@ public class RabbitMQConfig {
     /** Cola propia de ms-tiendas para la eliminación de cuentas que publica ms-usuarios. */
     public static final String QUEUE_USUARIO_ELIMINADO = "styleradar.tiendas.user-deleted.q";
     public static final String DLQ_USUARIO_ELIMINADO = "styleradar.tiendas.user-deleted.dlq";
-    public static final String DLX_EXCHANGE = "styleradar.dlx";
+    /** Exchange por defecto de RabbitMQ: enruta a la cola cuyo nombre es la routing key (no hay que declararlo). */
+    public static final String DLX_EXCHANGE = "";
     /** Clave que publica hoy ms-usuarios y la clave en inglés acordada para cuando la cambie. */
     public static final String ROUTING_KEY_CUENTA_ELIMINADA = "styleradar.usuarios.cuenta.eliminada";
     public static final String ROUTING_KEY_USUARIO_ELIMINADO = "user.deleted";
@@ -44,9 +48,27 @@ public class RabbitMQConfig {
         return new TopicExchange(nombre, true, false);
     }
 
+    /**
+     * Un fallo al declarar colas o bindings (p. ej. permisos del usuario en el broker) se registra en el log pero no
+     * impide que ms-tiendas arranque ni que publique eventos.
+     */
     @Bean
-    public DirectExchange deadLetterExchange() {
-        return new DirectExchange(DLX_EXCHANGE, true, false);
+    public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+        RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+        admin.setIgnoreDeclarationExceptions(true);
+        return admin;
+    }
+
+    /**
+     * Si la cola del consumidor no existe o el broker rechaza al consumidor, el contenedor reintenta en segundo plano
+     * en lugar de abortar el arranque de la aplicación (por defecto Spring AMQP lo trata como fatal).
+     */
+    @Bean
+    public ContainerCustomizer<SimpleMessageListenerContainer> consumidoresNoFatales() {
+        return contenedor -> {
+            contenedor.setMissingQueuesFatal(false);
+            contenedor.setPossibleAuthenticationFailureFatal(false);
+        };
     }
 
     /** Un mensaje que falla (p. ej. base de datos caída) va a la DLQ en vez de reintentarse sin fin. */
@@ -71,11 +93,6 @@ public class RabbitMQConfig {
     @Bean
     public Binding usuarioEliminadoBinding(Queue usuarioEliminadoQueue, TopicExchange eventosExchange) {
         return BindingBuilder.bind(usuarioEliminadoQueue).to(eventosExchange).with(ROUTING_KEY_USUARIO_ELIMINADO);
-    }
-
-    @Bean
-    public Binding usuarioEliminadoDlqBinding(Queue usuarioEliminadoDeadLetterQueue, DirectExchange deadLetterExchange) {
-        return BindingBuilder.bind(usuarioEliminadoDeadLetterQueue).to(deadLetterExchange).with(DLQ_USUARIO_ELIMINADO);
     }
 
     @Bean
