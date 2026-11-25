@@ -301,12 +301,12 @@ tiendas/
 | `GET` | `/api/v1/users/{userId}/store` | SR-RF-62-A · Almacén que administra el usuario | El mismo usuario o Admin |
 | `POST` | `/api/v1/stores/documents/rut` | SR-RF-62-A · Subir RUT (PDF) | Tienda |
 | `GET` | `/api/v1/stores/{nit}` | SR-RF-116 · Detalle de un almacén | Público |
-| `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Dueño |
-| `GET` · `PUT` | `/api/v1/stores/{nit}/low-stock-threshold` | SR-RF-59 | Dueño |
-| `GET` · `PUT` | `/api/v1/stores/{nit}/new-arrival-days` | SR-RF-60 | Dueño |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/catalog-settings` | SR-RF-59/60 · Umbral y días | Público (GET) · Dueño (PUT) |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/low-stock-threshold` | SR-RF-59 | Público (GET) · Dueño (PUT) |
+| `GET` · `PUT` | `/api/v1/stores/{nit}/new-arrival-days` | SR-RF-60 | Público (GET) · Dueño (PUT) |
 | `PATCH` | `/api/v1/stores/{nit}/items/{itemId}/low-stock` | SR-RF-59 · Distintivo | Dueño |
 | `PATCH` | `/api/v1/stores/{nit}/items/{itemId}/new-arrival` | SR-RF-60 · Distintivo | Dueño |
-| `GET` · `POST` | `/api/v1/stores/{nit}/photos` | SR-RF-74 · Listar / subir foto | Dueño (subir) |
+| `GET` · `POST` | `/api/v1/stores/{nit}/photos` | SR-RF-74 · Listar / subir foto | Público (GET) · Dueño (POST) |
 | `PUT` | `/api/v1/stores/{nit}/photos/order` | SR-RF-74 · Reordenar | Dueño |
 | `DELETE` | `/api/v1/stores/{nit}/photos/{photoId}` | SR-RF-74 · Eliminar | Dueño |
 | `GET` | `/api/v1/admin/stores/verifications` | SR-RF-62 · Bandeja paginada por estado | Admin |
