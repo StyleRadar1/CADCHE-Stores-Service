@@ -83,8 +83,11 @@ styleradar:
     jwt:
       secret-base64: ${JWT_SECRET_BASE64:}
     trust-gateway-headers: ${TRUST_GATEWAY_HEADERS:false}
-  # Credenciales Basic de servicio para /api/v1/internal/** (ms-segunda-vida-donaciones). Sin contraseña → 503.
+  # Credenciales Basic de servicio para /api/v1/internal/** (ms-segunda-vida-donaciones y ms-auth). Sin contraseñas → 503.
   internal:
     donaciones:
       username: ${DONACIONES_INTERNAL_USERNAME:ms-donaciones}
       password: ${DONACIONES_INTERNAL_PASSWORD:}
+    auth:
+      username: ${AUTH_INTERNAL_USERNAME:ms-auth}
+      password: ${AUTH_INTERNAL_PASSWORD:}
