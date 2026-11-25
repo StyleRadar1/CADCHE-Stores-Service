@@ -15,7 +15,6 @@ Plantilla en [`.env.example`](../../.env.example). En Azure, los pipelines confi
 | `JWT_SECRET_BASE64` | **Mismo secreto Base64 de ms-auth** (≥ 256 bits). Obligatorio en QA y PROD; sin él, o con un secreto de ejemplo, el servicio no arranca. | Solo dev/docker tienen un valor de ejemplo |
 | `TRUST_GATEWAY_HEADERS` | Acepta `X-User-*` sin token. Solo `true` en local o con red restringida al Gateway | `false` (`true` en dev/docker) |
 | `DONACIONES_INTERNAL_USERNAME` / `DONACIONES_INTERNAL_PASSWORD` | Credencial Basic de ms-segunda-vida-donaciones para `/api/v1/internal/**`. Sin contraseña esas rutas responden `503` y nunca quedan abiertas | `ms-donaciones` / — |
-| `AUTH_INTERNAL_USERNAME` / `AUTH_INTERNAL_PASSWORD` | Credencial Basic de ms-auth para `/api/v1/internal/stores` (almacén del administrador, para el JWT). Igual que la de donaciones: sin contraseñas configuradas las rutas internas responden `503` | `ms-auth` / — |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` (o `RABBITMQ_USER`) / `RABBITMQ_PASSWORD` / `RABBITMQ_VHOST` | Broker | `localhost` / `5672` / `guest` / `/` |
 | `RABBITMQ_SSL_ENABLED` / `RABBITMQ_SSL_VERIFY_HOSTNAME` | TLS hacia el broker (obligatorio en QA y PROD) | `true` / `true` en qa y prod |
 | `AZURE_STORAGE_CONNECTION_STRING` | Cadena de conexión de Azure Blob Storage (secreto `AZURE_STORAGE_CONNECTION_STRING_QA/PROD`). Sin ella, en QA/PROD las subidas responden `503` | Azurite en `docker`; memoria en `dev`/`test` |
