@@ -83,30 +83,4 @@ class ServicioInternoAuthFilterTest {
         assertThat(res.getStatus()).isEqualTo(200);
         assertThat(cadena.getRequest()).isNotNull();
     }
-
-    @Test
-    @DisplayName("BUG-005: Acepta tanto ms-donaciones como ms-auth cuando ambos están configurados")
-    void aceptaMultiplesServiciosInternos() throws Exception {
-        ServicioInternoAuthFilter multi = new ServicioInternoAuthFilter(
-                "ms-donaciones", "clave-don", "ms-auth", "clave-auth",
-                new ObjectMapper().findAndRegisterModules());
-
-        MockFilterChain cadenaDon = new MockFilterChain();
-        MockHttpServletResponse resDon = ejecutar(multi, "/api/v1/internal/foundations?representativeId=24",
-                basic("ms-donaciones", "clave-don"), cadenaDon);
-        assertThat(resDon.getStatus()).isEqualTo(200);
-        assertThat(cadenaDon.getRequest()).isNotNull();
-
-        MockFilterChain cadenaAuth = new MockFilterChain();
-        MockHttpServletResponse resAuth = ejecutar(multi, "/api/v1/internal/stores?ownerUserId=15",
-                basic("ms-auth", "clave-auth"), cadenaAuth);
-        assertThat(resAuth.getStatus()).isEqualTo(200);
-        assertThat(cadenaAuth.getRequest()).isNotNull();
-
-        MockFilterChain cadenaMala = new MockFilterChain();
-        MockHttpServletResponse resMala = ejecutar(multi, "/api/v1/internal/stores?ownerUserId=15",
-                basic("ms-auth", "incorrecta"), cadenaMala);
-        assertThat(resMala.getStatus()).isEqualTo(401);
-        assertThat(cadenaMala.getRequest()).isNull();
-    }
 }

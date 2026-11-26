@@ -16,8 +16,6 @@ public interface RegistrarFundacionUseCase {
 
     FundacionResponseDTO obtenerPorId(Long id, String rol);
 
-    FundacionResponseDTO obtenerPorRepresentante(Long representanteId, String rol);
-
     DocumentoSubidoResponseDTO subirCertificado(
             String nombreOriginal, String contentType, long tamano, InputStream contenido, String rol);
 
