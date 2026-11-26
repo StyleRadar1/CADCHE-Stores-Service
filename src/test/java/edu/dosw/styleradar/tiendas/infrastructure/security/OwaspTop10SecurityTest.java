@@ -146,6 +146,16 @@ class OwaspTop10SecurityTest {
 
             assertThatCode(() -> corsConfig.addCorsMappings(registry)).doesNotThrowAnyException();
         }
+
+        @Test
+        @DisplayName("A02.3: Actuator solo publica health e info en los perfiles desplegados (sin metrics ni env)")
+        void test_A02_SecurityMisconfiguration_ActuatorExposureMinima() throws IOException {
+            for (String perfil : java.util.List.of("application.yml", "application-qa.yml", "application-prod.yml")) {
+                String yml = java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources", perfil));
+                assertThat(yml).as(perfil).contains("include: health,info")
+                        .doesNotContainPattern("include: .*(metrics|env|heapdump|loggers|prometheus)");
+            }
+        }
     }
 
     // =========================================================================
