@@ -128,10 +128,12 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
+    private static final String INVALID_DATA = "La solicitud contiene datos inválidos";
+
     @ExceptionHandler(edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException.class)
     public ResponseEntity<ErrorResponseDTO> handleDatoInvalido(
             edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException exception, HttpServletRequest request) {
-        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
+        return buildResponse(CodigoError.INVALID_DATA, resumirErroresValidacion(exception.getErrores()),
                 request.getRequestURI(), exception.getErrores());
     }
 
@@ -140,15 +142,17 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException exception, HttpServletRequest request) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
         Object objetivo = exception.getBindingResult().getTarget();
-        exception.getBindingResult().getFieldErrors().forEach(error ->
-                validationErrors.putIfAbsent(nombreJson(objetivo, error.getField()), error.getDefaultMessage()));
+        exception.getBindingResult().getFieldErrors().forEach(error -> {
+            String campo = nombreJson(objetivo, error.getField());
+            validationErrors.putIfAbsent(campo, mensajeDeCampoSeguro(campo, error));
+        });
         java.util.List<org.springframework.validation.FieldError> errores = exception.getBindingResult().getFieldErrors();
         if (!errores.isEmpty() && errores.stream().allMatch(e -> "MotivoDeRechazoValido".equals(e.getCode()))) {
             // SR-RF-62 FA-06 (análisis v2): el motivo de rechazo es una regla de negocio; el campo se marca igual.
             return buildResponse(CodigoError.BUSINESS_RULE_VIOLATION, errores.get(0).getDefaultMessage(),
                     request.getRequestURI(), validationErrors);
         }
-        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
+        return buildResponse(CodigoError.INVALID_DATA, resumirErroresValidacion(validationErrors),
                 request.getRequestURI(), validationErrors);
     }
 
@@ -157,9 +161,11 @@ public class GlobalExceptionHandler {
             BindException exception, HttpServletRequest request) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
         Object objetivo = exception.getBindingResult().getTarget();
-        exception.getBindingResult().getFieldErrors().forEach(error ->
-                validationErrors.putIfAbsent(nombreJson(objetivo, error.getField()), error.getDefaultMessage()));
-        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene datos inválidos",
+        exception.getBindingResult().getFieldErrors().forEach(error -> {
+            String campo = nombreJson(objetivo, error.getField());
+            validationErrors.putIfAbsent(campo, mensajeDeCampoSeguro(campo, error));
+        });
+        return buildResponse(CodigoError.INVALID_DATA, resumirErroresValidacion(validationErrors),
                 request.getRequestURI(), validationErrors);
     }
 
@@ -182,8 +188,48 @@ public class GlobalExceptionHandler {
             }
             cause = cause.getCause();
         }
-        return buildResponse(CodigoError.INVALID_DATA, "La solicitud contiene parámetros inválidos",
+        return buildResponse(CodigoError.INVALID_DATA, describirErrorHttpInvalido(exception),
                 request.getRequestURI(), Map.of());
+    }
+
+    static String resumirErroresValidacion(Map<String, String> validationErrors) {
+        if (validationErrors == null || validationErrors.isEmpty()) {
+            return INVALID_DATA;
+        }
+        String detalle = validationErrors.values().stream()
+                .filter(msg -> msg != null && !msg.isBlank())
+                .map(msg -> msg.trim().endsWith(".") ? msg.trim().substring(0, msg.trim().length() - 1) : msg.trim())
+                .distinct()
+                .reduce((a, b) -> a + ". " + b)
+                .orElse("");
+        return detalle.isEmpty() ? INVALID_DATA : INVALID_DATA + ": " + detalle;
+    }
+
+    private static String mensajeDeCampoSeguro(String campo, org.springframework.validation.FieldError error) {
+        String mensaje = error.getDefaultMessage();
+        if ("typeMismatch".equals(error.getCode())
+                || mensaje == null
+                || mensaje.isBlank()
+                || mensaje.startsWith("Failed to convert")) {
+            return "El valor ingresado para '" + campo + "' no tiene un formato válido";
+        }
+        return mensaje;
+    }
+
+    private static String describirErrorHttpInvalido(Exception exception) {
+        if (exception instanceof HttpMessageNotReadableException) {
+            return "El cuerpo de la solicitud JSON está mal formado o contiene valores con formato inválido";
+        }
+        if (exception instanceof MissingServletRequestPartException) {
+            return "Falta el archivo o campo obligatorio en la solicitud multipart";
+        }
+        if (exception instanceof HttpMediaTypeNotSupportedException) {
+            return "El tipo de contenido no es compatible con este endpoint";
+        }
+        if (exception instanceof MethodArgumentTypeMismatchException) {
+            return "Uno de los parámetros de la solicitud tiene un tipo o formato inválido";
+        }
+        return "La solicitud contiene parámetros inválidos";
     }
 
     @ExceptionHandler(AlmacenamientoNoDisponibleException.class)

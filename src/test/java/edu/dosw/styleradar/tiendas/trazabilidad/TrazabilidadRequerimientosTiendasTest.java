@@ -163,14 +163,18 @@ class TrazabilidadRequerimientosTiendasTest {
                 .andExpect(jsonPath("$.path").exists())
                 .andExpect(jsonPath("$.timestamp").value(matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")));
         if (mensaje != null) {
-            r.andExpect(jsonPath("$.message").value(mensaje));
+            if (INVALID_DATA.equals(mensaje)) {
+                r.andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.startsWith(INVALID_DATA)));
+            } else {
+                r.andExpect(jsonPath("$.message").value(mensaje));
+            }
         }
         return r;
     }
 
     private static void campo(ResultActions r, String campo, String mensaje) throws Exception {
         r.andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value(INVALID_DATA))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.startsWith(INVALID_DATA)))
                 .andExpect(jsonPath("$.errors." + campo).value(mensaje));
     }
 
@@ -1273,7 +1277,7 @@ class TrazabilidadRequerimientosTiendasTest {
             JsonNode e = cuerpo(json(HttpMethod.POST, "/api/v1/admin/foundations", admin, Map.of()));
             assertThat(e.get("type").asText()).isEqualTo("https://api.styleradar.com/errors/invalid-data");
             assertThat(e.get("code").asText()).isEqualTo("INVALID_DATA");
-            assertThat(e.get("detail").asText()).isEqualTo(INVALID_DATA);
+            assertThat(e.get("detail").asText()).startsWith(INVALID_DATA);
             assertThat(e.get("errors").get("name").asText()).isEqualTo("El nombre es obligatorio");
             assertThat(e.get("errors").get("neighborhood").asText()).isEqualTo("El barrio es obligatorio");
             assertThat(e.get("errors").get("representativeId").asText()).isEqualTo("El ID del usuario representante es obligatorio");
@@ -1324,7 +1328,9 @@ class TrazabilidadRequerimientosTiendasTest {
         private void codigo(ResultActions r, int http, String code, String detail) throws Exception {
             r.andExpect(status().is(http)).andExpect(jsonPath("$.code").value(code));
             if (detail != null) {
-                r.andExpect(jsonPath("$.detail").value(detail));
+                r.andExpect(INVALID_DATA.equals(detail)
+                        ? jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith(INVALID_DATA))
+                        : jsonPath("$.detail").value(detail));
             }
         }
 
