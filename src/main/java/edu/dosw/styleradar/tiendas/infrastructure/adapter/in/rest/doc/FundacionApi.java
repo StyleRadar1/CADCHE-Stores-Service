@@ -124,6 +124,24 @@ public interface FundacionApi {
             @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(
+            summary = "Get the foundation of the authenticated representative",
+            description = "FOUNDATION_REPRESENTATIVE or STYLERADAR_ADMIN. Returns the partner foundation represented by the authenticated user, including active status and representativeId.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Foundation found"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid token", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Requires FOUNDATION_REPRESENTATIVE or STYLERADAR_ADMIN", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No foundation associated with the authenticated user", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @GetMapping("/api/v1/foundations/representative")
+    ResponseEntity<FundacionResponseDTO> obtenerPorRepresentanteAutenticado(
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @Parameter(in = ParameterIn.HEADER, hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
+
+    @Operation(
             summary = "List active partner foundations",
             description = "Public. Returns only active partner foundations, without the internal registration data (representative and certificate). With latitude and longitude they are sorted by distance; without them, by name. Optional type filter.")
     @GetMapping("/api/v1/foundations")

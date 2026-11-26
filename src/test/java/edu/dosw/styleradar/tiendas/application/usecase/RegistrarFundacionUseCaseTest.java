@@ -29,6 +29,7 @@ import edu.dosw.styleradar.tiendas.application.dto.request.FundacionRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.DocumentoSubidoResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.FundacionResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.AccesoDenegadoAlmacenException;
+import edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionNoEncontradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.FundacionYaRegistradaException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
@@ -203,5 +204,40 @@ class RegistrarFundacionUseCaseTest {
                 useCase.consultarCercanas(null).stream().map(FundacionResponseDTO::getNombre).toList());
         assertThrows(ReglaDeNegocioException.class, () -> useCase.consultarCercanas(
                 ConsultaFundacionesRequestDTO.builder().latitude(4.6).build()));
+    }
+
+    @Test
+    @DisplayName("obtenerPorRepresentante autoriza representante o admin, retorna active y representativeId, y rechaza otros roles o sin identidad")
+    void debeObtenerFundacionPorRepresentanteYValidarSeguridad() {
+        Fundacion fundacion = Fundacion.builder()
+                .id(1L)
+                .nombre("Fundación Pruebas QA")
+                .representanteId(5L)
+                .activa(true)
+                .build();
+        when(repositoryPort.findByRepresentanteId(5L)).thenReturn(Optional.of(fundacion));
+        when(repositoryPort.findByRepresentanteId(99L)).thenReturn(Optional.empty());
+
+        FundacionResponseDTO porRep = useCase.obtenerPorRepresentante(5L, "FOUNDATION_REPRESENTATIVE");
+        assertEquals(1L, porRep.getId());
+        assertEquals(5L, porRep.getRepresentanteId());
+        assertTrue(porRep.isActiva());
+
+        assertEquals(1L, useCase.obtenerPorRepresentante(5L, "ROLE_FOUNDATION_REPRESENTATIVE").getId());
+        assertEquals(1L, useCase.obtenerPorRepresentante(5L, "REPRESENTANTE_FUNDACION").getId());
+        assertEquals(1L, useCase.obtenerPorRepresentante(5L, ADMIN_ROLE).getId());
+
+        assertThrows(FalloAutenticacionException.class,
+                () -> useCase.obtenerPorRepresentante(null, "FOUNDATION_REPRESENTATIVE"));
+        assertThrows(FalloAutenticacionException.class,
+                () -> useCase.obtenerPorRepresentante(5L, null));
+        assertThrows(FalloAutenticacionException.class,
+                () -> useCase.obtenerPorRepresentante(5L, "   "));
+        assertThrows(AccesoDenegadoAlmacenException.class,
+                () -> useCase.obtenerPorRepresentante(5L, "BUYER"));
+        assertThrows(AccesoDenegadoAlmacenException.class,
+                () -> useCase.obtenerPorRepresentante(5L, "STORE_ADMIN"));
+        assertThrows(FundacionNoEncontradaException.class,
+                () -> useCase.obtenerPorRepresentante(99L, "FOUNDATION_REPRESENTATIVE"));
     }
 }
