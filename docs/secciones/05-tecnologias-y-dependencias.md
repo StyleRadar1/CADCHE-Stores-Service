@@ -7,13 +7,13 @@
 | Componente | Tecnología | Versión | Uso |
 | :--- | :--- | :--- | :--- |
 | Lenguaje | Java LTS | `21` | Estándar del curso. |
-| Framework | Spring Boot | `3.2.12` | Web, Data JPA, AMQP, Validation y Actuator. |
+| Framework | Spring Boot | `4.2.0` | Web, Data JPA, AMQP, Validation y Actuator. |
 | Base de datos | PostgreSQL | `16` | Todos los perfiles (dev con Docker Compose); **sin H2**. |
-| Migraciones | Flyway | `10.20.1` | V1..V7 con `ddl-auto=validate`. |
+| Migraciones | Flyway | `12.11.0` | V1..V7 con `ddl-auto=validate`. |
 | Mensajería | RabbitMQ (Spring AMQP) | `3.13` | Eventos de fundaciones. |
 | Seguridad | JJWT | `0.12.6` | Validación de los JWT de ms-auth (misma librería y versión). |
 | Almacenamiento | Azure Blob Storage SDK (`azure-storage-blob`) | `12.29.1` | Subida real de RUT, fotos y certificados (CADCHE-117); Azurite en `docker` y en `AzureBlobStorageAdapterIntegrationTest`. |
-| Documentación | springdoc-openapi | `2.3.0` | Swagger UI y OpenAPI 3. |
+| Documentación | springdoc-openapi | `3.2.1` | Swagger UI y OpenAPI 3. |
 | Pruebas | JUnit 5, Mockito, Testcontainers | `5.10 / 5.7 / 1.19.8` | Unitarias, WebMvc e integración con **PostgreSQL 16 real**. |
 | Calidad | JaCoCo, SpotBugs, SonarCloud | `0.8.12 / 4.8.6 / –` | Cobertura ≥ 85 % de líneas y ≥ 80 % de ramas, y análisis estático. |
 | Contenedor | Eclipse Temurin JRE Alpine | `21` | Imagen OCI no-root con el JAR validado en CI. |
@@ -115,7 +115,7 @@ $$\text{Puntaje Total} = \sum_{i=1}^{5} (\text{Calificación}_{i} \times \text{P
 
 ##### 3.2 Framework Backend & Microservicios (ADR-002)
 
-| Criterio (Peso) | Spring Boot 3.2.x | Quarkus 3.x | Micronaut 4.x | NestJS (Node/TS) |
+| Criterio (Peso) | Spring Boot 4.2.x | Quarkus 3.x | Micronaut 4.x | NestJS (Node/TS) |
 | :--- | :---: | :---: | :---: | :---: |
 | C1: Rendimiento (25 %) | 5 | 5 | 4 | 4 |
 | C2: Madurez & LTS (20 %) | 5 | 4 | 3 | 4 |
@@ -124,8 +124,8 @@ $$\text{Puntaje Total} = \sum_{i=1}^{5} (\text{Calificación}_{i} \times \text{P
 | C5: Costo & TCO (20 %) | 4 | 5 | 5 | 4 |
 | **Total Ponderado** | **4.80 / 5.00 (Seleccionado)** | **4.40 / 5.00** | **3.80 / 5.00** | **3.95 / 5.00** |
 
-* **Decisión ADR-002:** Se adopta Spring Boot 3.2.x (`3.2.12`) como framework base para la construcción del microservicio `ms-tiendas`.
-* **Por qué Spring Boot:** Soporte integrado para recepción de solicitudes `multipart/form-data` con límites estrictos configurables en `application.yml` (6 MB por archivo y 7 MB por petición); integración nativa con Spring Data JPA, Actuator y OpenAPI 3 (`springdoc 2.3.0`).
+* **Decisión ADR-002:** Se adopta Spring Boot 4.2.x (`4.2.0`) como framework base para la construcción del microservicio `ms-tiendas`.
+* **Por qué Spring Boot:** Soporte integrado para recepción de solicitudes `multipart/form-data` con límites estrictos configurables en `application.yml` (6 MB por archivo y 7 MB por petición); integración nativa con Spring Data JPA, Actuator y OpenAPI 3 (`springdoc 3.2.1`).
 * **Por qué no los otros:** Quarkus y Micronaut requieren configuraciones adicionales complejas para el manejo de partes binarias multipart en contenedores nativos; NestJS introduce una pila tecnológica heterogénea frente al resto de microservicios Java.
 
 ##### 3.3 Persistencia Relacional Georreferenciada y Almacenamiento de Archivos (ADR-003)
@@ -208,13 +208,13 @@ Los microservicios se ejecutan en Azure Container Apps (serverless sobre Kuberne
 El Technology Radar de StyleRadar categoriza las tecnologías según su nivel de adopción institucional, mitigando el riesgo de obsolescencia o dispersión técnica:
 
 ##### Cuadrante 1: Lenguajes & Frameworks
-* **ADOPT:** Java 21 LTS, Spring Boot 3.2.x, React 18, Tailwind CSS, Vite.
+* **ADOPT:** Java 21 LTS, Spring Boot 4.2.x, React 18, Tailwind CSS, Vite.
 * **TRIAL:** Spring Cloud Gateway Reactive, Spring Data Specifications.
 * **ASSESS:** Virtual Threads en producción masiva, Keycloak OpenID Connect.
 * **HOLD:** Monolito no modular, Node.js sin TypeScript, frameworks sin tipado.
 
 ##### Cuadrante 2: Almacenamiento & Datos
-* **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 10.20.1 (`V1..V7`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
+* **ADOPT:** PostgreSQL 16 (Database-per-Service), Flyway 12.11.0 (`V1..V7`), Azure Blob Storage (vía puerto `AlmacenamientoBlobPort`).
 * **ADOPT:** SDK Azure Blob Storage v12 para la subida directa de binarios desde `AzureBlobStorageAdapter` (CADCHE-117).
 * **ASSESS:** PostGIS y Redis en iteraciones futuras si aumenta la carga de lectura geoespacial.
 * **HOLD:** MongoDB para transacciones relacionales de NIT o binarios `BYTEA` dentro de PostgreSQL.
@@ -283,7 +283,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
    **Persistencia Relacional en PostgreSQL 16 (`styleradar_tiendas`) + puerto `AlmacenamientoBlobPort` (`AzureBlobStorageAdapter`).** PostgreSQL garantiza atomicidad transaccional y reglas estructurales (`almacenes.nit` PK, `UNIQUE (almacen_nit, usuario_id)`, llaves foráneas con `ON DELETE CASCADE`), mientras que la regla de dominio `Almacen.MAXIMO_FOTOGRAFIAS = 6` controla la cuota de vitrina en `almacen_fotos`. Actualmente `ms-tiendas` **no utiliza Redis**.
 
 3. **Frameworks, Lenguaje y Herramientas:**
-   **Java 21 LTS, Spring Boot 3.2.12, Spring Data JPA, Jakarta Bean Validation 3, Flyway 10.20.1, SpringDoc OpenAPI 2.3.0, MapStruct 1.5.5.Final y Lombok 1.18.42.** Spring Boot gestiona el límite multipart (`6MB` por archivo, `7MB` por petición). Flyway versiona `V1..V7` de `styleradar_tiendas`, y los 9 casos de uso se cablean mediante `@Service` implementando `domain.port.in.*UseCase` sin acoplar Spring al dominio puro.
+   **Java 21 LTS, Spring Boot 4.2.0, Spring Data JPA, Jakarta Bean Validation 3, Flyway 12.11.0, SpringDoc OpenAPI 3.2.1, MapStruct 1.5.5.Final y Lombok 1.18.42.** Spring Boot gestiona el límite multipart (`6MB` por archivo, `7MB` por petición). Flyway versiona `V1..V7` de `styleradar_tiendas`, y los 9 casos de uso se cablean mediante `@Service` implementando `domain.port.in.*UseCase` sin acoplar Spring al dominio puro.
 
 4. **Broker de Mensajería:**
    **Spring AMQP / RabbitMQ (`RabbitMQFundacionEventPublisherAdapter`).** El microservicio implementa la publicación de `FundacionDesactivadaEvent` hacia el exchange `styleradar.exchange` (routing keys `foundation.deactivated` y `foundation.reactivated`) capturando `AmqpException` para no bloquear las confirmaciones SQL. Actualmente **ni `ms-tiendas` ni `ms-auth` se conectan al broker RabbitMQ compartido** y `management.health.rabbit.enabled=false` está configurado en QA, PROD y DEV.
@@ -294,7 +294,7 @@ Consolidación técnica alineada con la segmentación oficial de StyleRadar (blo
 
 ##### 8.1 Resumen de Decisiones y Factores de Éxito
 
-La adopción de Java 21 LTS y Spring Boot 3.2.12 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 96.8 % de líneas y 84.8 % de ramas sobre 548 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V7` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
+La adopción de Java 21 LTS y Spring Boot 4.2.0 garantiza un núcleo tipado, compilado con SpotBugs en 0 errores y cobertura JaCoCo de 96.8 % de líneas y 84.8 % de ramas sobre 548 pruebas. La persistencia relacional en PostgreSQL 16 con migraciones Flyway `V1..V7` e infraestructura stateless (`JwtAuthFilter` + `AutorizacionAlmacenValidator`) asegura integridad de datos y aislamiento multi-tenant sin dependencias externas innecesarias.
 
 ##### 8.2 Roadmap de Evolución Tecnológica
 

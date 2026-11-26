@@ -32,9 +32,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -105,9 +105,9 @@ class TrazabilidadRequerimientosTiendasTest {
     private JdbcTemplate jdbc;
     @Autowired
     private edu.dosw.styleradar.tiendas.domain.port.in.LimpiarUsuarioEliminadoUseCase limpiarUsuarioEliminado;
-    @MockBean
+    @MockitoBean
     private FundacionEventPublisherPort eventos;
-    @MockBean
+    @MockitoBean
     private edu.dosw.styleradar.tiendas.domain.port.out.AlmacenEventPublisherPort eventosAlmacen;
 
     private final String tienda = token(20, "STORE_ADMIN");

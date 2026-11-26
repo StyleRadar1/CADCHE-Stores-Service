@@ -23,8 +23,8 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
@@ -78,25 +78,25 @@ class AlmacenControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private RegistrarAlmacenUseCase registrarAlmacenUseCase;
 
-    @MockBean
+    @MockitoBean
     private ConfigurarUmbralUltimasUnidadesUseCase configurarUmbralUseCase;
 
-    @MockBean
+    @MockitoBean
     private ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
 
-    @MockBean
+    @MockitoBean
     private ConfigurarPeriodoNuevaLlegadaUseCase configurarPeriodoUseCase;
 
-    @MockBean
+    @MockitoBean
     private ConsultarPeriodoNuevaLlegadaUseCase consultarPeriodoUseCase;
 
-    @MockBean
+    @MockitoBean
     private MarcarDistintivoPrendaUseCase marcarDistintivoUseCase;
 
-    @MockBean
+    @MockitoBean
     private RegistrarFotografiaTiendaUseCase registrarFotografiaUseCase;
 
     private static final String NIT = "900123456";
