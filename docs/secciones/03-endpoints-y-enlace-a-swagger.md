@@ -41,7 +41,7 @@
 * Sin token, las cabeceras `X-User-*` solo se aceptan con `TRUST_GATEWAY_HEADERS=true`. Use esa opción en local o cuando el servicio esté restringido a la red del Gateway; en QA y PROD el valor por defecto es `false`.
 * Las funciones restringidas sin identidad responden `401`; sin el rol o sin ser dueño del almacén responden `403`.
 
-### Endpoints Expuestos (35 rutas)
+### Endpoints Expuestos (36 rutas)
 
 | Método | Ruta | Historia | Acceso |
 | :---: | :--- | :--- | :--- |
@@ -71,6 +71,7 @@
 | `PATCH` | `/api/v1/admin/foundations/{id}/activate` | SR-RF-65 · Reactivar (publica evento) | Admin |
 | `DELETE` | `/api/v1/admin/foundations/{id}` | SR-RF-120 · Eliminar fundación (publica `foundation.deleted`) | Admin |
 | `GET` | `/api/v1/foundations` | SR-RF-117 · Fundaciones activas por cercanía o nombre, sin representante ni certificado | Público |
+| `GET` | `/api/v1/foundations/representative` | Fundación del representante autenticado con `active` y `representativeId` | Representante de fundación o Admin |
 | `GET` | `/api/v1/internal/foundations/{id}` | Fundación completa (con `representativeId` y `active`) para ms-segunda-vida-donaciones | Servicio (Basic `ms-donaciones`) |
 | `GET` | `/api/v1/internal/foundations?representativeId={userId}` | Fundación del representante autenticado en ms-segunda-vida-donaciones | Servicio (Basic `ms-donaciones`) |
 

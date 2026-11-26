@@ -67,6 +67,8 @@ class SwaggerOpenApiTest {
                 .andExpect(jsonPath("$.paths['/api/v1/admin/foundations/{id}'].put").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/foundations/{id}/deactivate'].patch").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/foundations'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/foundations/representative'].get").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/foundations/representative'].get.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/stores/{nit}'].get.security").isEmpty())
                 .andExpect(jsonPath("$.paths['/api/v1/foundations'].get.security").isEmpty());
     }

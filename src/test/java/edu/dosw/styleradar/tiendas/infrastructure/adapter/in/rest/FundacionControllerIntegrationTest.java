@@ -525,4 +525,55 @@ class FundacionControllerIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/foundations/representative retorna 200 con active y representativeId para el representante autenticado")
+    void debeRetornarFundacionDelRepresentanteAutenticado() throws Exception {
+        FundacionResponseDTO dto = FundacionResponseDTO.builder()
+                .id(1L)
+                .nombre("Fundación Pruebas QA")
+                .representanteId(5L)
+                .activa(true)
+                .build();
+        when(useCase.obtenerPorRepresentante(5L, "FOUNDATION_REPRESENTATIVE")).thenReturn(dto);
+
+        mockMvc.perform(get("/api/v1/foundations/representative")
+                        .header("X-User-Id", "5")
+                        .header("X-User-Roles", "FOUNDATION_REPRESENTATIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Fundación Pruebas QA"))
+                .andExpect(jsonPath("$.representativeId").value(5))
+                .andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/foundations/representative responde 401 sin identidad, 403 con otro rol y 404 si no tiene fundación")
+    void debeResponder401Y403Y404EnFundacionPorRepresentante() throws Exception {
+        when(useCase.obtenerPorRepresentante(null, null))
+                .thenThrow(new edu.dosw.styleradar.tiendas.domain.exception.FalloAutenticacionException(
+                        "Se requiere un token de acceso válido para esta operación"));
+        when(useCase.obtenerPorRepresentante(5L, "BUYER"))
+                .thenThrow(new AccesoDenegadoAlmacenException(
+                        "Se requiere el rol FOUNDATION_REPRESENTATIVE o STYLERADAR_ADMIN para consultar su fundación"));
+        when(useCase.obtenerPorRepresentante(99L, "FOUNDATION_REPRESENTATIVE"))
+                .thenThrow(new FundacionNoEncontradaException(
+                        "No existe una fundación aliada para el representante con ID: 99"));
+
+        mockMvc.perform(get("/api/v1/foundations/representative"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+
+        mockMvc.perform(get("/api/v1/foundations/representative")
+                        .header("X-User-Id", "5")
+                        .header("X-User-Roles", "BUYER"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+
+        mockMvc.perform(get("/api/v1/foundations/representative")
+                        .header("X-User-Id", "99")
+                        .header("X-User-Roles", "FOUNDATION_REPRESENTATIVE"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
 }
