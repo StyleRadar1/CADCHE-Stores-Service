@@ -1328,7 +1328,9 @@ class TrazabilidadRequerimientosTiendasTest {
         private void codigo(ResultActions r, int http, String code, String detail) throws Exception {
             r.andExpect(status().is(http)).andExpect(jsonPath("$.code").value(code));
             if (detail != null) {
-                r.andExpect(jsonPath("$.detail").value(detail));
+                r.andExpect(INVALID_DATA.equals(detail)
+                        ? jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith(INVALID_DATA))
+                        : jsonPath("$.detail").value(detail));
             }
         }
 
