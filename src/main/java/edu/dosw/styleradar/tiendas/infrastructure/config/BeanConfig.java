@@ -202,10 +202,4 @@ public class BeanConfig {
         return new edu.dosw.styleradar.tiendas.application.usecase.ConsultarFundacionInternaUseCaseImpl(
                 repositoryPort, registrarFundacionUseCase);
     }
-
-    @Bean
-    public edu.dosw.styleradar.tiendas.domain.port.in.ConsultarAlmacenInternoUseCase consultarAlmacenInternoUseCase(
-            AlmacenRepositoryPort repositoryPort) {
-        return new edu.dosw.styleradar.tiendas.application.usecase.ConsultarAlmacenInternoUseCaseImpl(repositoryPort);
-    }
 }

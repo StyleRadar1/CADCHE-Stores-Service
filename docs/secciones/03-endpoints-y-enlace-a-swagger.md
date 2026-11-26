@@ -71,10 +71,8 @@
 | `PATCH` | `/api/v1/admin/foundations/{id}/activate` | SR-RF-65 · Reactivar (publica evento) | Admin |
 | `DELETE` | `/api/v1/admin/foundations/{id}` | SR-RF-120 · Eliminar fundación (publica `foundation.deleted`) | Admin |
 | `GET` | `/api/v1/foundations` | SR-RF-117 · Fundaciones activas por cercanía o nombre, sin representante ni certificado | Público |
-| `GET` | `/api/v1/foundations/representative` | Fundación del representante autenticado (por su JWT) | Representante de fundación o Admin |
 | `GET` | `/api/v1/internal/foundations/{id}` | Fundación completa (con `representativeId` y `active`) para ms-segunda-vida-donaciones | Servicio (Basic `ms-donaciones`) |
 | `GET` | `/api/v1/internal/foundations?representativeId={userId}` | Fundación del representante autenticado en ms-segunda-vida-donaciones | Servicio (Basic `ms-donaciones`) |
-| `GET` | `/api/v1/internal/stores?ownerUserId={userId}` | Almacén que administra el usuario, para añadir `storeId` al JWT en ms-auth | Servicio (Basic `ms-auth`) |
 
 Formato de error (todas las respuestas 4xx y 5xx): **ProblemDetail (RFC 9457)** con `Content-Type: application/problem+json`, igual que ms-auth y ms-usuarios (CADCHE-121). Lleva `type`, `title`, `status`, `detail`, `instance` y las extensiones `code` y `errors` (claves en inglés, mensajes en español); `timestamp`, `error`, `message` y `path` quedan como alias de compatibilidad. `type` es `https://api.styleradar.com/errors/{code en minúsculas con guiones}`. Catálogo de `code`: `INVALID_DATA`, `BUSINESS_RULE_VIOLATION` (400), `UNAUTHENTICATED` (401), `ACCESS_DENIED` (403), `RESOURCE_NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `FILE_TOO_LARGE` (413), `UNPROCESSABLE_OPERATION` (422), `INTERNAL_ERROR` (500) y `SERVICE_UNAVAILABLE` (503).
 
