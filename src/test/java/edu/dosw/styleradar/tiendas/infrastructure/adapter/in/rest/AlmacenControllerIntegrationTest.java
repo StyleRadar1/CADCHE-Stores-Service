@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
@@ -54,8 +55,10 @@ import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
 import edu.dosw.styleradar.tiendas.domain.exception.LimiteFotografiasSuperadoException;
 import edu.dosw.styleradar.tiendas.domain.exception.PrendaNoCumpleDistintivoException;
 import edu.dosw.styleradar.tiendas.domain.exception.TamanoArchivoExcedidoException;
+import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
+import edu.dosw.styleradar.tiendas.domain.port.in.ActualizarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarPeriodoNuevaLlegadaUseCase;
@@ -80,6 +83,9 @@ class AlmacenControllerIntegrationTest {
 
     @MockitoBean
     private RegistrarAlmacenUseCase registrarAlmacenUseCase;
+
+    @MockitoBean
+    private ActualizarAlmacenUseCase actualizarAlmacenUseCase;
 
     @MockitoBean
     private ConfigurarUmbralUltimasUnidadesUseCase configurarUmbralUseCase;
@@ -677,5 +683,99 @@ class AlmacenControllerIntegrationTest {
                         .header("X-User-Id", 10L))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/stores/{nit} actualiza el perfil comercial del almacén y devuelve 200 OK con los 5 nuevos campos y almacenId")
+    void debeActualizarPerfilComercialDeAlmacen() throws Exception {
+        ActualizarAlmacenRequestDTO request = ActualizarAlmacenRequestDTO.builder()
+                .nombreComercial("Atelier Urbano Chapinero")
+                .descripcion("Moda independiente actualizada")
+                .telefono("+57 310 555 8899")
+                .correoContacto("contacto@atelierurbano.co")
+                .representanteLegal("Camila Gómez")
+                .cuentaPagos("Bancolombia Ahorros 012-345678-90")
+                .direccionComercial("Carrera 13 # 63-25")
+                .barrio("Chapinero")
+                .horarioAtencion("Lun-Sáb 10:00 - 20:00")
+                .categorias(Set.of(CategoriaAlmacen.CASUAL, CategoriaAlmacen.VINTAGE))
+                .build();
+
+        VerificacionAlmacenResponseDTO response = new VerificacionAlmacenResponseDTO(
+                NIT,
+                "Atelier Urbano Chapinero",
+                "Moda independiente actualizada",
+                "+57 310 555 8899",
+                "contacto@atelierurbano.co",
+                4.6533,
+                -74.0602,
+                4.8,
+                Set.of(CategoriaAlmacen.CASUAL, CategoriaAlmacen.VINTAGE),
+                EstadoVerificacionAlmacen.APPROVED,
+                false,
+                Instant.now(),
+                1L,
+                "Aprobado",
+                "https://styleradarblob.blob.core.windows.net/documentos-rut/rut.pdf",
+                "Camila Gómez",
+                "Bancolombia Ahorros 012-345678-90",
+                "Carrera 13 # 63-25",
+                "Chapinero",
+                "Lun-Sáb 10:00 - 20:00",
+                Almacen.calcularAlmacenId(NIT));
+
+        when(actualizarAlmacenUseCase.actualizarAlmacen(eq(NIT), any(ActualizarAlmacenRequestDTO.class), eq(10L), any()))
+                .thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/stores/{nit}", NIT)
+                        .header("X-User-Id", 10L)
+                        .header("X-User-Roles", "ROLE_STORE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nit").value(NIT))
+                .andExpect(jsonPath("$.tradeName").value("Atelier Urbano Chapinero"))
+                .andExpect(jsonPath("$.representative").value("Camila Gómez"))
+                .andExpect(jsonPath("$.payoutAccount").value("Bancolombia Ahorros 012-345678-90"))
+                .andExpect(jsonPath("$.address").value("Carrera 13 # 63-25"))
+                .andExpect(jsonPath("$.barrio").value("Chapinero"))
+                .andExpect(jsonPath("$.hours").value("Lun-Sáb 10:00 - 20:00"))
+                .andExpect(jsonPath("$.almacenId").value(Almacen.calcularAlmacenId(NIT).toString()));
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/stores/{nit} responde 403 cuando otro usuario intenta editar el almacén (BOLA)")
+    void debeRechazarActualizacionAlmacenCon403PorBola() throws Exception {
+        ActualizarAlmacenRequestDTO request = ActualizarAlmacenRequestDTO.builder()
+                .nombreComercial("Intruso")
+                .build();
+
+        when(actualizarAlmacenUseCase.actualizarAlmacen(eq(NIT), any(ActualizarAlmacenRequestDTO.class), eq(99L), any()))
+                .thenThrow(new AccesoDenegadoAlmacenException("No autorizado"));
+
+        mockMvc.perform(put("/api/v1/stores/{nit}", NIT)
+                        .header("X-User-Id", 99L)
+                        .header("X-User-Roles", "ROLE_STORE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/stores/{nit} responde 404 cuando el almacén no existe")
+    void debeResponder404CuandoAlmacenAActualizarNoExiste() throws Exception {
+        ActualizarAlmacenRequestDTO request = ActualizarAlmacenRequestDTO.builder()
+                .nombreComercial("Tienda Inexistente")
+                .build();
+
+        when(actualizarAlmacenUseCase.actualizarAlmacen(eq("999999999-0"), any(ActualizarAlmacenRequestDTO.class), eq(10L), any()))
+                .thenThrow(new AlmacenNoEncontradoException("Almacén no encontrado"));
+
+        mockMvc.perform(put("/api/v1/stores/{nit}", "999999999-0")
+                        .header("X-User-Id", 10L)
+                        .header("X-User-Roles", "ROLE_STORE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
     }
 }

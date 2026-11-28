@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
@@ -98,6 +99,25 @@ public interface AlmacenApi {
     @GetMapping("/{nit}")
     ResponseEntity<AlmacenResponseDTO> obtenerPorNit(
             @Parameter(description = "NIT of the partner store", example = "900123456-1") @PathVariable String nit);
+
+    @Operation(
+            summary = "Update the commercial profile of a partner store",
+            description = "Store administrator (BOLA validated) or ROLE_STYLERADAR_ADMIN. Updates editable commercial profile fields while keeping NIT immutable.",
+            security = {@SecurityRequirement(name = "bearerAuth")})
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Store commercial profile updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid commercial profile data", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "JWT missing or invalid", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "User is not authorized to edit this store", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Store not found", content = @Content(mediaType = ErrorResponseDTO.MEDIA_TYPE, schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    @PutMapping("/{nit}")
+    ResponseEntity<VerificacionAlmacenResponseDTO> actualizarAlmacen(
+            @Parameter(description = "NIT of the partner store", example = "900123456-1") @PathVariable String nit,
+            @Valid @RequestBody ActualizarAlmacenRequestDTO request,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader);
 
     @Operation(summary = "Get the catalog settings and thresholds", security = {})
     @GetMapping("/{nit}/catalog-settings")

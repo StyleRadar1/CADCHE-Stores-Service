@@ -228,11 +228,20 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
                 a.getLatitud(),
                 a.getLongitud(),
                 a.getReputacion() != null ? a.getReputacion() : 0.0,
-                a.getCategorias()
+                a.getCategorias(),
+                a.getTelefono(),
+                a.getCorreoContacto(),
+                a.getDireccionComercial(),
+                a.getBarrio(),
+                a.getHorarioAtencion(),
+                a.obtenerAlmacenId()
         );
     }
 
-    private VerificacionAlmacenResponseDTO toVerificacionResponseDTO(Almacen a, String representante) {
+    private VerificacionAlmacenResponseDTO toVerificacionResponseDTO(Almacen a, String representanteFallback) {
+        String representante = (a.getRepresentanteLegal() != null && !a.getRepresentanteLegal().isBlank())
+                ? a.getRepresentanteLegal()
+                : representanteFallback;
         return new VerificacionAlmacenResponseDTO(
                 a.getNit(),
                 a.getNombreComercial(),
@@ -249,7 +258,12 @@ public class RegistrarAlmacenUseCaseImpl implements RegistrarAlmacenUseCase {
                 a.getAdministradorDecisionId(),
                 a.getMotivoVerificacion(),
                 a.getUrlRutPdf(),
-                representante
+                representante,
+                a.getCuentaPagos(),
+                a.getDireccionComercial(),
+                a.getBarrio(),
+                a.getHorarioAtencion(),
+                a.obtenerAlmacenId()
         );
     }
 }

@@ -1,13 +1,16 @@
 package edu.dosw.styleradar.tiendas.domain.model;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import edu.dosw.styleradar.tiendas.domain.exception.DatoInvalidoException;
@@ -33,6 +36,11 @@ public class Almacen {
     private String descripcion;
     private String telefono;
     private String correoContacto;
+    private String representanteLegal;
+    private String cuentaPagos;
+    private String direccionComercial;
+    private String barrio;
+    private String horarioAtencion;
     private Double latitud;
     private Double longitud;
     private Double reputacion;
@@ -65,6 +73,72 @@ public class Almacen {
 
     @Builder.Default
     private List<FotografiaTienda> fotos = new ArrayList<>();
+
+    public UUID obtenerAlmacenId() {
+        return calcularAlmacenId(this.nit);
+    }
+
+    public static UUID calcularAlmacenId(String nit) {
+        if (nit == null || nit.isBlank()) {
+            return null;
+        }
+        return UUID.nameUUIDFromBytes(("ms-tiendas:almacen:" + nit).getBytes(StandardCharsets.UTF_8));
+    }
+
+    public void actualizarPerfilComercial(
+            String nombreComercial,
+            String descripcion,
+            String telefono,
+            String correoContacto,
+            String representanteLegal,
+            String cuentaPagos,
+            String direccionComercial,
+            String barrio,
+            String horarioAtencion,
+            Set<CategoriaAlmacen> categorias) {
+        if (nombreComercial != null) {
+            String limpio = nombreComercial.strip();
+            if (limpio.length() < 2 || limpio.length() > 120) {
+                throw new ReglaDeNegocioException(
+                        "El nombre comercial del almacén debe tener entre 2 y 120 caracteres");
+            }
+            this.nombreComercial = limpio;
+        }
+        if (descripcion != null) {
+            this.descripcion = descripcion.strip();
+        }
+        if (telefono != null) {
+            this.telefono = telefono.strip();
+        }
+        if (correoContacto != null) {
+            String correo = correoContacto.strip();
+            if (correo.isBlank() || !correo.contains("@")) {
+                throw new ReglaDeNegocioException("El correo electrónico de contacto del almacén es inválido");
+            }
+            this.correoContacto = correo.toLowerCase(Locale.ROOT);
+        }
+        if (representanteLegal != null) {
+            this.representanteLegal = representanteLegal.strip();
+        }
+        if (cuentaPagos != null) {
+            this.cuentaPagos = cuentaPagos.strip();
+        }
+        if (direccionComercial != null) {
+            this.direccionComercial = direccionComercial.strip();
+        }
+        if (barrio != null) {
+            this.barrio = barrio.strip();
+        }
+        if (horarioAtencion != null) {
+            this.horarioAtencion = horarioAtencion.strip();
+        }
+        if (categorias != null) {
+            if (categorias.isEmpty()) {
+                throw new ReglaDeNegocioException("Debe indicar al menos una categoría comercial para el almacén");
+            }
+            this.categorias = new HashSet<>(categorias);
+        }
+    }
 
     public void validarDatosObligatoriosRegistro() {
         if (nit == null || nit.isBlank() || !PATRON_NIT.matcher(nit.strip()).matches()) {

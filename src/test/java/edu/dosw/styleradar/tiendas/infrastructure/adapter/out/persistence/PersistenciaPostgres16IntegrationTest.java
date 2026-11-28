@@ -66,14 +66,14 @@ class PersistenciaPostgres16IntegrationTest {
     private JdbcTemplate jdbc;
 
     @Test
-    @DisplayName("Flyway aplica V1..V6 sobre PostgreSQL 16 y el esquema valida contra las entidades JPA")
+    @DisplayName("Flyway aplica V1..V8 sobre PostgreSQL 16 y el esquema valida contra las entidades JPA")
     void migracionesAplicadasEnPostgres16() {
         String version = jdbc.queryForObject("SHOW server_version", String.class);
         Integer migraciones = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND version IS NOT NULL", Integer.class);
 
         assertThat(version).startsWith("16.");
-        assertThat(migraciones).isEqualTo(7);
+        assertThat(migraciones).isEqualTo(8);
     }
 
     @Test

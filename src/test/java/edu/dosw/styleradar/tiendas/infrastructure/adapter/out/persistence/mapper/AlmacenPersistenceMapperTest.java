@@ -40,4 +40,31 @@ class AlmacenPersistenceMapperTest {
         dominio.setCategorias(null);
         assertTrue(mapper.toEntity(dominio).getCategorias().isEmpty());
     }
+
+    @Test
+    void mapeaCamposPerfilComercialIdaYVuelta() {
+        Almacen dominio = Almacen.builder()
+                .nit("900123456-1")
+                .nombreComercial("Atelier Urbano")
+                .representanteLegal("Camila Gómez")
+                .cuentaPagos("Bancolombia 012-345678-90")
+                .direccionComercial("Carrera 13 # 63-25")
+                .barrio("Chapinero")
+                .horarioAtencion("Lun-Sáb 10:00 - 20:00")
+                .build();
+
+        AlmacenEntity entity = mapper.toEntity(dominio);
+        assertEquals("Camila Gómez", entity.getRepresentanteLegal());
+        assertEquals("Bancolombia 012-345678-90", entity.getCuentaPagos());
+        assertEquals("Carrera 13 # 63-25", entity.getDireccionComercial());
+        assertEquals("Chapinero", entity.getBarrio());
+        assertEquals("Lun-Sáb 10:00 - 20:00", entity.getHorarioAtencion());
+
+        Almacen reconstruido = mapper.toDomain(entity);
+        assertEquals("Camila Gómez", reconstruido.getRepresentanteLegal());
+        assertEquals("Bancolombia 012-345678-90", reconstruido.getCuentaPagos());
+        assertEquals("Carrera 13 # 63-25", reconstruido.getDireccionComercial());
+        assertEquals("Chapinero", reconstruido.getBarrio());
+        assertEquals("Lun-Sáb 10:00 - 20:00", reconstruido.getHorarioAtencion());
+    }
 }
