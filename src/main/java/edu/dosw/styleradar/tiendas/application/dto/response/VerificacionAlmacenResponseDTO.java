@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 
+import edu.dosw.styleradar.tiendas.domain.model.Almacen;
 import edu.dosw.styleradar.tiendas.domain.model.CategoriaAlmacen;
 import edu.dosw.styleradar.tiendas.domain.model.EstadoVerificacionAlmacen;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -57,9 +59,46 @@ public record VerificacionAlmacenResponseDTO(
                 example = "https://styleradarblob.blob.core.windows.net/documentos-rut/900123456-1/rut-atelier-urbano.pdf")
         @JsonProperty("rutPdfUrl") String urlRutPdf,
 
-        @Schema(description = "Identifier or reference of the store administrator user", example = "10")
-        @JsonProperty("representative") String representante
+        @Schema(description = "Legal representative or administrator reference of the store", example = "Camila Gómez")
+        @JsonProperty("representative") String representante,
+
+        @Schema(description = "Payout account for store settlements", example = "Bancolombia Ahorros 012-345678-90")
+        @JsonProperty("payoutAccount") String cuentaPagos,
+
+        @Schema(description = "Commercial street address of the store", example = "Carrera 13 # 63-25")
+        @JsonProperty("address") String direccionComercial,
+
+        @Schema(description = "Neighborhood (barrio) of the store", example = "Chapinero")
+        @JsonProperty("barrio") String barrio,
+
+        @Schema(description = "Business hours of the store", example = "Lun-Sáb 10:00 - 20:00")
+        @JsonProperty("hours") String horarioAtencion,
+
+        @Schema(description = "Deterministic UUID identifier of the store", example = "3c2f8a1e-4b5d-3e6f-9a1b-2c3d4e5f6a7b")
+        @JsonProperty("almacenId") UUID almacenId
 ) {
+    public VerificacionAlmacenResponseDTO(
+            String nit,
+            String nombreComercial,
+            String descripcion,
+            String telefono,
+            String correoContacto,
+            Double latitud,
+            Double longitud,
+            Double reputacion,
+            Set<CategoriaAlmacen> categorias,
+            EstadoVerificacionAlmacen estadoVerificacion,
+            boolean legadoSinVerificacion,
+            Instant fechaDecisionVerificacion,
+            Long administradorDecisionId,
+            String motivoVerificacion,
+            String urlRutPdf,
+            String representante) {
+        this(nit, nombreComercial, descripcion, telefono, correoContacto, latitud, longitud, reputacion, categorias,
+                estadoVerificacion, legadoSinVerificacion, fechaDecisionVerificacion, administradorDecisionId,
+                motivoVerificacion, urlRutPdf, representante, null, null, null, null, Almacen.calcularAlmacenId(nit));
+    }
+
     public VerificacionAlmacenResponseDTO(
             String nit,
             String nombreComercial,

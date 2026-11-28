@@ -3,6 +3,7 @@ package edu.dosw.styleradar.tiendas.infrastructure.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import edu.dosw.styleradar.tiendas.application.usecase.ActualizarAlmacenUseCaseImpl;
 import edu.dosw.styleradar.tiendas.application.usecase.AsociarAdministradorAlmacenUseCaseImpl;
 import edu.dosw.styleradar.tiendas.application.usecase.ConfigurarPeriodoNuevaLlegadaUseCaseImpl;
 import edu.dosw.styleradar.tiendas.application.usecase.ConfigurarUmbralUltimasUnidadesUseCaseImpl;
@@ -16,6 +17,7 @@ import edu.dosw.styleradar.tiendas.application.usecase.RegistrarAlmacenUseCaseIm
 import edu.dosw.styleradar.tiendas.application.usecase.RegistrarFotografiaTiendaUseCaseImpl;
 import edu.dosw.styleradar.tiendas.application.usecase.RegistrarFundacionUseCaseImpl;
 import edu.dosw.styleradar.tiendas.application.usecase.VerificarAlmacenUseCaseImpl;
+import edu.dosw.styleradar.tiendas.domain.port.in.ActualizarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.AsociarAdministradorAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
@@ -64,6 +66,13 @@ public class BeanConfig {
     @Bean
     public UmbralInventarioValidator umbralInventarioValidator() {
         return new UmbralInventarioValidator();
+    }
+
+    @Bean
+    public ActualizarAlmacenUseCase actualizarAlmacenUseCase(
+            AlmacenRepositoryPort repositoryPort,
+            AutorizacionAlmacenValidator autorizacionValidator) {
+        return new ActualizarAlmacenUseCaseImpl(repositoryPort, autorizacionValidator);
     }
 
     @Bean

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarAlmacenRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarPeriodoRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ActualizarUmbralRequestDTO;
 import edu.dosw.styleradar.tiendas.application.dto.request.ConfiguracionCatalogoAlmacenRequestDTO;
@@ -31,6 +32,7 @@ import edu.dosw.styleradar.tiendas.application.dto.response.PageResponseDTO;
 import edu.dosw.styleradar.tiendas.application.dto.response.VerificacionAlmacenResponseDTO;
 import edu.dosw.styleradar.tiendas.domain.exception.ArchivoNoEsImagenException;
 import edu.dosw.styleradar.tiendas.domain.exception.ReglaDeNegocioException;
+import edu.dosw.styleradar.tiendas.domain.port.in.ActualizarAlmacenUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarPeriodoNuevaLlegadaUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConfigurarUmbralUltimasUnidadesUseCase;
 import edu.dosw.styleradar.tiendas.domain.port.in.ConsultarPeriodoNuevaLlegadaUseCase;
@@ -48,6 +50,7 @@ import lombok.RequiredArgsConstructor;
 public class AlmacenController implements AlmacenApi {
 
     private final RegistrarAlmacenUseCase registrarAlmacenUseCase;
+    private final ActualizarAlmacenUseCase actualizarAlmacenUseCase;
     private final ConfigurarUmbralUltimasUnidadesUseCase configurarUmbralUseCase;
     private final ConsultarUmbralUltimasUnidadesUseCase consultarUmbralUseCase;
     private final ConfigurarPeriodoNuevaLlegadaUseCase configurarPeriodoUseCase;
@@ -101,6 +104,20 @@ public class AlmacenController implements AlmacenApi {
     @Override
     public ResponseEntity<AlmacenResponseDTO> obtenerPorNit(String nit) {
         return ResponseEntity.ok(registrarAlmacenUseCase.obtenerPorNit(nit));
+    }
+
+    @Override
+    public ResponseEntity<VerificacionAlmacenResponseDTO> actualizarAlmacen(
+            String nit,
+            @Valid @RequestBody ActualizarAlmacenRequestDTO request,
+            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @RequestHeader(value = "X-User-Roles", required = false) String rolesHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
+        Long resolvedId = resolveUserId(usuarioId);
+        String rol = resolveRole(rolesHeader, roleHeader);
+        VerificacionAlmacenResponseDTO response = actualizarAlmacenUseCase.actualizarAlmacen(
+                nit, request, resolvedId, rol);
+        return ResponseEntity.ok(response);
     }
 
     @Override

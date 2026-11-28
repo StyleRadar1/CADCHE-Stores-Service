@@ -146,6 +146,9 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
     }
 
     private VerificacionAlmacenResponseDTO toResponseDTO(Almacen a) {
+        String representante = (a.getRepresentanteLegal() != null && !a.getRepresentanteLegal().isBlank())
+                ? a.getRepresentanteLegal()
+                : resolverRepresentante(a.getNit());
         return new VerificacionAlmacenResponseDTO(
                 a.getNit(),
                 a.getNombreComercial(),
@@ -162,7 +165,12 @@ public class VerificarAlmacenUseCaseImpl implements VerificarAlmacenUseCase {
                 a.getAdministradorDecisionId(),
                 a.getMotivoVerificacion(),
                 a.getUrlRutPdf(),
-                resolverRepresentante(a.getNit())
+                representante,
+                a.getCuentaPagos(),
+                a.getDireccionComercial(),
+                a.getBarrio(),
+                a.getHorarioAtencion(),
+                a.obtenerAlmacenId()
         );
     }
 }

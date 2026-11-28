@@ -47,6 +47,21 @@ public class AlmacenEntity {
     @Column(name = "correo_contacto", length = 100)
     private String correoContacto;
 
+    @Column(name = "representante_legal", length = 120)
+    private String representanteLegal;
+
+    @Column(name = "cuenta_pagos", length = 120)
+    private String cuentaPagos;
+
+    @Column(name = "direccion_comercial", length = 200)
+    private String direccionComercial;
+
+    @Column(name = "barrio", length = 80)
+    private String barrio;
+
+    @Column(name = "horario_atencion", length = 150)
+    private String horarioAtencion;
+
     @Column(name = "latitud")
     private Double latitud;
 
